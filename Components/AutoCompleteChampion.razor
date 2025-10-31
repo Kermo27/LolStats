@@ -1,0 +1,61 @@
+@using Microsoft.AspNetCore.Components
+
+<div class="relative w-full">
+    <input type="text" 
+           @bind="InputValue"
+           @bind:event="oninput"
+           placeholder="@Placeholder"
+           class="w-full border rounded p-2"
+           @onfocus="() => showList = true"
+           @onblur="HideList" />
+
+    @if (showList && FilteredChampions.Any())
+    {
+        <ul class="absolute z-10 bg-white border border-gray-300 rounded shadow max-h-48 overflow-auto w-full mt-1">
+            @foreach (var champ in FilteredChampions)
+            {
+                <li class="px-2 py-1 hover:bg-blue-100 cursor-pointer"
+                    @onmousedown="() => SelectChampion(champ)">
+                    @champ
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter] public string Placeholder { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter] public List<string> Champions { get; set; } = new();
+
+    private bool showList = false;
+    private string InputValue
+    {
+        get => Value;
+        set
+        {
+            Value = value;
+            ValueChanged.InvokeAsync(value);
+        }
+    }
+
+    private IEnumerable<string> FilteredChampions =>
+        string.IsNullOrWhiteSpace(InputValue)
+            ? Champions
+            : Champions.Where(c => c.Contains(InputValue, StringComparison.OrdinalIgnoreCase));
+
+    private async Task SelectChampion(string champ)
+    {
+        Value = champ;
+        await ValueChanged.InvokeAsync(champ);
+        showList = false;
+    }
+
+    private async Task HideList()
+    {
+        await Task.Delay(200); // małe opóźnienie, by kliknięcie zdążyło się zarejestrować
+        showList = false;
+    }
+}

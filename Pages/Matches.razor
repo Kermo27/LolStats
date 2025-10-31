@@ -1,0 +1,269 @@
+@page "/matches"
+@using System.Text.Json
+@using LolStatsTracker.Components
+@using LolStatsTracker.Models
+@using LolStatsTracker.Services
+
+<h1 class="text-2xl font-bold mb-4">LoL Stats Tracker</h1>
+
+<div class="p-4 bg-gray-100 rounded-2xl shadow mb-6">
+    <h3 class="text-lg font-semibold mb-2">Dodaj mecz</h3>
+
+    <EditForm Model="newMatch" OnValidSubmit="AddMatch">
+        <div class="match-form">
+            <div class="row">
+                <div class="col">
+                    <label>Twój Champion</label>
+                    <InputText class="form-control" @bind-Value="newMatch.Champion" placeholder="Wybierz champion..." />
+                </div>
+                <div class="col">
+                    <label>Twój Support</label>
+                    <InputText class="form-control" @bind-Value="newMatch.Support" placeholder="Wybierz support..." />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <label>Przeciwny Bot</label>
+                    <InputText class="form-control" @bind-Value="newMatch.EnemyBot" placeholder="Wybierz enemy..." />
+                </div>
+                <div class="col">
+                    <label>Przeciwny Support</label>
+                    <InputText class="form-control" @bind-Value="newMatch.EnemySupport" placeholder="Wybierz enemy support..." />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <label>Kills</label>
+                    <InputNumber class="form-control" @bind-Value="newMatch.Kills" />
+                </div>
+                <div class="col">
+                    <label>Deaths</label>
+                    <InputNumber class="form-control" @bind-Value="newMatch.Deaths" />
+                </div>
+                <div class="col">
+                    <label>Assists</label>
+                    <InputNumber class="form-control" @bind-Value="newMatch.Assists" />
+                </div>
+                <div class="col">
+                    <label>CS</label>
+                    <InputNumber class="form-control" @bind-Value="newMatch.Cs" />
+                </div>
+                <div class="col">
+                    <label>Czas gry (min)</label>
+                    <InputNumber class="form-control" @bind-Value="newMatch.GameLengthMinutes" />
+                </div>
+                <div class="col">
+                    <label>Data</label>
+                    <InputDate class="form-control" @bind-Value="newMatch.Date" format="yyyy-MM-dd" />
+                </div>
+            </div>
+
+            <div class="form-check mt-2">
+                <InputCheckbox class="form-check-input" @bind-Value="newMatch.Win" />
+                <label class="form-check-label">Wygrana</label>
+            </div>
+
+            <button class="btn btn-primary mt-3" @onclick="AddMatch">Dodaj mecz</button>
+        </div>
+
+    </EditForm>
+</div>
+
+<div class="flex gap-2 mb-4">
+    <button class="bg-blue-600 text-white px-4 py-2 rounded" @onclick="ExportJson">💾 Eksportuj JSON</button>
+    <InputFile OnChange="ImportJson" accept=".json" />
+    <button class="bg-red-600 text-white px-4 py-2 rounded" @onclick="ClearData">🗑️ Wyczyść</button>
+</div>
+
+
+@if (matches.Any())
+{
+    <h3 class="text-lg font-semibold mb-2">Lista meczów</h3>
+    <table class="table-auto w-full border border-gray-300 text-center">
+        <thead class="bg-gray-200">
+        <tr>
+            <th class="p-2">Data</th>
+            <th class="p-2">Champion</th>
+            <th class="p-2">Support</th>
+            <th class="p-2">Enemy Bot</th>
+            <th class="p-2">Enemy Support</th>
+            <th class="p-2">K/D/A</th>
+            <th class="p-2">CS</th>
+            <th class="p-2">Czas gry</th>
+            <th class="p-2">Wygrana</th>
+            <th class="p-2">Akcje</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var match in matches)
+        {
+            <tr class="border-t border-gray-300">
+                <td class="p-2">@match.Date.ToString("yyyy-MM-dd")</td>
+                <td class="p-2">@match.Champion</td>
+                <td class="p-2">@match.Support</td>
+                <td class="p-2">@match.EnemyBot</td>
+                <td class="p-2">@match.EnemySupport</td>
+                <td class="p-2">@match.Kills / @match.Deaths / @match.Assists</td>
+                <td class="p-2">@match.Cs</td>
+                <td class="p-2">@match.GameLengthMinutes min</td>
+                <td class="p-2">@((match.Win) ? "✔️" : "❌")</td>
+                <td class="p-2 flex gap-1 justify-center">
+                    <button class="bg-yellow-400 text-white px-2 py-1 rounded" @onclick="() => EditMatch(match)">✏️ Edytuj</button>
+                    <button class="bg-red-600 text-white px-2 py-1 rounded" @onclick="() => DeleteMatch(match)">🗑️ Usuń</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Brak danych. Dodaj pierwszy mecz powyżej.</p>
+}
+
+@code {
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private MatchService? matchService;
+    private MatchEntry newMatch = new();
+    private List<MatchEntry> matches = new();
+    private IEnumerable<MatchStats> stats => matchService?.GetChampionStats() ?? [];
+
+    private List<string> ChampionNames = new()
+    {
+        "Aatrox", "Ahri", "Akali", "Alistar", "Amumu", "Anivia", "Annie", "Aphelios", "Ashe", "Aurelion Sol",
+        "Azir", "Bard", "Blitzcrank", "Brand", "Braum", "Caitlyn", "Camille", "Cassiopeia", "Cho'Gath",
+        "Corki", "Darius", "Diana", "Draven", "Ekko", "Elise", "Evelynn", "Ezreal", "Fiddlesticks",
+        "Fiora", "Fizz", "Galio", "Gangplank", "Garen", "Gnar", "Gragas", "Graves", "Gwen", "Hecarim",
+        "Heimerdinger", "Illaoi", "Irelia", "Ivern", "Janna", "Jarvan IV", "Jax", "Jayce", "Jhin", "Jinx",
+        "Kai'Sa", "Kalista", "Karma", "Karthus", "Kassadin", "Katarina", "Kayle", "Kayn", "Kennen", "Kha'Zix",
+        "Kindred", "Kled", "Kog'Maw", "LeBlanc", "Lee Sin", "Leona", "Lillia", "Lissandra", "Lucian",
+        "Lulu", "Lux", "Malphite", "Malzahar", "Maokai", "Master Yi", "Miss Fortune", "Mordekaiser", "Morgana",
+        "Nami", "Nasus", "Nautilus", "Neeko", "Nidalee", "Nilah", "Nocturne", "Nunu & Willump", "Olaf", "Orianna",
+        "Ornn", "Pantheon", "Poppy", "Pyke", "Qiyana", "Quinn", "Rakan", "Rammus", "Rek'Sai", "Rell", "Renata Glasc",
+        "Renekton", "Rengar", "Riven", "Rumble", "Ryze", "Samira", "Sejuani", "Senna", "Seraphine", "Sett",
+        "Shaco", "Shen", "Shyvana", "Singed", "Sion", "Sivir", "Skarner", "Sona", "Soraka", "Swain",
+        "Sylas", "Syndra", "Tahm Kench", "Taliyah", "Talon", "Taric", "Teemo", "Thresh", "Tristana", "Trundle",
+        "Tryndamere", "Twisted Fate", "Twitch", "Udyr", "Urgot", "Varus", "Vayne", "Veigar", "Vel'Koz",
+        "Vex", "Vi", "Viego", "Viktor", "Vladimir", "Volibear", "Warwick", "Wukong", "Xayah", "Xerath",
+        "Xin Zhao", "Yasuo", "Yone", "Yorick", "Yuumi", "Zac", "Zed", "Zeri", "Ziggs", "Zilean", "Zoe", "Zyra"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var storage = new LocalStorageService(JS);
+        matchService = new MatchService(storage);
+        await matchService.InitializeAsync();
+        matches = matchService.GetAll();
+    }
+
+    private async Task AddMatch()
+    {
+        if (matchService == null)
+            return;
+
+        if (matches.Any(m => m.Id == newMatch.Id))
+        {
+            await matchService.UpdateMatchAsync(newMatch);
+        }
+        else
+        {
+            await matchService.AddMatchAsync(newMatch);
+        }
+
+        matches = matchService.GetAll();
+        newMatch = new MatchEntry();
+        StateHasChanged();
+    }
+
+
+    private async Task ExportJson()
+    {
+        if (matchService == null)
+            return;
+
+        var data = matchService.GetAll();
+        var json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+        var base64 = Convert.ToBase64String(bytes);
+
+        await JS.InvokeVoidAsync("downloadFile", "matches.json", "application/json", base64);
+    }
+
+    private async Task ImportJson(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null || matchService == null)
+            return;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000);
+        using var reader = new StreamReader(stream);
+        var json = await reader.ReadToEndAsync();
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var imported = JsonSerializer.Deserialize<List<MatchEntry>>(json, options);
+
+        if (imported != null)
+        {
+            foreach (var match in imported)
+            {
+                if (match.Id == Guid.Empty)
+                    match.Id = Guid.NewGuid();
+
+                await matchService.AddMatchAsync(match);
+            }
+
+            matches = matchService.GetAll();
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task ClearData()
+    {
+        if (matchService == null)
+            return;
+
+        await matchService.ClearAsync();
+        matches.Clear();
+        StateHasChanged();
+    }
+    
+    private async Task DeleteMatch(MatchEntry match)
+    {
+        if (matchService == null)
+            return;
+
+        await matchService.RemoveMatchAsync(match);
+        matches = matchService.GetAll();
+        StateHasChanged();
+    }
+
+    private void EditMatch(MatchEntry match)
+    {
+        newMatch = new MatchEntry
+        {
+            Id = match.Id, 
+            Champion = match.Champion,
+            Support = match.Support,
+            EnemyBot = match.EnemyBot,
+            EnemySupport = match.EnemySupport,
+            Kills = match.Kills,
+            Deaths = match.Deaths,
+            Assists = match.Assists,
+            Cs = match.Cs,
+            GameLengthMinutes = match.GameLengthMinutes,
+            Date = match.Date,
+            Win = match.Win
+        };
+    }
+
+}
+

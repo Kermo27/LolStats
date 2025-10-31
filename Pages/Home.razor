@@ -1,0 +1,267 @@
+﻿@page "/"
+@using LolStatsTracker.Models
+@using LolStatsTracker.Services
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<h1 class="text-3xl font-bold text-white mb-6">LoL Stats Summary</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+    <!-- Card: Overall Stats -->
+    <div class="bg-gray-900 text-white p-6 rounded-2xl shadow-lg">
+        <h2 class="text-xl font-semibold mb-2">Overall Stats</h2>
+        <p>Total Matches: <strong>@matches.Count</strong></p>
+        <p>Wins: <strong>@totalWins</strong> / WR: <strong>@winRate%</strong></p>
+        <p>Average KDA: <strong>@avgKDA</strong></p>
+        <p>Average CS/min: <strong>@avgCSM</strong></p>
+        <p>Longest Win Streak: <strong>@longestWinStreak</strong></p>
+        <p>Longest Lose Streak: <strong>@longestLoseStreak</strong></p>
+    </div>
+
+    <!-- Card: Most Played Champion -->
+    <div class="bg-gray-900 text-white p-6 rounded-2xl shadow-lg">
+        <h2 class="text-xl font-semibold mb-2">Most Played Champion</h2>
+        @if (mostPlayedChampion != null)
+        {
+            <p>@mostPlayedChampion.Champion</p>
+            <p>Games: @mostPlayedChampion.Games | WR: <span class="@GetWRColor(mostPlayedChampion.WinRate)">@mostPlayedChampion.WinRate%</span></p>
+            <p>Average KDA: @mostPlayedChampion.AvgKda | Avg CS/min: @mostPlayedChampion.AvgCsm</p>
+        }
+    </div>
+
+    <!-- Card: Favorite Support -->
+    <div class="bg-gray-900 text-white p-6 rounded-2xl shadow-lg">
+        <h2 class="text-xl font-semibold mb-2">Favorite Support</h2>
+        @if (favoriteSupport != null)
+        {
+            <p>@favoriteSupport.Support</p>
+            <p>Games: @favoriteSupport.Games | WR: <span class="@GetWRColor(favoriteSupport.WinRate)">@favoriteSupport.WinRate%</span></p>
+            <p>Average KDA: @favoriteSupport.AvgKDA</p>
+        }
+    </div>
+</div>
+
+<!-- Table: Champions Stats -->
+<h2 class="text-2xl font-bold text-white mt-8 mb-4">Champion Stats</h2>
+<table class="w-full text-white border-collapse">
+    <thead>
+        <tr class="bg-gray-800">
+            <th class="p-2 border border-gray-700">Champion</th>
+            <th class="p-2 border border-gray-700">Games</th>
+            <th class="p-2 border border-gray-700">Wins</th>
+            <th class="p-2 border border-gray-700">WR %</th>
+            <th class="p-2 border border-gray-700">Avg KDA</th>
+            <th class="p-2 border border-gray-700">Avg CS/min</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var s in stats)
+        {
+            <tr class="odd:bg-gray-900 even:bg-gray-800">
+                <td class="p-2 border border-gray-700">@s.Champion</td>
+                <td class="p-2 border border-gray-700">@s.Games</td>
+                <td class="p-2 border border-gray-700">@s.Wins</td>
+                <td class="p-2 border border-gray-700"><span class="@GetWRColor(s.WinRate)">@s.WinRate</span></td>
+                <td class="p-2 border border-gray-700">@s.AvgKda</td>
+                <td class="p-2 border border-gray-700">@s.AvgCsm</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Table: Stats With Supports -->
+<h2 class="text-2xl font-bold text-white mt-8 mb-4">Stats With Supports</h2>
+<table class="w-full text-white border-collapse">
+    <thead>
+        <tr class="bg-gray-800">
+            <th class="p-2 border border-gray-700">Support</th>
+            <th class="p-2 border border-gray-700">Games</th>
+            <th class="p-2 border border-gray-700">Wins</th>
+            <th class="p-2 border border-gray-700">WR %</th>
+            <th class="p-2 border border-gray-700">Avg KDA</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var s in supportsStats)
+        {
+            <tr class="odd:bg-gray-900 even:bg-gray-800">
+                <td class="p-2 border border-gray-700">@s.Support</td>
+                <td class="p-2 border border-gray-700">@s.Games</td>
+                <td class="p-2 border border-gray-700">@s.Wins</td>
+                <td class="p-2 border border-gray-700"><span class="@GetWRColor(s.WinRate)">@s.WinRate</span></td>
+                <td class="p-2 border border-gray-700">@s.AvgKDA</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Table: Stats vs Enemy Bot -->
+<h2 class="text-2xl font-bold text-white mt-8 mb-4">Stats vs Enemy Bot</h2>
+<table class="w-full text-white border-collapse">
+    <thead>
+        <tr class="bg-gray-800">
+            <th class="p-2 border border-gray-700">Enemy Bot</th>
+            <th class="p-2 border border-gray-700">Games</th>
+            <th class="p-2 border border-gray-700">Wins</th>
+            <th class="p-2 border border-gray-700">WR %</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var e in enemyStats)
+        {
+            <tr class="odd:bg-gray-900 even:bg-gray-800">
+                <td class="p-2 border border-gray-700">@e.Enemy</td>
+                <td class="p-2 border border-gray-700">@e.Games</td>
+                <td class="p-2 border border-gray-700">@e.Wins</td>
+                <td class="p-2 border border-gray-700"><span class="@GetWRColor(e.WinRate)">@e.WinRate</span></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private MatchService? matchService;
+    private List<MatchEntry> matches = new();
+    private IEnumerable<MatchStats> stats = Enumerable.Empty<MatchStats>();
+
+    private int totalWins = 0;
+    private double winRate = 0;
+    private double avgKDA = 0;
+    private double avgCSM = 0;
+    private int longestWinStreak = 0;
+    private int longestLoseStreak = 0;
+
+    private MatchStats? mostPlayedChampion;
+    private SupportStats? favoriteSupport;
+
+    private List<SupportStats> supportsStats = new();
+    private List<EnemyStats> enemyStats = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var storage = new LocalStorageService(JS);
+        matchService = new MatchService(storage);
+        await matchService.InitializeAsync();
+
+        matches = matchService.GetAll().ToList();
+        stats = matchService.GetChampionStats();
+
+        CalculateOverallStats();
+        CalculateMostPlayedChampion();
+        CalculateFavoriteSupport();
+        CalculateStreaks();
+        CalculateSupportsStats();
+        CalculateEnemyStats();
+    }
+
+    private void CalculateOverallStats()
+    {
+        totalWins = matches.Count(m => m.Win);
+        winRate = matches.Count > 0 ? Math.Round(100.0 * totalWins / matches.Count, 1) : 0;
+        avgKDA = matches.Count > 0 ? Math.Round(matches.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths)), 2) : 0;
+        avgCSM = matches.Count > 0 ? Math.Round(matches.Average(m => m.Cs / Math.Max(1.0, m.GameLengthMinutes)), 2) : 0;
+    }
+
+    private void CalculateMostPlayedChampion()
+    {
+        mostPlayedChampion = stats.OrderByDescending(s => s.Games).FirstOrDefault();
+    }
+
+    private void CalculateFavoriteSupport()
+    {
+        favoriteSupport = matches
+            .Where(m => !string.IsNullOrEmpty(m.Support))
+            .GroupBy(m => m.Support)
+            .Select(g => new SupportStats
+            {
+                Support = g.Key!,
+                Games = g.Count(),
+                Wins = g.Count(m => m.Win),
+                WinRate = Math.Round(100.0 * g.Count(m => m.Win) / g.Count(), 1),
+                AvgKDA = Math.Round(g.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths)), 2)
+            })
+            .OrderByDescending(s => s.Games)
+            .FirstOrDefault();
+    }
+
+    private void CalculateStreaks()
+    {
+        int currentWinStreak = 0;
+        int currentLoseStreak = 0;
+
+        foreach (var m in matches)
+        {
+            if (m.Win)
+            {
+                currentWinStreak++;
+                currentLoseStreak = 0;
+            }
+            else
+            {
+                currentLoseStreak++;
+                currentWinStreak = 0;
+            }
+
+            if (currentWinStreak > longestWinStreak) longestWinStreak = currentWinStreak;
+            if (currentLoseStreak > longestLoseStreak) longestLoseStreak = currentLoseStreak;
+        }
+    }
+
+    private void CalculateSupportsStats()
+    {
+        supportsStats = matches
+            .Where(m => !string.IsNullOrEmpty(m.Support))
+            .GroupBy(m => m.Support)
+            .Select(g => new SupportStats
+            {
+                Support = g.Key!,
+                Games = g.Count(),
+                Wins = g.Count(m => m.Win),
+                WinRate = Math.Round(100.0 * g.Count(m => m.Win) / g.Count(), 1),
+                AvgKDA = Math.Round(g.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths)), 2)
+            })
+            .OrderByDescending(s => s.Games)
+            .ToList();
+    }
+
+    private void CalculateEnemyStats()
+    {
+        enemyStats = matches
+            .Where(m => !string.IsNullOrEmpty(m.EnemyBot))
+            .GroupBy(m => m.EnemyBot)
+            .Select(g => new EnemyStats
+            {
+                Enemy = g.Key!,
+                Games = g.Count(),
+                Wins = g.Count(m => m.Win),
+                WinRate = Math.Round(100.0 * g.Count(m => m.Win) / g.Count(), 1)
+            })
+            .OrderByDescending(e => e.Games)
+            .ToList();
+    }
+
+    private string GetWRColor(double wr)
+    {
+        if (wr >= 60) return "text-green-400 font-bold";
+        if (wr <= 40) return "text-red-500 font-bold";
+        return "text-yellow-400 font-bold";
+    }
+
+    private class SupportStats
+    {
+        public string Support { get; set; } = "";
+        public int Games { get; set; }
+        public int Wins { get; set; }
+        public double WinRate { get; set; }
+        public double AvgKDA { get; set; }
+    }
+
+    private class EnemyStats
+    {
+        public string Enemy { get; set; } = "";
+        public int Games { get; set; }
+        public int Wins { get; set; }
+        public double WinRate { get; set; }
+    }
+}

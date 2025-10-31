@@ -1,0 +1,239 @@
+/* --- Base --- */
+html, body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    margin: 0;
+    padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #fff;
+    font-weight: 600;
+}
+
+/* --- Links --- */
+a, .btn-link {
+    color: #1e90ff;
+    text-decoration: none;
+}
+a:hover, .btn-link:hover {
+    color: #63b3ed;
+}
+
+/* --- Buttons --- */
+.btn-primary {
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
+}
+.btn-primary:hover {
+    background-color: #2a7ad0;
+    border-color: #205aa1;
+}
+
+/* --- Focus & Active --- */
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus,
+.form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+    outline: none;
+}
+
+/* --- Content --- */
+.content {
+    padding-top: 1.5rem;
+}
+
+/* --- Form Validation --- */
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid #ff4d4d;
+}
+
+.validation-message {
+    color: #ff4d4d;
+}
+
+/* --- Tables --- */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    padding: 0.5rem 1rem;
+    border: 1px solid #333;
+}
+
+thead tr {
+    background-color: #1f1f1f;
+}
+
+tbody tr:nth-child(odd) {
+    background-color: #181818;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #212121;
+}
+
+/* --- Table WR Colors --- */
+.text-green-400 { color: #26b050 !important; font-weight: bold; }
+.text-yellow-400 { color: #facc15 !important; font-weight: bold; }
+.text-red-500 { color: #f56565 !important; font-weight: bold; }
+
+/* --- Cards --- */
+.bg-card {
+    background-color: #1e1e1e;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+}
+
+/* --- Loading --- */
+.loading-progress {
+    position: relative;
+    display: block;
+    width: 8rem;
+    height: 8rem;
+    margin: 20vh auto 1rem auto;
+}
+
+.loading-progress circle {
+    fill: none;
+    stroke: #2c2c2c;
+    stroke-width: 0.6rem;
+    transform-origin: 50% 50%;
+    transform: rotate(-90deg);
+}
+
+.loading-progress circle:last-child {
+    stroke: #1b6ec2;
+    stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
+    transition: stroke-dasharray 0.05s ease-in-out;
+}
+
+.loading-progress-text {
+    position: absolute;
+    text-align: center;
+    font-weight: bold;
+    inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
+}
+
+.loading-progress-text:after {
+    content: var(--blazor-load-percentage-text, "Loading");
+}
+
+/* --- Code Blocks --- */
+code {
+    color: #c02d76;
+    background-color: #1f1f1f;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+}
+
+/* --- Floating Form Labels --- */
+.form-floating > .form-control-plaintext::placeholder,
+.form-floating > .form-control::placeholder {
+    color: #888;
+    text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder,
+.form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
+
+/* --- Blazor Error UI --- */
+#blazor-error-ui {
+    color-scheme: dark;
+    background: #b32121;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 1rem 1rem 1rem 3.7rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+    color: white;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+/* --- Table Row Hover --- */
+tbody tr {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+tbody tr:hover {
+    background-color: #2a2a2a; /* ciemny szary */
+    color: #ffffff;
+}
+
+tbody tr:hover td {
+    color: #ffffff;
+}
+
+/* Opcjonalnie: podświetlenie WR na hover */
+tbody tr:hover .text-green-400 {
+    color: #81e6d9 !important; /* jasny zielony */
+}
+tbody tr:hover .text-yellow-400 {
+    color: #fef08a !important; /* jasny żółty */
+}
+tbody tr:hover .text-red-500 {
+    color: #feb2b2 !important; /* jasny czerwony */
+}
+
+.match-form {
+    background-color: #1e1e1e;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+    margin-bottom: 2rem;
+}
+
+.match-form label {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: #c7c7c7;
+    font-weight: 500;
+}
+
+.match-form .form-control {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    border-radius: 0.5rem;
+}
+
+.match-form .form-control::placeholder {
+    color: #888;
+}
+
+.match-form .form-check-label {
+    color: #e0e0e0;
+    margin-left: 0.3rem;
+}
+
+.match-form .btn-primary {
+    background-color: #1b6ec2;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    font-weight: 600;
+}
+
+.match-form .btn-primary:hover {
+    background-color: #2a7ad0;
+}
+
