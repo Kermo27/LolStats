@@ -1,20 +1,21 @@
-@using Microsoft.AspNetCore.Components
-
-<div class="relative w-full">
-    <input type="text" 
-           @bind="InputValue"
+<div class="relative inline-block w-[220px]">
+    <input type="text"
+           @bind="Value"
            @bind:event="oninput"
            placeholder="@Placeholder"
-           class="w-full border rounded p-2"
+           class="w-full bg-[#1e1e1e] border border-gray-700 rounded-lg p-2 text-gray-200
+                  focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition duration-150"
            @onfocus="() => showList = true"
            @onblur="HideList" />
 
     @if (showList && FilteredChampions.Any())
     {
-        <ul class="absolute z-10 bg-white border border-gray-300 rounded shadow max-h-48 overflow-auto w-full mt-1">
+        <ul class="absolute z-20 list-none bg-[#1a1a1a] border border-gray-700 rounded-lg shadow-lg 
+                   w-full mt-1 max-h-[200px] overflow-auto text-gray-200 p-0 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-[#111]"
+            @onmousedown:preventDefault>
             @foreach (var champ in FilteredChampions)
             {
-                <li class="px-2 py-1 hover:bg-blue-100 cursor-pointer"
+                <li class="px-3 py-2 hover:bg-blue-600 hover:text-white cursor-pointer transition-colors"
                     @onmousedown="() => SelectChampion(champ)">
                     @champ
                 </li>
@@ -24,27 +25,26 @@
 </div>
 
 @code {
-    [Parameter] public string Placeholder { get; set; } = "";
-    [Parameter] public string Value { get; set; } = "";
-    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter]
+    public string Placeholder { get; set; } = "Select champion...";
 
-    [Parameter] public List<string> Champions { get; set; } = new();
+    [Parameter]
+    public string Value { get; set; } = "";
 
-    private bool showList = false;
-    private string InputValue
-    {
-        get => Value;
-        set
-        {
-            Value = value;
-            ValueChanged.InvokeAsync(value);
-        }
-    }
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
+    public List<string> Champions { get; set; } = new();
+
+    private bool showList;
 
     private IEnumerable<string> FilteredChampions =>
-        string.IsNullOrWhiteSpace(InputValue)
-            ? Champions
-            : Champions.Where(c => c.Contains(InputValue, StringComparison.OrdinalIgnoreCase));
+        string.IsNullOrWhiteSpace(Value)
+            ? Champions.Take(5)
+            : Champions
+                .Where(c => c.Contains(Value, StringComparison.OrdinalIgnoreCase))
+                .Take(5);
 
     private async Task SelectChampion(string champ)
     {
@@ -55,7 +55,7 @@
 
     private async Task HideList()
     {
-        await Task.Delay(200); // małe opóźnienie, by kliknięcie zdążyło się zarejestrować
+        await Task.Delay(150);
         showList = false;
     }
 }

@@ -10,6 +10,8 @@
     <h3 class="text-lg font-semibold mb-2">Dodaj mecz</h3>
 
     <EditForm Model="newMatch" OnValidSubmit="AddMatch">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
         <div class="match-form">
             <div class="row">
                 <div class="col">
@@ -36,32 +38,32 @@
             <div class="row">
                 <div class="col">
                     <label>Kills</label>
-                    <InputNumber class="form-control" @bind-Value="newMatch.Kills" />
+                    <InputNumber class="form-control" @bind-Value="newMatch.Kills"/>
                 </div>
                 <div class="col">
                     <label>Deaths</label>
-                    <InputNumber class="form-control" @bind-Value="newMatch.Deaths" />
+                    <InputNumber class="form-control" @bind-Value="newMatch.Deaths"/>
                 </div>
                 <div class="col">
                     <label>Assists</label>
-                    <InputNumber class="form-control" @bind-Value="newMatch.Assists" />
+                    <InputNumber class="form-control" @bind-Value="newMatch.Assists"/>
                 </div>
                 <div class="col">
                     <label>CS</label>
-                    <InputNumber class="form-control" @bind-Value="newMatch.Cs" />
+                    <InputNumber class="form-control" @bind-Value="newMatch.Cs"/>
                 </div>
                 <div class="col">
                     <label>Czas gry (min)</label>
-                    <InputNumber class="form-control" @bind-Value="newMatch.GameLengthMinutes" />
+                    <InputNumber class="form-control" @bind-Value="newMatch.GameLengthMinutes"/>
                 </div>
                 <div class="col">
                     <label>Data</label>
-                    <InputDate class="form-control" @bind-Value="newMatch.Date" format="yyyy-MM-dd" />
+                    <InputDate class="form-control" @bind-Value="newMatch.Date" format="yyyy-MM-dd"/>
                 </div>
             </div>
 
             <div class="form-check mt-2">
-                <InputCheckbox class="form-check-input" @bind-Value="newMatch.Win" />
+                <InputCheckbox class="form-check-input" @bind-Value="newMatch.Win"/>
                 <label class="form-check-label">Wygrana</label>
             </div>
 
@@ -139,7 +141,7 @@ else
         "Corki", "Darius", "Diana", "Draven", "Ekko", "Elise", "Evelynn", "Ezreal", "Fiddlesticks",
         "Fiora", "Fizz", "Galio", "Gangplank", "Garen", "Gnar", "Gragas", "Graves", "Gwen", "Hecarim",
         "Heimerdinger", "Illaoi", "Irelia", "Ivern", "Janna", "Jarvan IV", "Jax", "Jayce", "Jhin", "Jinx",
-        "Kai'Sa", "Kalista", "Karma", "Karthus", "Kassadin", "Katarina", "Kayle", "Kayn", "Kennen", "Kha'Zix",
+        "Kai'sa", "Kalista", "Karma", "Karthus", "Kassadin", "Katarina", "Kayle", "Kayn", "Kennen", "Kha'Zix",
         "Kindred", "Kled", "Kog'Maw", "LeBlanc", "Lee Sin", "Leona", "Lillia", "Lissandra", "Lucian",
         "Lulu", "Lux", "Malphite", "Malzahar", "Maokai", "Master Yi", "Miss Fortune", "Mordekaiser", "Morgana",
         "Nami", "Nasus", "Nautilus", "Neeko", "Nidalee", "Nilah", "Nocturne", "Nunu & Willump", "Olaf", "Orianna",

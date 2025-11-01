@@ -1,22 +1,27 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">LolStatsTracker</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
+﻿<div class="bg-gray-900 text-white px-3 py-2 flex items-center justify-between">
+    <a class="text-xl font-bold" href="">LolStatsTracker</a>
+    <button 
+        title="Navigation menu" 
+        class="text-white focus:outline-none md:hidden" 
+        @onclick="ToggleNavMenu">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 5h14M3 10h14M3 15h14" clip-rule="evenodd" />
+        </svg>
+    </button>
 </div>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+<div class="@NavMenuCssClass md:block bg-gray-800 text-white">
+    <nav class="flex flex-col">
+        <div class="px-3 py-2">
+            <NavLink class="flex items-center space-x-2 hover:bg-gray-700 rounded px-2 py-1" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill"></span>
+                <span>Home</span>
             </NavLink>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="matches">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Add match
+        <div class="px-3 py-2">
+            <NavLink class="flex items-center space-x-2 hover:bg-gray-700 rounded px-2 py-1" href="matches">
+                <span class="bi bi-plus-square-fill"></span>
+                <span>Add match</span>
             </NavLink>
         </div>
     </nav>
@@ -25,11 +30,10 @@
 @code {
     private bool collapseNavMenu = true;
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    private string NavMenuCssClass => collapseNavMenu ? "hidden" : "block";
 
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
     }
-
 }
