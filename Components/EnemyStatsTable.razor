@@ -1,0 +1,36 @@
+﻿@using LolStatsTracker.Models
+
+<h2 class="text-2xl font-bold text-white mt-8 mb-4">Stats vs Enemy Bot</h2>
+
+<table class="w-full text-white border-collapse">
+    <thead>
+    <tr class="bg-gray-800">
+        <th class="p-2 border border-gray-700">Enemy Bot</th>
+        <th class="p-2 border border-gray-700">Games</th>
+        <th class="p-2 border border-gray-700">Wins</th>
+        <th class="p-2 border border-gray-700">WR %</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var e in Enemies.OrderByDescending(e => e.Games))
+    {
+        <tr class="odd:bg-gray-900 even:bg-gray-800 hover:bg-gray-700 transition-colors">
+            <td class="p-2 border border-gray-700">@e.Enemy</td>
+            <td class="p-2 border border-gray-700">@e.Games</td>
+            <td class="p-2 border border-gray-700">@e.Wins</td>
+            <td class="p-2 border border-gray-700">
+                <span class="@GetWRColor(e.WinRate)">@e.WinRate</span>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    [Parameter] public IEnumerable<EnemyStats> Enemies { get; set; } = Enumerable.Empty<EnemyStats>();
+
+    private string GetWRColor(double wr) =>
+        wr >= 60 ? "text-green-400 font-bold"
+        : wr <= 40 ? "text-red-500 font-bold"
+        : "text-yellow-400 font-bold";
+}

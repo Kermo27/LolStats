@@ -1,0 +1,33 @@
+﻿@using LolStatsTracker.Models
+<Card>
+    <h2 class="text-xl font-semibold mb-2">Favorite Support</h2>
+    @if (Favorite != null)
+    {
+        <p>@Favorite.Support</p>
+        <p>Games: @Favorite.Games | WR: <span class="@GetWRColor(Favorite.WinRate)">@Favorite.WinRate%</span></p>
+        <p>Avg KDA: @Favorite.AvgKda</p>
+    }
+</Card>
+
+@code {
+    [Parameter] public List<MatchEntry> Matches { get; set; } = new();
+
+    private SupportStats? Favorite => Matches
+        .Where(m => !string.IsNullOrEmpty(m.Support))
+        .GroupBy(m => m.Support)
+        .Select(g => new SupportStats
+        {
+            Support = g.Key!,
+            Games = g.Count(),
+            Wins = g.Count(m => m.Win),
+            WinRate = Math.Round(100.0 * g.Count(m => m.Win) / g.Count(), 1),
+            AvgKda = Math.Round(g.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths)), 2)
+        })
+        .OrderByDescending(s => s.Games)
+        .FirstOrDefault();
+
+    private string GetWRColor(double wr) =>
+        wr >= 60 ? "text-green-400 font-bold"
+        : wr <= 40 ? "text-red-500 font-bold"
+        : "text-yellow-400 font-bold";
+}

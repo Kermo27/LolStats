@@ -1,0 +1,37 @@
+﻿@using LolStatsTracker.Models
+
+<Card>
+    <h2 class="text-xl font-semibold mb-2">Overall Stats</h2>
+    <p>Total Matches: <strong>@Matches.Count</strong></p>
+    <p>Wins: <strong>@TotalWins</strong> / WR: <strong>@WinRate%</strong></p>
+    <p>Average KDA: <strong>@AvgKda</strong></p>
+    <p>Average CS/min: <strong>@AvgCsm</strong></p>
+    <p>Longest Win Streak: <strong>@LongestWinStreak</strong></p>
+    <p>Longest Lose Streak: <strong>@LongestLoseStreak</strong></p>
+</Card>
+
+@code {
+    [Parameter] public List<MatchEntry> Matches { get; set; } = new();
+
+    private int TotalWins => Matches.Count(m => m.Win);
+    private double WinRate => Matches.Any() ? Math.Round(100.0 * TotalWins / Matches.Count, 1) : 0;
+    private double AvgKda => Matches.Any() ? Math.Round(Matches.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths)), 2) : 0;
+    private double AvgCsm => Matches.Any() ? Math.Round(Matches.Average(m => m.Cs / Math.Max(1.0, m.GameLengthMinutes)), 2) : 0;
+    private int LongestWinStreak => CalculateStreak(true);
+    private int LongestLoseStreak => CalculateStreak(false);
+
+    private int CalculateStreak(bool win)
+    {
+        int streak = 0, longest = 0;
+        foreach (var m in Matches)
+        {
+            if (m.Win == win)
+            {
+                streak++;
+                if (streak > longest) longest = streak;
+            }
+            else streak = 0;
+        }
+        return longest;
+    }
+}

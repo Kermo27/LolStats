@@ -69,4 +69,52 @@ public class MatchService
             })
             .OrderByDescending(s => s.WinRate);
     }
+    
+    public IEnumerable<SupportStats> GetSupportStats()
+    {
+        return _matches
+            .Where(m => !string.IsNullOrWhiteSpace(m.Support))
+            .GroupBy(m => m.Support)
+            .Select(g => new SupportStats
+            {
+                Support = g.Key,
+                Games = g.Count(),
+                Wins = g.Count(m => m.Win),
+                AvgKda = Math.Round(g.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths)), 2)
+            })
+            .OrderByDescending(s => s.Games)
+            .ThenByDescending(s => s.WinRate);
+    }
+    
+    public IEnumerable<EnemyStats> GetEnemyBotStats()
+    {
+        return _matches
+            .Where(m => !string.IsNullOrWhiteSpace(m.EnemyBot))
+            .GroupBy(m => m.EnemyBot)
+            .Select(g => new EnemyStats
+            {
+                Enemy = g.Key,
+                Games = g.Count(),
+                Wins = g.Count(m => m.Win),
+                WinRate = Math.Round(100.0 * g.Count(m => m.Win) / g.Count(), 1)
+            })
+            .OrderByDescending(s => s.Games)
+            .ThenByDescending(s => s.WinRate);
+    }
+    
+    public IEnumerable<EnemySupportStats> GetEnemySupportStats()
+    {
+        return _matches
+            .Where(m => !string.IsNullOrWhiteSpace(m.EnemySupport))
+            .GroupBy(m => m.EnemySupport)
+            .Select(g => new EnemySupportStats
+            {
+                Enemy = g.Key,
+                Games = g.Count(),
+                Wins = g.Count(m => m.Win),
+                WinRate = Math.Round(100.0 * g.Count(m => m.Win) / g.Count(), 1)
+            })
+            .OrderByDescending(s => s.Games)
+            .ThenByDescending(s => s.WinRate);
+    }
 }

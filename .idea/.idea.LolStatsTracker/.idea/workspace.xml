@@ -9,15 +9,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e6eceaad-6216-4f00-a5b0-6351d375dcaf" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/wwwroot/css/input.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.LolStatsTracker/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.LolStatsTracker/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Components/AutoCompleteChampion.razor" beforeDir="false" afterPath="$PROJECT_DIR$/Components/AutoCompleteChampion.razor" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Layout/MainLayout.razor" beforeDir="false" afterPath="$PROJECT_DIR$/Layout/MainLayout.razor" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Layout/NavMenu.razor" beforeDir="false" afterPath="$PROJECT_DIR$/Layout/NavMenu.razor" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Models/MatchEntry.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Models/MatchEntry.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/Card.razor" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/ChampionStatsTable.razor" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/EnemyStatsTable.razor" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/EnemySupportsStatsTable.razor" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/FavoriteSupportCard.razor" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/MostPlayedChampionCard.razor" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/OverallStatsCard.razor" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Components/SupportsStatsTable.razor" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Models/ChampionList.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Models/EnemyStats.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Models/EnemySupportStats.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Models/SupportStats.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Components/AutoCompleteChampion.razor" beforeDir="false" afterPath="$PROJECT_DIR$/Components/ChampionSelect.razor" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Pages/Home.razor" beforeDir="false" afterPath="$PROJECT_DIR$/Pages/StatsSummary.razor" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Pages/Matches.razor" beforeDir="false" afterPath="$PROJECT_DIR$/Pages/Matches.razor" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Services/MatchService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Services/MatchService.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/wwwroot/css/app.css" beforeDir="false" afterPath="$PROJECT_DIR$/wwwroot/css/app.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wwwroot/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/wwwroot/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,9 +58,21 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/Components/AutoCompleteChampion.razor" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" root2="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Components/Card.razor" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" root2="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Components/ChampionSelect.razor" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" root2="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Components/ChampionStatsTable.razor" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" root2="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Components/EnemyStatsTable.razor" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" root2="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Components/EnemySupportsStatsTable.razor" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" root2="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Components/FavoriteSupportCard.razor" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" root2="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Components/MostPlayedChampionCard.razor" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" root2="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Components/OverallStatsCard.razor" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" root2="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Components/SupportsStatsTable.razor" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" root2="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Models/ChampionList.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Models/EnemyStats.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Models/EnemySupportStats.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Models/MatchEntry.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Models/MatchStats.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Models/SupportStats.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Pages/Matches.razor" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" root2="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Services/LocalStorageService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Services/MatchService.cs" root0="FORCE_HIGHLIGHTING" />
@@ -132,8 +152,25 @@
       <workItem from="1761896837222" duration="9006000" />
       <workItem from="1761925024669" duration="118000" />
       <workItem from="1761925284372" duration="4530000" />
-      <workItem from="1761998657064" duration="10048000" />
+      <workItem from="1761998657064" duration="15297000" />
     </task>
+    <task id="LOCAL-00001" summary="replace bootstrap with tailwindcss">
+      <option name="closed" value="true" />
+      <created>1762038136018</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1762038136018</updated>
+    </task>
+    <task id="LOCAL-00002" summary="package.json">
+      <option name="closed" value="true" />
+      <created>1762038241510</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1762038241510</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -143,6 +180,9 @@
   <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+    <MESSAGE value="replace bootstrap with tailwindcss" />
+    <MESSAGE value="package.json" />
+    <option name="LAST_COMMIT_MESSAGE" value="package.json" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

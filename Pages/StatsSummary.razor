@@ -1,0 +1,47 @@
+﻿@page "/"
+@using LolStatsTracker.Components
+@using LolStatsTracker.Models
+@using LolStatsTracker.Services
+@inject IJSRuntime JS
+
+<h1 class="text-3xl font-bold text-white mb-6">LoL Stats Summary</h1>
+
+@if (matches == null || !matches.Any())
+{
+    <p class="text-gray-400">No match data available.</p>
+}
+else
+{
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <OverallStatsCard Matches="matches" />
+        <MostPlayedChampionCard Stats="championStats" />
+        <FavoriteSupportCard Matches="matches" />
+    </div>
+
+    <ChampionStatsTable Stats="championStats" />
+    <SupportsStatsTable Supports="supportsStats" />
+    <EnemyStatsTable Enemies="enemyStats" />
+    <EnemySupportsStatsTable Enemies="enemySupportStats" />
+}
+
+@code {
+    private MatchService? matchService;
+    private List<MatchEntry> matches = new();
+    private List<MatchStats> championStats = new();
+    private List<SupportStats> supportsStats = new();
+    private List<EnemyStats> enemyStats = new();
+    private List<EnemySupportStats> enemySupportStats = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var storage = new LocalStorageService(JS);
+        matchService = new MatchService(storage);
+        await matchService.InitializeAsync();
+
+        matches = matchService.GetAll().ToList();
+        championStats = matchService.GetChampionStats().OrderByDescending(s => s.Games).ToList();
+        supportsStats = matchService.GetSupportStats().OrderByDescending(s => s.Games).ToList();
+        enemyStats = matchService.GetEnemyBotStats().OrderByDescending(e => e.Games).ToList();
+        enemySupportStats = matchService.GetEnemySupportStats().OrderByDescending(e => e.Games).ToList();
+    }
+}

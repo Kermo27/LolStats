@@ -1,0 +1,21 @@
+﻿@using LolStatsTracker.Models
+<Card>
+    <h2 class="text-xl font-semibold mb-2">Most Played Champion</h2>
+    @if (MostPlayed != null)
+    {
+        <p>@MostPlayed.Champion</p>
+        <p>Games: @MostPlayed.Games | WR: <span class="@GetWRColor(MostPlayed.WinRate)">@MostPlayed.WinRate%</span></p>
+        <p>Avg KDA: @MostPlayed.AvgKda | Avg CS/min: @MostPlayed.AvgCsm</p>
+    }
+</Card>
+
+@code {
+    [Parameter] public IEnumerable<MatchStats> Stats { get; set; } = Enumerable.Empty<MatchStats>();
+
+    private MatchStats? MostPlayed => Stats.OrderByDescending(s => s.Games).FirstOrDefault();
+
+    private string GetWRColor(double wr) =>
+        wr >= 60 ? "text-green-400 font-bold"
+        : wr <= 40 ? "text-red-500 font-bold"
+        : "text-yellow-400 font-bold";
+}
