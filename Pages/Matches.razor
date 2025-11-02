@@ -1,250 +1,100 @@
 @page "/matches"
 @using System.Text.Json
-@using LolStatsTracker.Components
+@using LolStatsTracker.Components.Matches
 @using LolStatsTracker.Models
 @using LolStatsTracker.Services
 
 <div class="min-h-screen bg-[#0f0f13] text-gray-200 p-6">
     <h1 class="text-3xl font-bold mb-6 text-blue-400 drop-shadow">LoL Stats Tracker</h1>
 
-    <!-- FORM -->
-    <div class="bg-[#1a1a20] rounded-2xl shadow-lg p-6 border border-gray-800 mb-8">
-        <h3 class="text-xl font-semibold mb-4 text-blue-300">Dodaj mecz</h3>
-
-        <EditForm Model="newMatch" OnValidSubmit="AddMatch">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-red-400 mb-3" />
-
-            <div class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Twój Champion</label>
-                        <ChampionSelect Placeholder="Wybierz champion..."
-                                        Champions="ChampionList.Names"
-                                        @bind-Value="newMatch.Champion" />
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Twój Support</label>
-                        <ChampionSelect Placeholder="Wybierz support..."
-                                        Champions="ChampionList.Names"
-                                        @bind-Value="newMatch.Support" />
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Przeciwny Bot</label>
-                        <ChampionSelect Placeholder="Wybierz enemy..."
-                                        Champions="ChampionList.Names"
-                                        @bind-Value="newMatch.EnemyBot" />
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Przeciwny Support</label>
-                        <ChampionSelect Placeholder="Wybierz enemy support..."
-                                        Champions="ChampionList.Names"
-                                        @bind-Value="newMatch.EnemySupport" />
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-6 gap-3">
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Kills</label>
-                        <InputNumber class="input-dark" @bind-Value="newMatch.Kills" />
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Deaths</label>
-                        <InputNumber class="input-dark" @bind-Value="newMatch.Deaths" />
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Assists</label>
-                        <InputNumber class="input-dark" @bind-Value="newMatch.Assists" />
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">CS</label>
-                        <InputNumber class="input-dark" @bind-Value="newMatch.Cs" />
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Czas gry (min)</label>
-                        <InputNumber class="input-dark" @bind-Value="newMatch.GameLengthMinutes" />
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Data</label>
-                        <InputDate class="input-dark" @bind-Value="newMatch.Date" format="yyyy-MM-dd" />
-                    </div>
-                </div>
-
-                <div class="flex items-center space-x-2">
-                    <InputCheckbox class="accent-blue-500 w-5 h-5" @bind-Value="newMatch.Win" />
-                    <label class="text-sm text-gray-300">Wygrana</label>
-                </div>
-
-                <button class="bg-blue-600 hover:bg-blue-700 transition text-white px-6 py-2 rounded-lg shadow mt-3">
-                    💾 Dodaj mecz
-                </button>
-            </div>
-        </EditForm>
+    <div class="mb-8">
+        <MatchForm Match="currentMatch"
+                   OnSubmit="HandleMatchSubmit"
+                   OnCancel="HandleCancelEdit"
+                   IsEditing="isEditing" />
     </div>
 
-    <!-- ACTIONS -->
-    <div class="flex flex-wrap gap-3 mb-8">
-        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
-                @onclick="ExportJson">
-            💾 Eksportuj JSON
-        </button>
-
-        <label class="bg-gray-700 hover:bg-gray-600 cursor-pointer text-white px-4 py-2 rounded-lg shadow">
-            📂 Importuj JSON
-            <InputFile class="hidden" OnChange="ImportJson" accept=".json" />
-        </label>
-
-        <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow"
-                @onclick="ClearData">
-            🗑️ Wyczyść
-        </button>
+    <div class="mb-8">
+        <MatchActions OnExport="ExportJson"
+                      OnImport="ImportJson"
+                      OnClear="ClearData" />
     </div>
 
-    <!-- TABLE -->
-    @if (matches.Any())
-    {
-        <div class="overflow-x-auto rounded-2xl shadow-lg border border-gray-800">
-            <table class="w-full text-sm text-gray-200">
-                <thead class="bg-[#111119] text-blue-300 uppercase text-xs">
-                    <tr>
-                        <th class="px-3 py-2">Data</th>
-                        <th class="px-3 py-2">Champion</th>
-                        <th class="px-3 py-2">Support</th>
-                        <th class="px-3 py-2">Enemy Bot</th>
-                        <th class="px-3 py-2">Enemy Support</th>
-                        <th class="px-3 py-2">K/D/A</th>
-                        <th class="px-3 py-2">CS</th>
-                        <th class="px-3 py-2">Czas gry</th>
-                        <th class="px-3 py-2">Win</th>
-                        <th class="px-3 py-2">Akcje</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-800 bg-[#16161d]">
-                    @foreach (var match in matches)
-                    {
-                        <tr class="hover:bg-[#1f1f29] transition">
-                            <td class="px-3 py-2">@match.Date.ToString("yyyy-MM-dd")</td>
-                            <td class="px-3 py-2 font-medium">@match.Champion</td>
-                            <td class="px-3 py-2">@match.Support</td>
-                            <td class="px-3 py-2">@match.EnemyBot</td>
-                            <td class="px-3 py-2">@match.EnemySupport</td>
-                            <td class="px-3 py-2">@match.Kills / @match.Deaths / @match.Assists</td>
-                            <td class="px-3 py-2">@match.Cs</td>
-                            <td class="px-3 py-2">@match.GameLengthMinutes min</td>
-                            <td class="px-3 py-2">
-                                @if (match.Win)
-                                {
-                                    <span class="text-green-400 font-bold">✔️</span>
-                                }
-                                else
-                                {
-                                    <span class="text-red-400 font-bold">❌</span>
-                                }
-                            </td>
-                            <td class="px-3 py-2 flex gap-2 justify-center">
-                                <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs"
-                                        @onclick="() => EditMatch(match)">
-                                    ✏️
-                                </button>
-                                <button class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
-                                        @onclick="() => DeleteMatch(match)">
-                                    🗑️
-                                </button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-    else
-    {
-        <p class="text-gray-400 italic">Brak danych. Dodaj pierwszy mecz powyżej.</p>
-    }
+    <NotificationBar ErrorMessage="@errorMessage"
+                     OnErrorCleared="() => errorMessage = string.Empty"
+                     SuccessMessage="@successMessage"
+                     OnSuccessCleared="() => successMessage = string.Empty" />
+
+    <MatchTable Matches="matches"
+                IsLoading="isLoading"
+                OnEdit="StartEdit"
+                OnDelete="DeleteMatch" />
 </div>
 
 @code {
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
-    private MatchService? matchService;
-    private MatchEntry newMatch = new();
+    private MatchService matchService = default!;
+    private MatchEntry currentMatch = new();
     private List<MatchEntry> matches = new();
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        var storage = new LocalStorageService(JS);
-        matchService = new MatchService(storage);
-        await matchService.InitializeAsync();
-        matches = matchService.GetAll();
-    }
-
-    private async Task AddMatch()
-    {
-        if (matchService == null)
-            return;
-
-        if (matches.Any(m => m.Id == newMatch.Id))
-            await matchService.UpdateMatchAsync(newMatch);
-        else
-            await matchService.AddMatchAsync(newMatch);
-
-        matches = matchService.GetAll();
-        newMatch = new MatchEntry();
-        StateHasChanged();
-    }
-
-    private async Task ExportJson()
-    {
-        if (matchService == null) return;
-
-        var json = JsonSerializer.Serialize(matchService.GetAll(), new JsonSerializerOptions { WriteIndented = true });
-        var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-        var base64 = Convert.ToBase64String(bytes);
-        await JS.InvokeVoidAsync("downloadFile", "matches.json", "application/json", base64);
-    }
-
-    private async Task ImportJson(InputFileChangeEventArgs e)
-    {
-        if (e.File is null || matchService is null) return;
-        using var stream = e.File.OpenReadStream(10_000_000);
-        using var reader = new StreamReader(stream);
-        var json = await reader.ReadToEndAsync();
-        var imported = JsonSerializer.Deserialize<List<MatchEntry>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        if (imported is null) return;
-
-        foreach (var match in imported)
+        try
         {
-            if (match.Id == Guid.Empty) match.Id = Guid.NewGuid();
-            await matchService.AddMatchAsync(match);
+            var storage = new LocalStorageService(JS);
+            matchService = new MatchService(storage);
+            await matchService.InitializeAsync();
+            await RefreshMatches();
         }
-
-        matches = matchService.GetAll();
-        StateHasChanged();
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd inicjalizacji: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
-    private async Task ClearData()
+    private async Task RefreshMatches()
     {
-        if (matchService == null) return;
-        await matchService.ClearAsync();
-        matches.Clear();
-        StateHasChanged();
+        matches = matchService.GetAll().OrderByDescending(m => m.Date).ToList();
     }
 
-    private async Task DeleteMatch(MatchEntry match)
+    private async Task HandleMatchSubmit(MatchEntry match)
     {
-        if (matchService == null) return;
-        await matchService.RemoveMatchAsync(match);
-        matches = matchService.GetAll();
-        StateHasChanged();
+        try
+        {
+            if (isEditing)
+            {
+                await matchService.UpdateMatchAsync(match);
+                successMessage = "Mecz zaktualizowany pomyślnie!";
+            }
+            else
+            {
+                await matchService.AddMatchAsync(match);
+                successMessage = "Mecz dodany pomyślnie!";
+            }
+
+            await RefreshMatches();
+            ResetForm();
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd podczas zapisywania: {ex.Message}";
+        }
     }
 
-    private void EditMatch(MatchEntry match)
+    private void StartEdit(MatchEntry match)
     {
-        newMatch = new MatchEntry
+        currentMatch = new MatchEntry
         {
             Id = match.Id,
             Champion = match.Champion,
@@ -259,5 +109,114 @@
             Date = match.Date,
             Win = match.Win
         };
+        isEditing = true;
+        successMessage = "Tryb edycji - zmień dane i zapisz";
+    }
+
+    private void HandleCancelEdit()
+    {
+        ResetForm();
+        successMessage = string.Empty;
+    }
+
+    private void ResetForm()
+    {
+        currentMatch = new MatchEntry();
+        isEditing = false;
+    }
+
+    private async Task DeleteMatch(MatchEntry match)
+    {
+        try
+        {
+            var confirmed = await JS.InvokeAsync<bool>("confirm", 
+                $"Usunąć mecz z {match.Date:yyyy-MM-dd} ({match.Champion})?");
+            if (!confirmed) return;
+
+            await matchService.RemoveMatchAsync(match);
+            await RefreshMatches();
+            successMessage = "Mecz usunięty pomyślnie!";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd podczas usuwania: {ex.Message}";
+        }
+    }
+
+    private async Task ExportJson()
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(matchService.GetAll(), 
+                new JsonSerializerOptions { WriteIndented = true });
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            var base64 = Convert.ToBase64String(bytes);
+            await JS.InvokeVoidAsync("downloadFile", "matches.json", "application/json", base64);
+            successMessage = "Dane wyeksportowane pomyślnie!";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd eksportu: {ex.Message}";
+        }
+    }
+
+    private async Task ImportJson(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            if (e.File is null) return;
+
+            using var stream = e.File.OpenReadStream(10_000_000);
+            using var reader = new StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+            var imported = JsonSerializer.Deserialize<List<MatchEntry>>(json, 
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (imported is null || !imported.Any())
+            {
+                errorMessage = "Plik jest pusty lub nieprawidłowy";
+                return;
+            }
+
+            int addedCount = 0;
+            foreach (var match in imported)
+            {
+                if (match.Id == Guid.Empty) match.Id = Guid.NewGuid();
+                if (!matches.Any(m => m.Id == match.Id))
+                {
+                    await matchService.AddMatchAsync(match);
+                    addedCount++;
+                }
+            }
+
+            await RefreshMatches();
+            successMessage = $"Zaimportowano {addedCount} meczy!";
+        }
+        catch (JsonException)
+        {
+            errorMessage = "Nieprawidłowy format pliku JSON";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd importu: {ex.Message}";
+        }
+    }
+
+    private async Task ClearData()
+    {
+        try
+        {
+            var confirmed = await JS.InvokeAsync<bool>("confirm", 
+                "Czy na pewno chcesz usunąć wszystkie dane? Tej operacji nie można cofnąć!");
+            if (!confirmed) return;
+
+            await matchService.ClearAsync();
+            await RefreshMatches();
+            successMessage = "Wszystkie dane zostały usunięte";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd podczas usuwania: {ex.Message}";
+        }
     }
 }

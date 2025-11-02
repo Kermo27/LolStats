@@ -1,0 +1,75 @@
+﻿@using LolStatsTracker.Models
+
+@if (IsLoading)
+{
+    <div class="text-center py-12">
+        <p class="text-gray-400 text-lg">Ładowanie danych...</p>
+    </div>
+}
+else if (Matches.Any())
+{
+    <div class="overflow-x-auto rounded-2xl shadow-lg border border-gray-800">
+        <table class="w-full text-sm text-gray-200">
+            <thead class="bg-[#111119] text-blue-300 uppercase text-xs">
+                <tr>
+                    <th class="px-3 py-2">Data</th>
+                    <th class="px-3 py-2">Champion</th>
+                    <th class="px-3 py-2">Support</th>
+                    <th class="px-3 py-2">Enemy Bot</th>
+                    <th class="px-3 py-2">Enemy Support</th>
+                    <th class="px-3 py-2">K/D/A</th>
+                    <th class="px-3 py-2">CS</th>
+                    <th class="px-3 py-2">Czas gry</th>
+                    <th class="px-3 py-2">Win</th>
+                    <th class="px-3 py-2">Akcje</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800 bg-[#16161d]">
+                @foreach (var match in Matches)
+                {
+                    <tr class="hover:bg-[#1f1f29] transition">
+                        <td class="px-3 py-2">@match.Date.ToString("yyyy-MM-dd")</td>
+                        <td class="px-3 py-2 font-medium">@match.Champion</td>
+                        <td class="px-3 py-2">@match.Support</td>
+                        <td class="px-3 py-2">@match.EnemyBot</td>
+                        <td class="px-3 py-2">@match.EnemySupport</td>
+                        <td class="px-3 py-2">@match.Kills / @match.Deaths / @match.Assists</td>
+                        <td class="px-3 py-2">@match.Cs</td>
+                        <td class="px-3 py-2">@match.GameLengthMinutes min</td>
+                        <td class="px-3 py-2">
+                            @if (match.Win)
+                            {
+                                <span class="text-green-400 font-bold">✔️</span>
+                            }
+                            else
+                            {
+                                <span class="text-red-400 font-bold">❌</span>
+                            }
+                        </td>
+                        <td class="px-3 py-2 flex gap-2 justify-center">
+                            <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs"
+                                    @onclick="() => OnEdit.InvokeAsync(match)">
+                                ✏️
+                            </button>
+                            <button class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
+                                    @onclick="() => OnDelete.InvokeAsync(match)">
+                                🗑️
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <p class="text-gray-400 italic">Brak danych. Dodaj pierwszy mecz powyżej.</p>
+}
+
+@code {
+    [Parameter] public List<MatchEntry> Matches { get; set; } = new();
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public EventCallback<MatchEntry> OnEdit { get; set; }
+    [Parameter] public EventCallback<MatchEntry> OnDelete { get; set; }
+}

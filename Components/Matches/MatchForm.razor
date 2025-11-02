@@ -1,0 +1,107 @@
+﻿@using LolStatsTracker.Components.Dashboard
+@using LolStatsTracker.Models
+
+<div class="bg-[#1a1a20] rounded-2xl shadow-lg p-6 border border-gray-800">
+    <h3 class="text-xl font-semibold mb-4 text-blue-300">
+        @(IsEditing ? "Edytuj mecz" : "Dodaj mecz")
+    </h3>
+
+    <EditForm Model="Match" OnValidSubmit="HandleSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-red-400 mb-3" />
+
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Twój Champion</label>
+                    <ChampionSelect Placeholder="Wybierz champion..."
+                                    Champions="ChampionList.Names"
+                                    @bind-Value="Match.Champion" />
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Twój Support</label>
+                    <ChampionSelect Placeholder="Wybierz support..."
+                                    Champions="ChampionList.Names"
+                                    @bind-Value="Match.Support" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Przeciwny Bot</label>
+                    <ChampionSelect Placeholder="Wybierz enemy..."
+                                    Champions="ChampionList.Names"
+                                    @bind-Value="Match.EnemyBot" />
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Przeciwny Support</label>
+                    <ChampionSelect Placeholder="Wybierz enemy support..."
+                                    Champions="ChampionList.Names"
+                                    @bind-Value="Match.EnemySupport" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-6 gap-3">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Kills</label>
+                    <InputNumber class="input-dark" @bind-Value="Match.Kills" />
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Deaths</label>
+                    <InputNumber class="input-dark" @bind-Value="Match.Deaths" />
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Assists</label>
+                    <InputNumber class="input-dark" @bind-Value="Match.Assists" />
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">CS</label>
+                    <InputNumber class="input-dark" @bind-Value="Match.Cs" />
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Czas gry (min)</label>
+                    <InputNumber class="input-dark" @bind-Value="Match.GameLengthMinutes" />
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Data</label>
+                    <InputDate class="input-dark" @bind-Value="Match.Date" format="yyyy-MM-dd" />
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <InputCheckbox class="accent-blue-500 w-5 h-5" @bind-Value="Match.Win" />
+                <label class="text-sm text-gray-300">Wygrana</label>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 transition text-white px-6 py-2 rounded-lg shadow">
+                    💾 @(IsEditing ? "Zapisz zmiany" : "Dodaj mecz")
+                </button>
+                @if (IsEditing)
+                {
+                    <button type="button" class="bg-gray-600 hover:bg-gray-700 transition text-white px-6 py-2 rounded-lg shadow"
+                            @onclick="CancelEdit">
+                        ❌ Anuluj
+                    </button>
+                }
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public MatchEntry Match { get; set; } = new();
+    [Parameter] public EventCallback<MatchEntry> OnSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public bool IsEditing { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        await OnSubmit.InvokeAsync(Match);
+    }
+
+    private async Task CancelEdit()
+    {
+        await OnCancel.InvokeAsync();
+    }
+}

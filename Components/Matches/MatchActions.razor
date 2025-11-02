@@ -1,0 +1,27 @@
+﻿<div class="flex flex-wrap gap-3">
+    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
+            @onclick="OnExport">
+        💾 Eksportuj JSON
+    </button>
+
+    <label class="bg-gray-700 hover:bg-gray-600 cursor-pointer text-white px-4 py-2 rounded-lg shadow">
+        📂 Importuj JSON
+        <InputFile class="hidden" OnChange="HandleImport" accept=".json" />
+    </label>
+
+    <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow"
+            @onclick="OnClear">
+        🗑️ Wyczyść
+    </button>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnExport { get; set; }
+    [Parameter] public EventCallback<InputFileChangeEventArgs> OnImport { get; set; }
+    [Parameter] public EventCallback OnClear { get; set; }
+
+    private async Task HandleImport(InputFileChangeEventArgs e)
+    {
+        await OnImport.InvokeAsync(e);
+    }
+}
