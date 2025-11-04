@@ -1,78 +1,59 @@
+﻿using System.Net.Http.Json;
 using LolStatsTracker.Models;
-using LolStatsTracker.Services;
 
-public class MatchService
+namespace LolStatsTracker.Services;
+
+public class MatchApiService : IMatchService
 {
-    private const string StorageKey = "matches";
-    private readonly LocalStorageService _storage;
-    private List<MatchEntry> _matches = new();
+    private readonly HttpClient _http;
 
-    public MatchService(LocalStorageService storage)
+    public MatchApiService(HttpClient http)
     {
-        _storage = storage;
+        _http = http;
     }
 
-    public async Task InitializeAsync()
+    private const string BaseUrl = "http://localhost:5031/matches";
+
+    public async Task<List<MatchEntry>> GetAllAsync()
     {
-        var loaded = await _storage.LoadAsync<List<MatchEntry>>(StorageKey);
-        if (loaded != null)
-            _matches = loaded;
-    }
-
-    public IEnumerable<MatchEntry> GetMatches() => _matches;
-
-    public List<MatchEntry> GetAll() => _matches;
-
-    public async Task AddMatchAsync(MatchEntry match)
-    {
-        if (match.Id == Guid.Empty)
-            match.Id = Guid.NewGuid();
-
-        _matches.Add(match);
-        await SaveAsync();
+        return await _http.GetFromJsonAsync<List<MatchEntry>>(BaseUrl) ?? new List<MatchEntry>();
     }
     
-    public async Task AddMatchesAsync(IEnumerable<MatchEntry> matches)
+    public async Task<MatchEntry?> GetAsync(Guid id)
     {
-        foreach (var match in matches)
-        {
-            if (match.Id == Guid.Empty)
-                match.Id = Guid.NewGuid();
-            
-            _matches.Add(match);
-        }
-        await SaveAsync();
+        return await _http.GetFromJsonAsync<MatchEntry>($"{BaseUrl}/{id}");
     }
 
-    public async Task UpdateMatchAsync(MatchEntry match)
+    public async Task<MatchEntry> AddAsync(MatchEntry match)
     {
-        var index = _matches.FindIndex(m => m.Id == match.Id);
-        if (index >= 0)
-            _matches[index] = match;
-
-        await SaveAsync();
+        var response = await _http.PostAsJsonAsync(BaseUrl, match);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<MatchEntry>()!;
     }
 
-    public async Task RemoveMatchAsync(MatchEntry match)
+    public async Task<MatchEntry> UpdateAsync(Guid id, MatchEntry match)
     {
-        _matches.RemoveAll(m => m.Id == match.Id);
-        await SaveAsync();
+        var response = await _http.PutAsJsonAsync($"{BaseUrl}/{id}", match);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<MatchEntry>()!;
+    }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        var response = await _http.DeleteAsync($"{BaseUrl}/{id}");
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task ClearAsync()
     {
-        _matches.Clear();
-        await _storage.RemoveAsync(StorageKey);
-    }
-    
-    private async Task SaveAsync()
-    {
-        await _storage.SaveAsync(StorageKey, _matches);
+        var response = await _http.DeleteAsync(BaseUrl);
+        response.EnsureSuccessStatusCode();
     }
 
-    public IEnumerable<MatchStats> GetChampionStats()
+    public async Task<IEnumerable<MatchStats>> GetChampionStatsAsync()
     {
-        return _matches
+        var matches = await GetAllAsync();
+        return matches
             .GroupBy(m => m.Champion)
             .Select(g => new MatchStats
             {
@@ -83,12 +64,13 @@ public class MatchService
                 AvgKda = Math.Round(g.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths)), 2),
                 AvgCsm = Math.Round(g.Average(m => m.Cs / Math.Max(1.0, m.GameLengthMinutes)), 2)
             })
-            .OrderByDescending(s => s.WinRate);
+            .OrderByDescending(s => s.Games);
     }
-    
-    public IEnumerable<SupportStats> GetSupportStats()
+
+    public async Task<IEnumerable<SupportStats>> GetSupportStatsAsync()
     {
-        return _matches
+        var matches = await GetAllAsync();
+        return matches
             .Where(m => !string.IsNullOrWhiteSpace(m.Support))
             .GroupBy(m => m.Support)
             .Select(g => new SupportStats
@@ -102,10 +84,11 @@ public class MatchService
             .OrderByDescending(s => s.Games)
             .ThenByDescending(s => s.WinRate);
     }
-    
-    public IEnumerable<EnemyStats> GetEnemyBotStats()
+
+    public async Task<IEnumerable<EnemyStats>> GetEnemyBotStatsAsync()
     {
-        return _matches
+        var matches = await GetAllAsync();
+        return matches
             .Where(m => !string.IsNullOrWhiteSpace(m.EnemyBot))
             .GroupBy(m => m.EnemyBot)
             .Select(g => new EnemyStats
@@ -118,10 +101,11 @@ public class MatchService
             .OrderByDescending(s => s.Games)
             .ThenByDescending(s => s.WinRate);
     }
-    
-    public IEnumerable<EnemySupportStats> GetEnemySupportStats()
+
+    public async Task<IEnumerable<EnemySupportStats>> GetEnemySupportStatsAsync()
     {
-        return _matches
+        var matches = await GetAllAsync();
+        return matches
             .Where(m => !string.IsNullOrWhiteSpace(m.EnemySupport))
             .GroupBy(m => m.EnemySupport)
             .Select(g => new EnemySupportStats
