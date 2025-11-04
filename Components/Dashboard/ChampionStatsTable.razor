@@ -1,36 +1,60 @@
-﻿@using LolStatsTracker.Models
+﻿<MudPaper Class="p-4 rounded-2xl bg-surface">
+    <MudText Typo="Typo.h5" Class="mb-4 font-bold">Champion Stats</MudText>
 
-<h2 class="text-2xl font-bold text-white mt-8 mb-4">Champion Stats</h2>
-<table class="w-full text-white border-collapse">
-    <thead>
-    <tr class="bg-gray-800">
-        <th class="p-2 border border-gray-700">Champion</th>
-        <th class="p-2 border border-gray-700">Games</th>
-        <th class="p-2 border border-gray-700">Wins</th>
-        <th class="p-2 border border-gray-700">WR %</th>
-        <th class="p-2 border border-gray-700">Avg KDA</th>
-        <th class="p-2 border border-gray-700">Avg CS/min</th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach (var s in Stats.OrderByDescending(s => s.Games))
-    {
-        <tr class="odd:bg-gray-900 hover:bg-gray-700 even:bg-gray-800">
-            <td class="p-2 border border-gray-700">@s.Champion</td>
-            <td class="p-2 border border-gray-700">@s.Games</td>
-            <td class="p-2 border border-gray-700">@s.Wins</td>
-            <td class="p-2 border border-gray-700"><span class="@GetWRColor(s.WinRate)">@s.WinRate</span></td>
-            <td class="p-2 border border-gray-700">@s.AvgKda</td>
-            <td class="p-2 border border-gray-700">@s.AvgCsm</td>
-        </tr>
-    }
-    </tbody>
-</table>
+    <MudTextField @bind-Value="_searchString"
+                  Placeholder="Filter by champion..."
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  Class="mb-4 w-full" />
+
+    <MudTable Items="filteredStats"
+              Hover="true"
+              Dense="true"
+              Bordered="true"
+              Striped="true"
+              Filter="FilterFunc"
+              RowsPerPage="10"
+              Breakpoint="Breakpoint.Sm"
+              Class="rounded-xl overflow-hidden">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel T="MatchStats" SortBy="@(s => s.Champion)">Champion</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="MatchStats" SortBy="@(s => s.Games)">Games</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="MatchStats" SortBy="@(s => s.Wins)">Wins</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="MatchStats" SortBy="@(s => s.WinRate)">WR %</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="MatchStats" SortBy="@(s => s.AvgKda)">Avg KDA</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="MatchStats" SortBy="@(s => s.AvgCsm)">Avg CS/min</MudTableSortLabel></MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd DataLabel="Champion">@context.Champion</MudTd>
+            <MudTd DataLabel="Games">@context.Games</MudTd>
+            <MudTd DataLabel="Wins">@context.Wins</MudTd>
+            <MudTd DataLabel="WR %">
+                <MudText Class="@UiHelpers.GetWrColor(@context.WinRate)">
+                    @context.WinRate.ToString("F1")%
+                </MudText>
+            </MudTd>
+            <MudTd DataLabel="Avg KDA">@context.AvgKda.ToString("F2")</MudTd>
+            <MudTd DataLabel="Avg CS/min">@context.AvgCsm.ToString("F2")</MudTd>
+        </RowTemplate>
+
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudPaper>
 
 @code {
     [Parameter] public IEnumerable<MatchStats> Stats { get; set; } = Enumerable.Empty<MatchStats>();
-    private string GetWRColor(double wr) =>
-        wr >= 60 ? "text-green-400 font-bold"
-        : wr <= 40 ? "text-red-500 font-bold"
-        : "text-yellow-400 font-bold";
+
+    private string _searchString = string.Empty;
+
+    private IEnumerable<MatchStats> filteredStats =>
+        string.IsNullOrWhiteSpace(_searchString)
+            ? Stats
+            : Stats.Where(s => s.Champion.Contains(_searchString, StringComparison.OrdinalIgnoreCase));
+
+    private bool FilterFunc(MatchStats stat) =>
+        string.IsNullOrWhiteSpace(_searchString) ||
+        stat.Champion.Contains(_searchString, StringComparison.OrdinalIgnoreCase);
 }

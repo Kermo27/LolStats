@@ -1,14 +1,38 @@
-﻿@using LolStatsTracker.Models
+﻿<MudPaper Class="p-4 rounded-2xl bg-surface shadow-md">
+    <MudText Typo="Typo.h6" Class="font-semibold mb-2">Overall Stats</MudText>
 
-<Card>
-    <h2 class="text-xl font-semibold mb-2">Overall Stats</h2>
-    <p>Total Matches: <strong>@Matches.Count</strong></p>
-    <p>Wins: <strong>@TotalWins</strong> / WR: <strong>@WinRate%</strong></p>
-    <p>Average KDA: <strong>@AvgKda</strong></p>
-    <p>Average CS/min: <strong>@AvgCsm</strong></p>
-    <p>Longest Win Streak: <strong>@LongestWinStreak</strong></p>
-    <p>Longest Lose Streak: <strong>@LongestLoseStreak</strong></p>
-</Card>
+    @if (Matches.Any())
+    {
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Total Matches: <span class="font-semibold text-gray-200">@Matches.Count</span>
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Wins: <span class="font-semibold text-gray-200">@TotalWins</span> /
+            WR: <span class="@UiHelpers.GetWrColor(WinRate) font-semibold">@WinRate.ToString("F1")%</span>
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Average KDA: <span class="font-semibold text-gray-200">@AvgKda.ToString("F2")</span>
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Average CS/min: <span class="font-semibold text-gray-200">@AvgCsm.ToString("F2")</span>
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Longest Win Streak: <span class="text-green-400 font-semibold">@LongestWinStreak</span>
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Longest Lose Streak: <span class="text-red-400 font-semibold">@LongestLoseStreak</span>
+        </MudText>
+    }
+    else
+    {
+        <MudText Typo="Typo.body2" Class="text-gray-500 italic">No match data available.</MudText>
+    }
+</MudPaper>
 
 @code {
     [Parameter] public List<MatchEntry> Matches { get; set; } = new();
@@ -28,9 +52,11 @@
             if (m.Win == win)
             {
                 streak++;
-                if (streak > longest) longest = streak;
+                if (streak > longest)
+                    longest = streak;
             }
-            else streak = 0;
+            else
+                streak = 0;
         }
         return longest;
     }

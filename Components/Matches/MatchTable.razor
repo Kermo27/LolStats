@@ -6,7 +6,7 @@
         <p class="text-gray-400 text-lg">Ładowanie danych...</p>
     </div>
 }
-else if (Matches.Any())
+else if (Matches != null && Matches.Any())
 {
     <div class="overflow-x-auto rounded-2xl shadow-lg border border-gray-800">
         <table class="w-full text-sm text-gray-200">
@@ -28,7 +28,7 @@ else if (Matches.Any())
                 @foreach (var match in Matches)
                 {
                     <tr class="hover:bg-[#1f1f29] transition">
-                        <td class="px-3 py-2">@match.Date.ToString("yyyy-MM-dd")</td>
+                        <td class="px-3 py-2">@match.Date?.ToString("dd-MM-yyyy")</td>
                         <td class="px-3 py-2 font-medium">@match.Champion</td>
                         <td class="px-3 py-2">@match.Support</td>
                         <td class="px-3 py-2">@match.EnemyBot</td>
@@ -36,15 +36,10 @@ else if (Matches.Any())
                         <td class="px-3 py-2">@match.Kills / @match.Deaths / @match.Assists</td>
                         <td class="px-3 py-2">@match.Cs</td>
                         <td class="px-3 py-2">@match.GameLengthMinutes min</td>
-                        <td class="px-3 py-2">
-                            @if (match.Win)
-                            {
-                                <span class="text-green-400 font-bold">✔️</span>
-                            }
-                            else
-                            {
-                                <span class="text-red-400 font-bold">❌</span>
-                            }
+                        <td class="px-3 py-2 text-center">
+                            <span class="@GetWinClass(match.Win)">
+                                @GetWinSymbol(match.Win)
+                            </span>
                         </td>
                         <td class="px-3 py-2 flex gap-2 justify-center">
                             <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs"
@@ -72,4 +67,8 @@ else
     [Parameter] public bool IsLoading { get; set; }
     [Parameter] public EventCallback<MatchEntry> OnEdit { get; set; }
     [Parameter] public EventCallback<MatchEntry> OnDelete { get; set; }
+
+    private string GetWinSymbol(bool? win) => win == true ? "✔️" : "❌";
+
+    private string GetWinClass(bool? win) => win == true ? "text-green-400 font-bold" : "text-red-400 font-bold";
 }

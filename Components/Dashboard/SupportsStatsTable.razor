@@ -1,38 +1,58 @@
-﻿@using LolStatsTracker.Models
+﻿<MudPaper Class="p-4 rounded-2xl bg-surface">
+    <MudText Typo="Typo.h5" Class="mb-4 font-bold">Stats With Supports</MudText>
 
-<h2 class="text-2xl font-bold text-white mt-8 mb-4">Stats With Supports</h2>
+    <MudTextField @bind-Value="_searchString"
+                  Placeholder="Filter by support..."
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  Class="mb-4 w-full" />
 
-<table class="w-full text-white border-collapse">
-    <thead>
-    <tr class="bg-gray-800">
-        <th class="p-2 border border-gray-700">Support</th>
-        <th class="p-2 border border-gray-700">Games</th>
-        <th class="p-2 border border-gray-700">Wins</th>
-        <th class="p-2 border border-gray-700">WR %</th>
-        <th class="p-2 border border-gray-700">Avg KDA</th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach (var s in Supports.OrderByDescending(s => s.Games))
-    {
-        <tr class="odd:bg-gray-900 even:bg-gray-800 hover:bg-gray-700 transition-colors">
-            <td class="p-2 border border-gray-700">@s.Support</td>
-            <td class="p-2 border border-gray-700">@s.Games</td>
-            <td class="p-2 border border-gray-700">@s.Wins</td>
-            <td class="p-2 border border-gray-700">
-                <span class="@GetWRColor(s.WinRate)">@s.WinRate</span>
-            </td>
-            <td class="p-2 border border-gray-700">@s.AvgKda</td>
-        </tr>
-    }
-    </tbody>
-</table>
+    <MudTable Items="filteredSupports"
+              Hover="true"
+              Dense="true"
+              Bordered="true"
+              Striped="true"
+              Filter="FilterFunc"
+              RowsPerPage="10"
+              Breakpoint="Breakpoint.Sm"
+              Class="rounded-xl overflow-hidden">
+
+        <HeaderContent>
+            <MudTh><MudTableSortLabel T="SupportStats" SortBy="@(s => s.Support)">Support</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="SupportStats" SortBy="@(s => s.Games)">Games</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="SupportStats" SortBy="@(s => s.Wins)">Wins</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="SupportStats" SortBy="@(s => s.WinRate)">WR %</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="SupportStats" SortBy="@(s => s.AvgKda)">Avg KDA</MudTableSortLabel></MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd DataLabel="Support">@context.Support</MudTd>
+            <MudTd DataLabel="Games">@context.Games</MudTd>
+            <MudTd DataLabel="Wins">@context.Wins</MudTd>
+            <MudTd DataLabel="WR %">
+                <MudText Class="@UiHelpers.GetWrColor(@context.WinRate)">
+                    @context.WinRate.ToString("F1")%
+                </MudText>
+            </MudTd>
+            <MudTd DataLabel="Avg KDA">@context.AvgKda.ToString("F2")</MudTd>
+        </RowTemplate>
+
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudPaper>
 
 @code {
     [Parameter] public IEnumerable<SupportStats> Supports { get; set; } = Enumerable.Empty<SupportStats>();
 
-    private string GetWRColor(double wr) =>
-        wr >= 60 ? "text-green-400 font-bold"
-        : wr <= 40 ? "text-red-500 font-bold"
-        : "text-yellow-400 font-bold";
+    private string _searchString = string.Empty;
+
+    private IEnumerable<SupportStats> filteredSupports => string.IsNullOrWhiteSpace(_searchString)
+        ? Supports
+        : Supports.Where(s => s.Support.Contains(_searchString, StringComparison.OrdinalIgnoreCase));
+
+    private bool FilterFunc(SupportStats s) =>
+        string.IsNullOrWhiteSpace(_searchString) ||
+        s.Support.Contains(_searchString, StringComparison.OrdinalIgnoreCase);
 }

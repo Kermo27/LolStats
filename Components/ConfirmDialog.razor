@@ -1,0 +1,20 @@
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.subtitle1">@ContentText</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="Cancel">Anuluj</MudButton>
+        <MudButton Variant="Variant.Filled" Color="@Color" OnClick="Confirm">@ButtonText</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string ContentText { get; set; } = "Czy na pewno?";
+    [Parameter] public string ButtonText { get; set; } = "Potwierdź";
+    [Parameter] public Color Color { get; set; } = Color.Error;
+
+    void Confirm() => MudDialog.Close(DialogResult.Ok(true));
+    void Cancel() => MudDialog.Cancel();
+}

@@ -1,39 +1,100 @@
-﻿<div class="bg-gray-900 text-white px-3 py-2 flex items-center justify-between">
-    <a class="text-xl font-bold" href="">LolStatsTracker</a>
-    <button 
-        title="Navigation menu" 
-        class="text-white focus:outline-none md:hidden" 
-        @onclick="ToggleNavMenu">
-        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M3 5h14M3 10h14M3 15h14" clip-rule="evenodd" />
-        </svg>
-    </button>
-</div>
+﻿@using MudBlazor
+@using LolStatsTracker.Themes
+@inject IJSRuntime JS
 
-<div class="@NavMenuCssClass md:block bg-gray-800 text-white">
-    <nav class="flex flex-col">
-        <div class="px-3 py-2">
-            <NavLink class="flex items-center space-x-2 hover:bg-gray-700 rounded px-2 py-1" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill"></span>
-                <span>Home</span>
-            </NavLink>
-        </div>
-        <div class="px-3 py-2">
-            <NavLink class="flex items-center space-x-2 hover:bg-gray-700 rounded px-2 py-1" href="matches">
-                <span class="bi bi-plus-square-fill"></span>
-                <span>Add match</span>
-            </NavLink>
-        </div>
-    </nav>
-</div>
+<MudThemeProvider Theme="@_currentTheme" />
+
+<MudLayout>
+
+    <!-- Top App Bar -->
+    <MudAppBar Elevation="2"
+               Color="Color.Transparent"
+               Class="bg-[#111827] text-gray-100 border-b border-gray-800 flex items-center px-4">
+
+        <!-- Hamburger icon (left side) -->
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="ToggleDrawer"
+                       Class="hover:text-white md:hidden mr-2" />
+
+        <!-- App title -->
+        <MudText Typo="Typo.h6" Class="font-semibold tracking-wide select-none">
+            LoL Stats Tracker
+        </MudText>
+
+        <MudSpacer />
+
+        <!-- Theme toggle button -->
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       Color="Color.Inherit"
+                       OnClick="ToggleTheme"
+                       Class="hover:text-white transition-colors duration-150"
+                       Title="@(_isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")" />
+    </MudAppBar>
+
+    <!-- Sidebar Drawer -->
+    <MudDrawer @bind-Open="_drawerOpen"
+               Variant="DrawerVariant.Responsive"
+               Elevation="4"
+               Anchor="Anchor.Left"
+               Class="bg-[#1a1a20] text-gray-200 border-r border-gray-800">
+
+        <!-- Navigation Menu -->
+        <MudNavMenu Dense="true" Class="pt-4">
+            @foreach (var link in _navLinks)
+            {
+                <MudNavLink Href="@link.Href"
+                            Match="@link.Match"
+                            Icon="@link.Icon"
+                            Class="hover:bg-[#2a2a35] hover:text-white rounded-lg mx-2 my-1 transition-colors duration-150"
+                            ActiveClass="bg-[#2563eb] text-white font-semibold rounded-lg mx-2 my-1">
+                    @link.Title
+                </MudNavLink>
+            }
+        </MudNavMenu>
+
+    </MudDrawer>
+
+    <!-- Main Content -->
+    <MudMainContent Class="bg-[#0f0f13] text-gray-100 min-h-screen p-6">
+        @Body
+    </MudMainContent>
+
+</MudLayout>
 
 @code {
-    private bool collapseNavMenu = true;
+    private bool _drawerOpen = true;
+    private bool _isDarkMode = true;
+    private MudTheme _currentTheme = AppTheme.DarkTheme;
 
-    private string NavMenuCssClass => collapseNavMenu ? "hidden" : "block";
+    private record NavItem(string Title, string Href, string Icon, NavLinkMatch Match = NavLinkMatch.Prefix);
 
-    private void ToggleNavMenu()
+    private readonly List<NavItem> _navLinks = new()
     {
-        collapseNavMenu = !collapseNavMenu;
+        new("Home", "", Icons.Material.Filled.Home, NavLinkMatch.All),
+        new("Add Match", "matches", Icons.Material.Filled.AddBox),
+        new("Stats", "stats", Icons.Material.Filled.Leaderboard)
+    };
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    [Parameter] public RenderFragment? Body { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load theme preference from localStorage
+        var themePref = await JS.InvokeAsync<string>("localStorage.getItem", "theme");
+        _isDarkMode = themePref != "light";
+        _currentTheme = _isDarkMode ? AppTheme.DarkTheme : AppTheme.LightTheme;
+    }
+
+    private async Task ToggleTheme()
+    {
+        _isDarkMode = !_isDarkMode;
+        _currentTheme = _isDarkMode ? AppTheme.DarkTheme : AppTheme.LightTheme;
+
+        // Save preference
+        await JS.InvokeVoidAsync("localStorage.setItem", "theme", _isDarkMode ? "dark" : "light");
     }
 }

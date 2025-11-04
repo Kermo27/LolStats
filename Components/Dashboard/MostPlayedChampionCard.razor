@@ -1,21 +1,29 @@
-﻿@using LolStatsTracker.Models
-<Card>
-    <h2 class="text-xl font-semibold mb-2">Most Played Champion</h2>
+﻿<MudPaper Class="p-4 rounded-2xl bg-surface shadow-md">
+    <MudText Typo="Typo.h6" Class="font-semibold mb-2">Most Played Champion</MudText>
+
     @if (MostPlayed != null)
     {
-        <p>@MostPlayed.Champion</p>
-        <p>Games: @MostPlayed.Games | WR: <span class="@GetWRColor(MostPlayed.WinRate)">@MostPlayed.WinRate%</span></p>
-        <p>Avg KDA: @MostPlayed.AvgKda | Avg CS/min: @MostPlayed.AvgCsm</p>
+        <MudText Typo="Typo.subtitle1" Class="font-medium">@MostPlayed.Champion</MudText>
+        <MudText Typo="Typo.body2" Class="text-gray-400">
+            Games: <span class="text-gray-200">@MostPlayed.Games</span> |
+            WR: <span class="@UiHelpers.GetWrColor(MostPlayed.WinRate)">@MostPlayed.WinRate.ToString("F1")%</span>
+        </MudText>
+        <MudText Typo="Typo.body2" Class="text-gray-400">
+            Avg KDA: <span class="text-gray-200">@MostPlayed.AvgKda.ToString("F2")</span> |
+            Avg CS/min: <span class="text-gray-200">@MostPlayed.AvgCsm.ToString("F2")</span>
+        </MudText>
     }
-</Card>
+    else
+    {
+        <MudText Typo="Typo.body2" Class="text-gray-500 italic">No champion data available.</MudText>
+    }
+</MudPaper>
 
 @code {
     [Parameter] public IEnumerable<MatchStats> Stats { get; set; } = Enumerable.Empty<MatchStats>();
 
-    private MatchStats? MostPlayed => Stats.OrderByDescending(s => s.Games).FirstOrDefault();
-
-    private string GetWRColor(double wr) =>
-        wr >= 60 ? "text-green-400 font-bold"
-        : wr <= 40 ? "text-red-500 font-bold"
-        : "text-yellow-400 font-bold";
+    private MatchStats? MostPlayed => Stats
+        .OrderByDescending(s => s.Games)
+        .ThenByDescending(s => s.WinRate)
+        .FirstOrDefault();
 }

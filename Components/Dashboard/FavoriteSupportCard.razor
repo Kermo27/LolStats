@@ -1,13 +1,22 @@
-﻿@using LolStatsTracker.Models
-<Card>
-    <h2 class="text-xl font-semibold mb-2">Favorite Support</h2>
+﻿<MudPaper Class="p-4 rounded-2xl bg-surface shadow-md">
+    <MudText Typo="Typo.h6" Class="font-semibold mb-2">Favorite Support</MudText>
+
     @if (Favorite != null)
     {
-        <p>@Favorite.Support</p>
-        <p>Games: @Favorite.Games | WR: <span class="@GetWRColor(Favorite.WinRate)">@Favorite.WinRate%</span></p>
-        <p>Avg KDA: @Favorite.AvgKda</p>
+        <MudText Typo="Typo.subtitle1" Class="font-medium">@Favorite.Support</MudText>
+        <MudText Typo="Typo.body2" Class="text-gray-400">
+            Games: <span class="text-gray-200">@Favorite.Games</span> |
+            WR: <span class="@UiHelpers.GetWrColor(Favorite.WinRate)">@Favorite.WinRate.ToString("F1")%</span>
+        </MudText>
+        <MudText Typo="Typo.body2" Class="text-gray-400">
+            Avg KDA: <span class="text-gray-200">@Favorite.AvgKda.ToString("F2")</span>
+        </MudText>
     }
-</Card>
+    else
+    {
+        <MudText Typo="Typo.body2" Class="text-gray-500 italic">No support data available.</MudText>
+    }
+</MudPaper>
 
 @code {
     [Parameter] public List<MatchEntry> Matches { get; set; } = new();
@@ -24,10 +33,6 @@
             AvgKda = Math.Round(g.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths)), 2)
         })
         .OrderByDescending(s => s.Games)
+        .ThenByDescending(s => s.WinRate)
         .FirstOrDefault();
-
-    private string GetWRColor(double wr) =>
-        wr >= 60 ? "text-green-400 font-bold"
-        : wr <= 40 ? "text-red-500 font-bold"
-        : "text-yellow-400 font-bold";
 }
