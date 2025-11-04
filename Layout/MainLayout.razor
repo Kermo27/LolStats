@@ -1,20 +1,113 @@
-﻿@inherits LayoutComponentBase
+﻿@using MudBlazor
+@using LolStatsTracker.Themes
+@inject IJSRuntime JS
 
-<div class="flex h-screen bg-gray-100">
-    <!-- Sidebar -->
-    <aside class="bg-gray-900 text-white w-64 flex-shrink-0 overflow-y-auto hidden md:block">
-        <NavMenu />
-    </aside>
+<MudThemeProvider Theme="@_currentTheme" />
+<MudPopoverProvider />
 
-    <!-- Mobile menu overlay -->
-    <div class="md:hidden">
-        <NavMenu />
-    </div>
+<MudLayout Class="transition-all duration-300 ease-in-out">
 
-    <!-- Main content -->
-    <main class="flex-1 dark:bg-gray-800 overflow-y-auto p-4">
-        <article class="max-w-7xl mx-auto">
-            @Body
-        </article>
-    </main>
-</div>
+    <!-- Top App Bar -->
+    <MudAppBar Elevation="2"
+               Color="Color.Transparent"
+               Class="bg-[#111827] dark:bg-[#111827] text-gray-100 border-b border-gray-800 flex items-center px-4 transition-colors duration-300">
+
+        <!-- Hamburger icon (left side) -->
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="ToggleDrawer"
+                       Class="hover:text-white md:hidden mr-2" />
+
+        <!-- App title -->
+        <MudText Typo="Typo.h6" Class="font-semibold tracking-wide select-none">
+            LoL Stats Tracker
+        </MudText>
+
+        <MudSpacer />
+
+        <!-- Theme toggle button -->
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       Color="Color.Inherit"
+                       OnClick="ToggleTheme"
+                       Class="hover:text-white transition-transform duration-300 hover:rotate-12"
+                       Title="@(_isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")" />
+    </MudAppBar>
+
+    <!-- Sidebar Drawer -->
+    <MudDrawer @bind-Open="_drawerOpen"
+               Variant="DrawerVariant.Responsive"
+               Elevation="4"
+               Anchor="Anchor.Left"
+               Class="bg-[#1a1a20] text-gray-200 border-r border-gray-800 transition-colors duration-300">
+
+        <!-- Navigation Menu -->
+        <MudNavMenu Dense="true" Class="pt-4">
+            @foreach (var link in _navLinks)
+            {
+                <MudNavLink Href="@link.Href"
+                            Match="@link.Match"
+                            Icon="@link.Icon"
+                            Class="hover:bg-[#2a2a35] hover:text-white rounded-lg mx-2 my-1 transition-colors duration-200"
+                            ActiveClass="bg-[#2563eb] text-white font-semibold rounded-lg mx-2 my-1 shadow-md shadow-blue-500/20">
+                    @link.Title
+                </MudNavLink>
+            }
+        </MudNavMenu>
+
+    </MudDrawer>
+
+    <!-- Main Content -->
+    <MudMainContent Class="min-h-screen p-6 bg-transparent transition-colors duration-300 ease-in-out">
+        @Body
+    </MudMainContent>
+
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDarkMode = true;
+    private MudTheme _currentTheme = AppTheme.DarkTheme;
+
+    private record NavItem(string Title, string Href, string Icon, NavLinkMatch Match = NavLinkMatch.Prefix);
+
+    private readonly List<NavItem> _navLinks = new()
+    {
+        new("Home", "", Icons.Material.Filled.Home, NavLinkMatch.All),
+        new("Add Match", "matches", Icons.Material.Filled.AddBox),
+        new("Stats", "stats", Icons.Material.Filled.Leaderboard)
+    };
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    [Parameter] public RenderFragment? Body { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var themePref = await JS.InvokeAsync<string>("localStorage.getItem", "theme");
+            _isDarkMode = themePref != "light";
+        }
+        catch
+        {
+            _isDarkMode = true;
+        }
+
+        _currentTheme = _isDarkMode ? AppTheme.DarkTheme : AppTheme.LightTheme;
+    }
+
+    private async Task ToggleTheme()
+    {
+        _isDarkMode = !_isDarkMode;
+        _currentTheme = _isDarkMode ? AppTheme.DarkTheme : AppTheme.LightTheme;
+
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "theme", _isDarkMode ? "dark" : "light");
+        }
+        catch { }
+
+        StateHasChanged();
+    }
+}

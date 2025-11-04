@@ -25,7 +25,6 @@ public class MatchService
 
     public async Task AddMatchAsync(MatchEntry match)
     {
-        // jeśli mecz nie ma Id, przypisz nowy Guid
         if (match.Id == Guid.Empty)
             match.Id = Guid.NewGuid();
 
@@ -80,6 +79,7 @@ public class MatchService
                 Support = g.Key,
                 Games = g.Count(),
                 Wins = g.Count(m => m.Win),
+                WinRate = Math.Round(100.0 * g.Count(m => m.Win) / g.Count(), 1),
                 AvgKda = Math.Round(g.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths)), 2)
             })
             .OrderByDescending(s => s.Games)

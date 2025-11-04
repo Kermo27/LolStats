@@ -5,13 +5,15 @@
            placeholder="@Placeholder"
            class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-gray-200
                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition duration-150"
-           @onfocus="() => showList = true"
-           @onblur="HideListAsync" />
+           @onfocus="ShowList"
+           @onblur="HideListAsync" 
+           autocomplete="off" />
 
     @if (showList && FilteredChampions.Any())
     {
-        <ul class="absolute z-20 list-none bg-gray-900 border border-gray-700 rounded-lg shadow-lg 
-                   w-full mt-1 max-h-52 overflow-auto text-gray-200 p-0 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
+        <ul class="absolute z-20 bg-gray-900 border border-gray-700 rounded-lg shadow-lg 
+                   w-full mt-1 max-h-52 overflow-auto text-gray-200 p-0 
+                   scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
             @onmousedown:preventDefault>
             @foreach (var champ in FilteredChampions)
             {
@@ -29,13 +31,18 @@
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
     [Parameter] public List<string> Champions { get; set; } = new();
     [Parameter] public string Placeholder { get; set; } = "Select champion...";
+    [Parameter] public int MaxSuggestions { get; set; } = 8;
 
     private bool showList;
 
-    private IEnumerable<string> FilteredChampions =>
+    private IEnumerable<string> FilteredChampions => 
         string.IsNullOrWhiteSpace(Value)
-            ? Champions.Take(5)
-            : Champions.Where(c => c.Contains(Value, StringComparison.OrdinalIgnoreCase)).Take(5);
+            ? Champions.Take(MaxSuggestions)
+            : Champions
+                .Where(c => c.Contains(Value, StringComparison.OrdinalIgnoreCase))
+                .Take(MaxSuggestions);
+
+    private void ShowList() => showList = true;
 
     private async Task SelectChampion(string champ)
     {
@@ -48,6 +55,6 @@
     {
         await Task.Delay(100);
         showList = false;
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 }
