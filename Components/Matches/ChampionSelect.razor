@@ -6,7 +6,7 @@
            class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-gray-200
                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition duration-150"
            @onfocus="ShowList"
-           @onblur="HideListAsync" 
+           @onblur="HideListAsync"
            autocomplete="off" />
 
     @if (showList && FilteredChampions.Any())
@@ -18,7 +18,7 @@
             @foreach (var champ in FilteredChampions)
             {
                 <li class="px-3 py-2 hover:bg-blue-600 hover:text-white cursor-pointer transition-colors"
-                    @onclick="() => SelectChampion(champ)">
+                    @onmousedown="() => SelectChampion(champ)">
                     @champ
                 </li>
             }
@@ -35,7 +35,7 @@
 
     private bool showList;
 
-    private IEnumerable<string> FilteredChampions => 
+    private IEnumerable<string> FilteredChampions =>
         string.IsNullOrWhiteSpace(Value)
             ? Champions.Take(MaxSuggestions)
             : Champions
@@ -53,7 +53,8 @@
 
     private async Task HideListAsync()
     {
-        await Task.Delay(100);
+        // Małe opóźnienie, żeby zdążył wykonać się onmousedown na li
+        await Task.Delay(150);
         showList = false;
         await InvokeAsync(StateHasChanged);
     }

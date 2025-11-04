@@ -8,12 +8,18 @@ public static class AppTheme
     {
         PaletteDark = new PaletteDark()
         {
-            Primary = "#3B82F6",
-            Background = "#0f0f13",
-            Surface = "#1a1a20",
+            Primary = "#3B82F6",          
+            Secondary = "#F59E0B",        
+            Background = "#0f0f13",       
+            Surface = "#1a1a20",          
             AppbarBackground = "#111827",
+            DrawerBackground = "#1a1a20",
             TextPrimary = "#E5E7EB",
-            DrawerBackground = "#1a1a20"
+            TextSecondary = "#9CA3AF",
+            Info = "#38BDF8",
+            Success = "#22C55E",
+            Warning = "#FBBF24",
+            Error = "#EF4444"
         },
         LayoutProperties = new LayoutProperties
         {
@@ -32,12 +38,18 @@ public static class AppTheme
     {
         PaletteLight = new PaletteLight()
         {
-            Primary = "#3B82F6",
-            Background = "#f9fafb",
-            Surface = "#ffffff",
+            Primary = "#3B82F6",           
+            Secondary = "#F59E0B",         
+            Background = "#f9fafb",        
+            Surface = "#ffffff",            
             AppbarBackground = "#ffffff",
+            DrawerBackground = "#f3f4f6",
             TextPrimary = "#111827",
-            DrawerBackground = "#f3f4f6"
+            TextSecondary = "#4B5563",
+            Info = "#38BDF8",
+            Success = "#22C55E",
+            Warning = "#FBBF24",
+            Error = "#EF4444"
         },
         LayoutProperties = new LayoutProperties
         {

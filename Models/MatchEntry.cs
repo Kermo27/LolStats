@@ -2,10 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LolStatsTracker.Models;
 
-public class MatchEntry
+public record MatchEntry
 {
     public Guid Id { get; set; }
-    public DateTime Date { get; set; } = DateTime.Now;
+    public DateTime? Date { get; set; } = DateTime.Now;
     public bool Win { get; set; }
     [Required(ErrorMessage = "Choose champion")]
     public string Champion { get; set; } = string.Empty;

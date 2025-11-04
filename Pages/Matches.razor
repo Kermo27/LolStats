@@ -1,95 +1,179 @@
 @page "/matches"
 @using System.Text.Json
-@using LolStatsTracker.Components.Matches
-@using LolStatsTracker.Models
+@using LolStatsTracker.Components
 @using LolStatsTracker.Services
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
-<div class="min-h-screen bg-[#0f0f13] text-gray-200 p-6">
-    <h1 class="text-3xl font-bold mb-6 text-blue-400 drop-shadow">LoL Stats Tracker</h1>
+<MudPaper Class="p-6 min-h-screen">
 
-    <div class="mb-8">
-        <MatchForm Match="currentMatch"
-                   OnSubmit="HandleMatchSubmit"
-                   OnCancel="HandleCancelEdit"
-                   IsEditing="isEditing" />
-    </div>
+    <MudText Typo="Typo.h3" Class="mb-6" Color="Color.Primary">LoL Stats Tracker</MudText>
 
-    <div class="mb-8">
-        <MatchActions OnExport="ExportJson"
-                      OnImport="ImportJson"
-                      OnClear="ClearData" />
-    </div>
+    <!-- Form -->
+    <MudCard Class="mb-8 p-4">
+        <MudCardContent>
+            <MudText Typo="Typo.h6">@((isEditing ? "Edytuj Mecz" : "Dodaj Mecz"))</MudText>
+            <MudGrid Spacing="3">
 
-    <NotificationBar ErrorMessage="@errorMessage"
-                     OnErrorCleared="() => errorMessage = string.Empty"
-                     SuccessMessage="@successMessage"
-                     OnSuccessCleared="() => successMessage = string.Empty" />
+                <MudItem xs="12" sm="6">
+                    <MudAutocomplete T="string"
+                                     @bind-Value="currentMatch.Champion"
+                                     Label="Champion"
+                                     Required="true"
+                                     CoerceText="true"
+                                     Clearable="true"
+                                     SearchFunc="SearchChampions"
+                                     ToStringFunc="c => c" />
+                </MudItem>
 
-    <MatchTable Matches="matches"
-                IsLoading="isLoading"
-                OnEdit="StartEdit"
-                OnDelete="DeleteMatch" />
-</div>
+                <MudItem xs="12" sm="6">
+                    <MudAutocomplete T="string"
+                                     @bind-Value="currentMatch.Support"
+                                     Label="Support"
+                                     Required="true"
+                                     CoerceText="true"
+                                     Clearable="true"
+                                     SearchFunc="SearchChampions"
+                                     ToStringFunc="c => c" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudAutocomplete T="string"
+                                     @bind-Value="currentMatch.EnemyBot"
+                                     Label="Enemy Bot"
+                                     Required="true"
+                                     CoerceText="true"
+                                     Clearable="true"
+                                     SearchFunc="SearchChampions"
+                                     ToStringFunc="c => c" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudAutocomplete T="string"
+                                     @bind-Value="currentMatch.EnemySupport"
+                                     Label="Enemy Support"
+                                     Required="true"
+                                     CoerceText="true"
+                                     Clearable="true"
+                                     SearchFunc="SearchChampions"
+                                     ToStringFunc="c => c" />
+                </MudItem>
+
+                <MudItem xs="12" sm="4">
+                    <MudNumericField @bind-Value="currentMatch.Kills" Label="Kills" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField @bind-Value="currentMatch.Deaths" Label="Deaths" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField @bind-Value="currentMatch.Assists" Label="Assists" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="currentMatch.Cs" Label="CS" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="currentMatch.GameLengthMinutes" Label="Game Length (min)" />
+                </MudItem>
+                
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="currentMatch.Date" Label="Data meczu" DateFormat="dd-MM-yyyy" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudCheckBox @bind-Checked="currentMatch.Win" T="bool" Label="Win?" />
+                </MudItem>
+
+                <MudItem xs="12" Class="mt-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitMatch">
+                        @(isEditing ? "Zapisz zmiany" : "Dodaj mecz")
+                    </MudButton>
+                    @if(isEditing)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Class="ml-2" OnClick="CancelEdit">
+                            Anuluj
+                        </MudButton>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Actions -->
+    <MudStack Direction="Row" Spacing="2" Class="mb-4">
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="ExportJson">Eksportuj JSON</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="TriggerImport">Import JSON</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="ClearData">Usuń wszystkie</MudButton>
+        <InputFile id="fileInput" OnChange="ImportJson" style="display:none" />
+    </MudStack>
+
+    <!-- Table -->
+    <MudTable Items="matches" Hover="true" Bordered="true" Striped="true">
+        <HeaderContent>
+            <MudTh>Date</MudTh>
+            <MudTh>Champion</MudTh>
+            <MudTh>Support</MudTh>
+            <MudTh>Enemy Bot</MudTh>
+            <MudTh>Enemy Support</MudTh>
+            <MudTh>K/D/A</MudTh>
+            <MudTh>CS</MudTh>
+            <MudTh>Game Length</MudTh>
+            <MudTh>Win</MudTh>
+            <MudTh>Akcje</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Date">@context.Date?.ToString("dd-MM-yyyy")</MudTd>
+            <MudTd DataLabel="Champion">@context.Champion</MudTd>
+            <MudTd DataLabel="Support">@context.Support</MudTd>
+            <MudTd DataLabel="Enemy Bot">@context.EnemyBot</MudTd>
+            <MudTd DataLabel="Enemy Support">@context.EnemySupport</MudTd>
+            <MudTd DataLabel="K/D/A">@context.Kills/@context.Deaths/@context.Assists</MudTd>
+            <MudTd DataLabel="CS">@context.Cs</MudTd>
+            <MudTd DataLabel="Game Length">@context.GameLengthMinutes</MudTd>
+            <MudTd DataLabel="Win">@((context.Win) ? "✔️" : "❌")</MudTd>
+            <MudTd DataLabel="Akcje">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="() => StartEdit(context)"/>
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="async () => await DeleteMatch(context)" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+
+</MudPaper>
 
 @code {
-    [Inject] private IJSRuntime JS { get; set; } = default!;
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
-
     private MatchService matchService = default!;
     private MatchEntry currentMatch = new();
     private List<MatchEntry> matches = new();
-    private bool isLoading = true;
     private bool isEditing = false;
-    private string errorMessage = string.Empty;
-    private string successMessage = string.Empty;
+
+    private InputFile? fileInput;
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            var storage = new LocalStorageService(JS);
-            matchService = new MatchService(storage);
-            await matchService.InitializeAsync();
-            await RefreshMatches();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Błąd inicjalizacji: {ex.Message}";
-        }
-        finally
-        {
-            isLoading = false;
-        }
+        var storage = new LocalStorageService(JS);
+        matchService = new MatchService(storage);
+        await matchService.InitializeAsync();
+        await RefreshMatches();
     }
 
-    private async Task RefreshMatches()
-    {
-        matches = matchService.GetAll().OrderByDescending(m => m.Date).ToList();
-    }
+    private async Task RefreshMatches() => matches = matchService.GetAll().OrderByDescending(m => m.Date).ToList();
 
-    private async Task HandleMatchSubmit(MatchEntry match)
+    private async Task SubmitMatch()
     {
-        try
+        if(isEditing)
         {
-            if (isEditing)
-            {
-                await matchService.UpdateMatchAsync(match);
-                successMessage = "Mecz zaktualizowany pomyślnie!";
-            }
-            else
-            {
-                await matchService.AddMatchAsync(match);
-                successMessage = "Mecz dodany pomyślnie!";
-            }
-
-            await RefreshMatches();
-            ResetForm();
-            errorMessage = string.Empty;
+            await matchService.UpdateMatchAsync(currentMatch);
+            Snackbar.Add("Mecz zaktualizowany", Severity.Success);
         }
-        catch (Exception ex)
+        else
         {
-            errorMessage = $"Błąd podczas zapisywania: {ex.Message}";
+            await matchService.AddMatchAsync(currentMatch);
+            Snackbar.Add("Mecz dodany", Severity.Success);
         }
+        ResetForm();
+        await RefreshMatches();
     }
 
     private void StartEdit(MatchEntry match)
@@ -110,14 +194,9 @@
             Win = match.Win
         };
         isEditing = true;
-        successMessage = "Tryb edycji - zmień dane i zapisz";
     }
 
-    private void HandleCancelEdit()
-    {
-        ResetForm();
-        successMessage = string.Empty;
-    }
+    private void CancelEdit() => ResetForm();
 
     private void ResetForm()
     {
@@ -127,96 +206,85 @@
 
     private async Task DeleteMatch(MatchEntry match)
     {
-        try
+        var parameters = new DialogParameters
         {
-            var confirmed = await JS.InvokeAsync<bool>("confirm", 
-                $"Usunąć mecz z {match.Date:yyyy-MM-dd} ({match.Champion})?");
-            if (!confirmed) return;
+            { "ContentText", $"Czy na pewno chcesz usunąć mecz {match.Champion}?" },
+            { "ButtonText", "Usuń" },
+            { "Color", Color.Error }
+        };
 
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
+
+        // ShowAsync zwraca IDialogReference
+        var dialogRef = DialogService.ShowAsync<ConfirmDialog>("Potwierdzenie", parameters, options);
+
+        // Czekamy na wynik
+        var dialogResult = await dialogRef.Result;
+
+        // Teraz dialogResult ma właściwość Data
+        if (dialogResult.Cancelled)
+            return;
+
+        if (dialogResult.Data is true)
+        {
             await matchService.RemoveMatchAsync(match);
             await RefreshMatches();
-            successMessage = "Mecz usunięty pomyślnie!";
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Błąd podczas usuwania: {ex.Message}";
+            Snackbar.Add("Mecz usunięty", Severity.Success);
         }
     }
-
+    
     private async Task ExportJson()
     {
-        try
-        {
-            var json = JsonSerializer.Serialize(matchService.GetAll(), 
-                new JsonSerializerOptions { WriteIndented = true });
-            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-            var base64 = Convert.ToBase64String(bytes);
-            await JS.InvokeVoidAsync("downloadFile", "matches.json", "application/json", base64);
-            successMessage = "Dane wyeksportowane pomyślnie!";
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Błąd eksportu: {ex.Message}";
-        }
+        var json = JsonSerializer.Serialize(matchService.GetAll(), new JsonSerializerOptions { WriteIndented = true });
+        var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("downloadFile", "matches.json", "application/json", base64);
+        Snackbar.Add("Dane wyeksportowane", Severity.Info);
+    }
+
+    private async Task TriggerImport()
+    {
+        await JS.InvokeVoidAsync("triggerFileInput", "fileInput");
     }
 
     private async Task ImportJson(InputFileChangeEventArgs e)
     {
-        try
+        using var stream = e.File.OpenReadStream(10_000_000);
+        using var reader = new StreamReader(stream);
+        var json = await reader.ReadToEndAsync();
+        var imported = JsonSerializer.Deserialize<List<MatchEntry>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        if(imported is null || !imported.Any()) return;
+
+        foreach(var match in imported)
         {
-            if (e.File is null) return;
-
-            using var stream = e.File.OpenReadStream(10_000_000);
-            using var reader = new StreamReader(stream);
-            var json = await reader.ReadToEndAsync();
-            var imported = JsonSerializer.Deserialize<List<MatchEntry>>(json, 
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            if (imported is null || !imported.Any())
-            {
-                errorMessage = "Plik jest pusty lub nieprawidłowy";
-                return;
-            }
-
-            int addedCount = 0;
-            foreach (var match in imported)
-            {
-                if (match.Id == Guid.Empty) match.Id = Guid.NewGuid();
-                if (!matches.Any(m => m.Id == match.Id))
-                {
-                    await matchService.AddMatchAsync(match);
-                    addedCount++;
-                }
-            }
-
-            await RefreshMatches();
-            successMessage = $"Zaimportowano {addedCount} meczy!";
+            if(match.Id == Guid.Empty) match.Id = Guid.NewGuid();
+            if(!matches.Any(m => m.Id == match.Id)) await matchService.AddMatchAsync(match);
         }
-        catch (JsonException)
-        {
-            errorMessage = "Nieprawidłowy format pliku JSON";
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Błąd importu: {ex.Message}";
-        }
+
+        await RefreshMatches();
+        Snackbar.Add($"Zaimportowano {imported.Count} meczy", Severity.Success);
     }
 
     private async Task ClearData()
     {
-        try
-        {
-            var confirmed = await JS.InvokeAsync<bool>("confirm", 
-                "Czy na pewno chcesz usunąć wszystkie dane? Tej operacji nie można cofnąć!");
-            if (!confirmed) return;
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Czy na pewno usunąć wszystkie dane?");
+        if(!confirmed) return;
 
-            await matchService.ClearAsync();
-            await RefreshMatches();
-            successMessage = "Wszystkie dane zostały usunięte";
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Błąd podczas usuwania: {ex.Message}";
-        }
+        await matchService.ClearAsync();
+        await RefreshMatches();
+        Snackbar.Add("Wszystkie dane usunięte", Severity.Success);
+    }
+    
+    private Task<IEnumerable<string>> SearchChampions(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult(ChampionList.Names.AsEnumerable());
+
+        var filtered = ChampionList.Names
+            .Where(c => c.Contains(value, StringComparison.OrdinalIgnoreCase))
+            .Take(8);
+
+        return Task.FromResult(filtered);
     }
 }

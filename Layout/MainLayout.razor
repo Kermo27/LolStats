@@ -2,15 +2,14 @@
 @using LolStatsTracker.Themes
 @inject IJSRuntime JS
 
-<MudThemeProvider Theme="@_currentTheme" />
+<MudThemeProvider IsDarkMode="@_isDarkMode" Theme="@_currentTheme" />
 <MudPopoverProvider />
 
 <MudLayout Class="transition-all duration-300 ease-in-out">
 
     <!-- Top App Bar -->
     <MudAppBar Elevation="2"
-               Color="Color.Transparent"
-               Class="bg-[#111827] dark:bg-[#111827] text-gray-100 border-b border-gray-800 flex items-center px-4 transition-colors duration-300">
+               Class="bg-[#111827] dark:bg-[#111827] text-gray-100 border-b border-gray-800 flex px-4 transition-colors duration-300">
 
         <!-- Hamburger icon (left side) -->
         <MudIconButton Icon="@Icons.Material.Filled.Menu"
@@ -39,7 +38,7 @@
                Variant="DrawerVariant.Responsive"
                Elevation="4"
                Anchor="Anchor.Left"
-               Class="bg-[#1a1a20] text-gray-200 border-r border-gray-800 transition-colors duration-300">
+               Class="bg-[#1a1a20] text-gray-200 border-r border-gray-800 transition-colors duration-300 no-horizontal-scrollbar">
 
         <!-- Navigation Menu -->
         <MudNavMenu Dense="true" Class="pt-4">
