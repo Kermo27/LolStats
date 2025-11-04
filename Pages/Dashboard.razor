@@ -1,7 +1,7 @@
 ﻿@page "/"
 @using LolStatsTracker.Components.Dashboard
-@using LolStatsTracker.Models
-@inject MatchService MatchService
+@using LolStatsTracker.Services
+@inject IMatchService MatchService
 
 <MudText Typo="Typo.h4" Class="font-bold mb-6">LoL Stats Summary</MudText>
 
@@ -40,14 +40,25 @@ else
     {
         IsLoading = true;
 
-        await MatchService.InitializeAsync();
+        try
+        {
+            // Pobranie wszystkich meczów z API
+            Matches = (await MatchService.GetAllAsync()).ToList();
 
-        Matches = MatchService.GetAll().ToList();
-        ChampionStats = MatchService.GetChampionStats().OrderByDescending(s => s.Games).ToList();
-        SupportStats = MatchService.GetSupportStats().OrderByDescending(s => s.Games).ToList();
-        EnemyStats = MatchService.GetEnemyBotStats().OrderByDescending(e => e.Games).ToList();
-        EnemySupportStats = MatchService.GetEnemySupportStats().OrderByDescending(e => e.Games).ToList();
-
-        IsLoading = false;
+            // Obliczenie statystyk na podstawie pobranych meczów
+            ChampionStats = (await MatchService.GetChampionStatsAsync()).ToList();
+            SupportStats = (await MatchService.GetSupportStatsAsync()).ToList();
+            EnemyStats = (await MatchService.GetEnemyBotStatsAsync()).ToList();
+            EnemySupportStats = (await MatchService.GetEnemySupportStatsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Błąd podczas ładowania danych: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
+
 }

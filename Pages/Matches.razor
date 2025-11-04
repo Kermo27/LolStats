@@ -5,6 +5,7 @@
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject IMatchService MatchService
 
 <MudPaper Class="p-6 min-h-screen">
 
@@ -143,39 +144,43 @@
 </MudPaper>
 
 @code {
-    private MatchService matchService = default!;
     private MatchEntry currentMatch = new();
     private List<MatchEntry> matches = new();
     private bool isEditing = false;
 
-    private InputFile? fileInput;
-
     protected override async Task OnInitializedAsync()
     {
-        var storage = new LocalStorageService(JS);
-        matchService = new MatchService(storage);
-        await matchService.InitializeAsync();
         await RefreshMatches();
     }
 
-    private async Task RefreshMatches() => matches = matchService.GetAll().OrderByDescending(m => m.Date).ToList();
+    private async Task RefreshMatches()
+    {
+        matches = (await MatchService.GetAllAsync()).OrderByDescending(m => m.Date).ToList();
+    }
 
     private async Task SubmitMatch()
     {
-        if(isEditing)
+        if (currentMatch == null || MatchService == null)
         {
-            await matchService.UpdateMatchAsync(currentMatch);
+            Snackbar.Add("Nie można wykonać akcji, brakuje danych lub serwisu.", Severity.Error);
+            return;
+        }
+
+        if (isEditing)
+        {
+            var updated = await MatchService.UpdateAsync(currentMatch.Id, currentMatch);
             Snackbar.Add("Mecz zaktualizowany", Severity.Success);
         }
         else
         {
-            await matchService.AddMatchAsync(currentMatch);
+            var added = await MatchService.AddAsync(currentMatch);
+            matches.Add(added); // dodanie do listy
             Snackbar.Add("Mecz dodany", Severity.Success);
         }
-        ResetForm();
-        await RefreshMatches();
-    }
 
+        ResetForm();
+    }
+    
     private void StartEdit(MatchEntry match)
     {
         currentMatch = new MatchEntry
@@ -215,19 +220,16 @@
 
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
 
-        // ShowAsync zwraca IDialogReference
-        var dialogRef = DialogService.ShowAsync<ConfirmDialog>("Potwierdzenie", parameters, options);
-
-        // Czekamy na wynik
+        var dialogRef = await DialogService.ShowAsync<ConfirmDialog>("Potwierdzenie", parameters, options);
+        
         var dialogResult = await dialogRef.Result;
-
-        // Teraz dialogResult ma właściwość Data
-        if (dialogResult.Cancelled)
+        
+        if (dialogResult.Canceled)
             return;
 
         if (dialogResult.Data is true)
         {
-            await matchService.RemoveMatchAsync(match);
+            await MatchService.DeleteAsync(match.Id);
             await RefreshMatches();
             Snackbar.Add("Mecz usunięty", Severity.Success);
         }
@@ -235,11 +237,20 @@
     
     private async Task ExportJson()
     {
-        var json = JsonSerializer.Serialize(matchService.GetAll(), new JsonSerializerOptions { WriteIndented = true });
-        var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-        var base64 = Convert.ToBase64String(bytes);
-        await JS.InvokeVoidAsync("downloadFile", "matches.json", "application/json", base64);
-        Snackbar.Add("Dane wyeksportowane", Severity.Info);
+        try
+        {
+            var allMatches = await MatchService.GetAllAsync(); // pobranie z API
+            var json = JsonSerializer.Serialize(allMatches, new JsonSerializerOptions { WriteIndented = true });
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            var base64 = Convert.ToBase64String(bytes);
+
+            await JS.InvokeVoidAsync("downloadFile", "matches.json", "application/json", base64);
+            Snackbar.Add("Dane wyeksportowane", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Błąd eksportu: {ex.Message}", Severity.Error);
+        }
     }
 
     private async Task TriggerImport()
@@ -252,28 +263,38 @@
         using var stream = e.File.OpenReadStream(10_000_000);
         using var reader = new StreamReader(stream);
         var json = await reader.ReadToEndAsync();
-        var imported = JsonSerializer.Deserialize<List<MatchEntry>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var imported = JsonSerializer.Deserialize<List<MatchEntry>>(json, 
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-        if(imported is null || !imported.Any()) return;
+        if (imported is null || !imported.Any()) return;
 
-        foreach(var match in imported)
+        // tylko nowe mecze (unikalne Id)
+        var toAdd = imported.Where(m =>
         {
-            if(match.Id == Guid.Empty) match.Id = Guid.NewGuid();
-            if(!matches.Any(m => m.Id == match.Id)) await matchService.AddMatchAsync(match);
-        }
+            if (m.Id == Guid.Empty) m.Id = Guid.NewGuid();
+            return !matches.Any(existing => existing.Id == m.Id);
+        }).ToList();
 
-        await RefreshMatches();
-        Snackbar.Add($"Zaimportowano {imported.Count} meczy", Severity.Success);
+        if (toAdd.Any())
+        {
+            foreach (var match in toAdd)
+            {
+                await MatchService.AddAsync(match); 
+            }
+
+            await RefreshMatches();
+            Snackbar.Add($"Zaimportowano {toAdd.Count} meczy", Severity.Success);
+        }
     }
 
     private async Task ClearData()
     {
         bool confirmed = await JS.InvokeAsync<bool>("confirm", "Czy na pewno usunąć wszystkie dane?");
-        if(!confirmed) return;
+        if (!confirmed) return;
 
-        await matchService.ClearAsync();
-        await RefreshMatches();
+        await MatchService.ClearAsync();
         Snackbar.Add("Wszystkie dane usunięte", Severity.Success);
+        await RefreshMatches();
     }
     
     private Task<IEnumerable<string>> SearchChampions(string value, CancellationToken cancellationToken)

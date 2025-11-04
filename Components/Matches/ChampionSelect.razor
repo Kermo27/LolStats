@@ -9,13 +9,13 @@
            @onblur="HideListAsync"
            autocomplete="off" />
 
-    @if (showList && FilteredChampions.Any())
+    @if (showList && _filteredChampions.Any())
     {
         <ul class="absolute z-20 bg-gray-900 border border-gray-700 rounded-lg shadow-lg 
                    w-full mt-1 max-h-52 overflow-auto text-gray-200 p-0 
                    scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
             @onmousedown:preventDefault>
-            @foreach (var champ in FilteredChampions)
+            @foreach (var champ in _filteredChampions)
             {
                 <li class="px-3 py-2 hover:bg-blue-600 hover:text-white cursor-pointer transition-colors"
                     @onmousedown="() => SelectChampion(champ)">
@@ -34,28 +34,50 @@
     [Parameter] public int MaxSuggestions { get; set; } = 8;
 
     private bool showList;
+    private List<string> _filteredChampions = new();
+    private string _lastFilterValue = "";
 
-    private IEnumerable<string> FilteredChampions =>
-        string.IsNullOrWhiteSpace(Value)
-            ? Champions.Take(MaxSuggestions)
-            : Champions
+    protected override void OnParametersSet()
+    {
+        if (_lastFilterValue != Value)
+        {
+            UpdateFilteredChampions();
+            _lastFilterValue = Value;
+        }
+    }
+
+    private void UpdateFilteredChampions()
+    {
+        if (string.IsNullOrWhiteSpace(Value))
+        {
+            _filteredChampions = Champions.Take(MaxSuggestions).ToList();
+        }
+        else
+        {
+            _filteredChampions = Champions
                 .Where(c => c.Contains(Value, StringComparison.OrdinalIgnoreCase))
-                .Take(MaxSuggestions);
+                .Take(MaxSuggestions)
+                .ToList();
+        }
+    }
 
-    private void ShowList() => showList = true;
+    private void ShowList()
+    {
+        UpdateFilteredChampions();
+        showList = true;
+    }
 
     private async Task SelectChampion(string champ)
     {
         Value = champ;
+        _lastFilterValue = champ;
         await ValueChanged.InvokeAsync(champ);
         showList = false;
     }
 
     private async Task HideListAsync()
     {
-        // Małe opóźnienie, żeby zdążył wykonać się onmousedown na li
         await Task.Delay(150);
         showList = false;
-        await InvokeAsync(StateHasChanged);
     }
 }
