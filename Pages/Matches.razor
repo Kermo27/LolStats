@@ -13,8 +13,13 @@
 
     <!-- Form -->
     <MudCard Class="mb-8 p-4">
-        <MudCardContent>
-            <MudText Typo="Typo.h6">@((isEditing ? "Edytuj Mecz" : "Dodaj Mecz"))</MudText>
+    <MudCardContent>
+        <MudText Typo="Typo.h6">@((isEditing ? "Edytuj Mecz" : "Dodaj Mecz"))</MudText>
+
+        <EditForm Model="@currentMatch"
+                  OnValidSubmit="SubmitMatch">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
             <MudGrid Spacing="3">
 
                 <MudItem xs="12" sm="6">
@@ -22,10 +27,10 @@
                                      @bind-Value="currentMatch.Champion"
                                      Label="Champion"
                                      Required="true"
-                                     CoerceText="true"
-                                     Clearable="true"
                                      SearchFunc="SearchChampions"
-                                     ToStringFunc="c => c" />
+                                     Clearable="true"
+                                     DebounceInterval="300" />
+                    <ValidationMessage For="@(() => currentMatch.Champion)" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -33,10 +38,10 @@
                                      @bind-Value="currentMatch.Support"
                                      Label="Support"
                                      Required="true"
-                                     CoerceText="true"
-                                     Clearable="true"
                                      SearchFunc="SearchChampions"
-                                     ToStringFunc="c => c" />
+                                     Clearable="true"
+                                     DebounceInterval="300" />
+                    <ValidationMessage For="@(() => currentMatch.Support)" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -44,10 +49,10 @@
                                      @bind-Value="currentMatch.EnemyBot"
                                      Label="Enemy Bot"
                                      Required="true"
-                                     CoerceText="true"
-                                     Clearable="true"
                                      SearchFunc="SearchChampions"
-                                     ToStringFunc="c => c" />
+                                     Clearable="true"
+                                     DebounceInterval="300" />
+                    <ValidationMessage For="@(() => currentMatch.EnemyBot)" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -55,18 +60,20 @@
                                      @bind-Value="currentMatch.EnemySupport"
                                      Label="Enemy Support"
                                      Required="true"
-                                     CoerceText="true"
-                                     Clearable="true"
                                      SearchFunc="SearchChampions"
-                                     ToStringFunc="c => c" />
+                                     Clearable="true"
+                                     DebounceInterval="300" />
+                    <ValidationMessage For="@(() => currentMatch.EnemySupport)" />
                 </MudItem>
 
                 <MudItem xs="12" sm="4">
                     <MudNumericField @bind-Value="currentMatch.Kills" Label="Kills" />
                 </MudItem>
+
                 <MudItem xs="12" sm="4">
                     <MudNumericField @bind-Value="currentMatch.Deaths" Label="Deaths" />
                 </MudItem>
+
                 <MudItem xs="12" sm="4">
                     <MudNumericField @bind-Value="currentMatch.Assists" Label="Assists" />
                 </MudItem>
@@ -74,23 +81,27 @@
                 <MudItem xs="12" sm="6">
                     <MudNumericField @bind-Value="currentMatch.Cs" Label="CS" />
                 </MudItem>
+
                 <MudItem xs="12" sm="6">
                     <MudNumericField @bind-Value="currentMatch.GameLengthMinutes" Label="Game Length (min)" />
                 </MudItem>
-                
+
                 <MudItem xs="12" sm="6">
                     <MudDatePicker @bind-Date="currentMatch.Date" Label="Data meczu" DateFormat="dd-MM-yyyy" />
+                    <ValidationMessage For="@(() => currentMatch.Date)" />
                 </MudItem>
 
                 <MudItem xs="12">
-                    <MudCheckBox @bind-Checked="currentMatch.Win" T="bool" Label="Win?" />
+                    <MudCheckBox T="bool"
+                                 Label="Win?"
+                                 @bind-Value="currentMatch.Win" />
                 </MudItem>
 
                 <MudItem xs="12" Class="mt-2">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitMatch">
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Type="Submit">
                         @(isEditing ? "Zapisz zmiany" : "Dodaj mecz")
                     </MudButton>
-                    @if(isEditing)
+                    @if (isEditing)
                     {
                         <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Class="ml-2" OnClick="CancelEdit">
                             Anuluj
@@ -98,7 +109,8 @@
                     }
                 </MudItem>
             </MudGrid>
-        </MudCardContent>
+        </EditForm>
+    </MudCardContent>
     </MudCard>
 
     <!-- Actions -->
@@ -110,7 +122,7 @@
     </MudStack>
 
     <!-- Table -->
-    <MudTable Items="matches" Hover="true" Bordered="true" Striped="true">
+    <MudTable Items="matches" Hover="true" Bordered="true" Striped="true" Virtualize="true">
         <HeaderContent>
             <MudTh>Date</MudTh>
             <MudTh>Champion</MudTh>
@@ -150,7 +162,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await RefreshMatches();
+        currentMatch ??= new MatchEntry();
+        matches = (await MatchService.GetAllAsync())
+            .OrderByDescending(m => m.Date)
+            .ToList();
     }
 
     private async Task RefreshMatches()
@@ -160,25 +175,30 @@
 
     private async Task SubmitMatch()
     {
-        if (currentMatch == null || MatchService == null)
+        if (currentMatch == null)
         {
-            Snackbar.Add("Nie można wykonać akcji, brakuje danych lub serwisu.", Severity.Error);
+            Snackbar.Add("Brakuje danych.", Severity.Error);
             return;
         }
 
         if (isEditing)
         {
             var updated = await MatchService.UpdateAsync(currentMatch.Id, currentMatch);
+            
+            var index = matches.FindIndex(m => m.Id == currentMatch.Id);
+            if (index >= 0)
+                matches[index] = updated;
             Snackbar.Add("Mecz zaktualizowany", Severity.Success);
         }
         else
         {
             var added = await MatchService.AddAsync(currentMatch);
-            matches.Add(added); // dodanie do listy
+            matches.Insert(0, added); // dodaj od razu na górę
             Snackbar.Add("Mecz dodany", Severity.Success);
         }
 
         ResetForm();
+        StateHasChanged();
     }
     
     private void StartEdit(MatchEntry match)
@@ -218,21 +238,16 @@
             { "Color", Color.Error }
         };
 
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
+        var dialogRef = await DialogService.ShowAsync<ConfirmDialog>("Potwierdzenie", parameters);
+        var result = await dialogRef.Result;
+        if (result.Canceled || result.Data is not true) return;
 
-        var dialogRef = await DialogService.ShowAsync<ConfirmDialog>("Potwierdzenie", parameters, options);
-        
-        var dialogResult = await dialogRef.Result;
-        
-        if (dialogResult.Canceled)
-            return;
+        await MatchService.DeleteAsync(match.Id);
 
-        if (dialogResult.Data is true)
-        {
-            await MatchService.DeleteAsync(match.Id);
-            await RefreshMatches();
-            Snackbar.Add("Mecz usunięty", Severity.Success);
-        }
+        // usuń lokalnie, zamiast RefreshMatches()
+        matches.Remove(match);
+        Snackbar.Add("Mecz usunięty", Severity.Success);
+        StateHasChanged();
     }
     
     private async Task ExportJson()
@@ -267,8 +282,7 @@
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         if (imported is null || !imported.Any()) return;
-
-        // tylko nowe mecze (unikalne Id)
+        
         var toAdd = imported.Where(m =>
         {
             if (m.Id == Guid.Empty) m.Id = Guid.NewGuid();
@@ -300,12 +314,13 @@
     private Task<IEnumerable<string>> SearchChampions(string value, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(value))
-            return Task.FromResult(ChampionList.Names.AsEnumerable());
+            return Task.FromResult(ChampionList.Names.Take(10).AsEnumerable());
 
         var filtered = ChampionList.Names
             .Where(c => c.Contains(value, StringComparison.OrdinalIgnoreCase))
-            .Take(8);
+            .Take(10)
+            .ToList();
 
-        return Task.FromResult(filtered);
+        return Task.FromResult<IEnumerable<string>>(filtered);
     }
 }

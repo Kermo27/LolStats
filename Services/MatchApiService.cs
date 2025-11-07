@@ -6,21 +6,31 @@ namespace LolStatsTracker.Services;
 public class MatchApiService : IMatchService
 {
     private readonly HttpClient _http;
+    private const string BaseUrl = "http://localhost:5031/matches";
+    private List<MatchEntry> _cache;
+    private DateTime _lastFetchTime;
+    private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(30);
 
     public MatchApiService(HttpClient http)
     {
         _http = http;
     }
-
-    private const string BaseUrl = "http://localhost:5031/matches";
-
+    
     public async Task<List<MatchEntry>> GetAllAsync()
     {
-        return await _http.GetFromJsonAsync<List<MatchEntry>>(BaseUrl) ?? new List<MatchEntry>();
+        if (_cache != null && DateTime.Now - _lastFetchTime < _cacheDuration)
+            return _cache;
+
+        _cache = await _http.GetFromJsonAsync<List<MatchEntry>>(BaseUrl) ?? new();
+        _lastFetchTime = DateTime.Now;
+        return _cache;
     }
     
     public async Task<MatchEntry?> GetAsync(Guid id)
     {
+        if (_cache?.FirstOrDefault(m => m.Id == id) is { } cached)
+            return cached;
+
         return await _http.GetFromJsonAsync<MatchEntry>($"{BaseUrl}/{id}");
     }
 
@@ -28,26 +38,38 @@ public class MatchApiService : IMatchService
     {
         var response = await _http.PostAsJsonAsync(BaseUrl, match);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<MatchEntry>()!;
+        var created = await response.Content.ReadFromJsonAsync<MatchEntry>()!;
+        InvalidateCache();
+        return created!;
     }
 
     public async Task<MatchEntry> UpdateAsync(Guid id, MatchEntry match)
     {
         var response = await _http.PutAsJsonAsync($"{BaseUrl}/{id}", match);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<MatchEntry>()!;
+        var updated = await response.Content.ReadFromJsonAsync<MatchEntry>()!;
+        InvalidateCache();
+        return updated!;
     }
 
     public async Task DeleteAsync(Guid id)
     {
         var response = await _http.DeleteAsync($"{BaseUrl}/{id}");
         response.EnsureSuccessStatusCode();
+        InvalidateCache();
     }
 
     public async Task ClearAsync()
     {
         var response = await _http.DeleteAsync(BaseUrl);
         response.EnsureSuccessStatusCode();
+        InvalidateCache();
+    }
+    
+    private void InvalidateCache()
+    {
+        _cache = null;
+        _lastFetchTime = DateTime.MinValue;
     }
 
     public async Task<IEnumerable<MatchStats>> GetChampionStatsAsync()
