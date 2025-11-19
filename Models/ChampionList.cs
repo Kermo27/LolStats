@@ -4,7 +4,7 @@ public static class ChampionList
 {
     public static readonly List<string> Names = new()
     {
-        "Aatrox", "Ahri", "Akali", "Akshan", "Alistar", "Ambessa", "Amumu", "Anivia", "Annie", "Aphelios", "Ashe",
+        "Aatrox", "Ahri", "Akali", "Akshan", "Alistar", "Ambessa", "Amumu", "Anivia", "Annie", "Aphelios", "Ashe", 
         "Aurelion Sol", "Aurora", "Azir",
         "Bard", "Bel'Veth", "Blitzcrank", "Brand", "Braum", "Briar",
         "Caitlyn", "Camille", "Cassiopeia", "Cho'Gath", "Corki",
@@ -34,5 +34,11 @@ public static class ChampionList
         "Xayah", "Xerath", "Xin Zhao",
         "Yasuo", "Yone", "Yorick", "Yuumi",
         "Zac", "zed", "Ziggs", "Zilean", "Zoe", "Zyra"
+    };
+
+    public static readonly List<string> Enchanters = new()
+    {
+        "Janna", "Karma", "Lulu", "Milio", "Nami", "Renata Glasc", "Senna", "Seraphine", "Sona", "Soraka", "Taric",
+        "Yuumi"
     };
 }

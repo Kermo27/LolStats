@@ -42,10 +42,8 @@ else
 
         try
         {
-            // Pobranie wszystkich meczów z API
             Matches = (await MatchService.GetAllAsync()).ToList();
-
-            // Obliczenie statystyk na podstawie pobranych meczów
+            
             ChampionStats = (await MatchService.GetChampionStatsAsync()).ToList();
             SupportStats = (await MatchService.GetSupportStatsAsync()).ToList();
             EnemyStats = (await MatchService.GetEnemyBotStatsAsync()).ToList();
@@ -53,7 +51,7 @@ else
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Błąd podczas ładowania danych: {ex.Message}");
+            await Console.Error.WriteLineAsync($"Błąd podczas ładowania danych: {ex.Message}");
         }
         finally
         {

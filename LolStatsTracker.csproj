@@ -30,6 +30,7 @@
       <_ContentIncludedByDefault Remove="Api\obj\project.assets.json" />
       <_ContentIncludedByDefault Remove="Api\obj\project.packagespec.json" />
       <_ContentIncludedByDefault Remove="Api\Properties\launchSettings.json" />
+      <_ContentIncludedByDefault Remove="wwwroot\sample-data\weather.json" />
     </ItemGroup>
 
 </Project>

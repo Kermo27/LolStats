@@ -7,7 +7,7 @@ public class MatchApiService : IMatchService
 {
     private readonly HttpClient _http;
     private const string BaseUrl = "http://localhost:5031/matches";
-    private List<MatchEntry> _cache;
+    private List<MatchEntry>? _cache;
     private DateTime _lastFetchTime;
     private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(30);
 

@@ -1,11 +1,12 @@
 ﻿@page "/stats"
-@using LolStatsTracker.Models
+@using LolStatsTracker.Components.Stats
 @using LolStatsTracker.Services
 @inject IMatchService MatchService
 @inject ISnackbar Snackbar
+@implements IDisposable
 
 <MudPaper Class="p-6 min-h-screen">
-    <MudText Typo="Typo.h4" Color="Color.Primary" Class="mb-4">Statystyki</MudText>
+    <MudText Typo="Typo.h4" Color="Color.Primary" Class="mb-4">Stats</MudText>
 
     @if (summary is null)
     {
@@ -14,191 +15,150 @@
     else
     {
         <MudGrid Spacing="3">
-            <MudItem xs="12" sm="4">
-                <MudCard>
-                    <MudCardHeader>
-                        <MudText Typo="Typo.h6">Top 3 Championy</MudText>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudList T="ChampionSummary" Dense="true">
-                            @foreach (var c in summary.TopChampions)
-                            {
-                                <MudListItem>
-                                    <MudText>@c.Name</MudText>
-                                    <MudText Class="ml-auto">@($"{c.WinRate:F1}% WR | {c.AvgKda:F2} KDA")</MudText>
-                                </MudListItem>
-                            }
-                        </MudList>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+            <StatsCard Title="Top 3 Champions"
+                       Items="summary.TopChampions"
+                       Formatter='@(c => $"{c.WinRate:F1}% WR | {c.AvgKda:F2} KDA | {c.Count} games")' />
 
-            <MudItem xs="12" sm="4">
-                <MudCard>
-                    <MudCardHeader>
-                        <MudText Typo="Typo.h6">Top 3 Supporty</MudText>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudList T="SupportSummary" Dense="true">
-                            @foreach (var s in summary.TopSupports)
-                            {
-                                <MudListItem>
-                                    <MudText>@s.Name</MudText>
-                                    <MudText Class="ml-auto">@($"{s.WinRate:F1}% WR")</MudText>
-                                </MudListItem>
-                            }
-                        </MudList>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+            <StatsCard Title="Top 3 Supports"
+                       Items="summary.TopSupports"
+                       Formatter='@(s => $"{s.WinRate:F1}% WR | {s.Count} games")' />
 
-            <MudItem xs="12" sm="4">
-                <MudCard>
-                    <MudCardHeader>
-                        <MudText Typo="Typo.h6">Najgorsze enemy boty</MudText>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudList T="EnemyBotlaneSummary" Dense="true">
-                            @foreach (var e in summary.WorstEnemies)
-                            {
-                                <MudListItem>
-                                    <MudText>@e.Name</MudText>
-                                    <MudText Class="ml-auto">@($"{e.WinRate:F1}% WR")</MudText>
-                                </MudListItem>
-                            }
-                        </MudList>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+            <StatsCard Title="Worst Enemy Bots"
+                       Items="summary.WorstEnemyBots"
+                       Formatter='@(e => $"{e.WinRate:F1}% WR | {e.Count} games")' />
+
+            <StatsCard Title="Worst Enemy Supports"
+                       Items="summary.WorstEnemySupports"
+                       Formatter='@(e => $"{e.WinRate:F1}% WR | {e.Count} games")' />
+
+            <StatsCard Title="Enchanter Usage"
+                       Items="enchanterItems"
+                       Formatter="@(item => item.Desc)" />
+            
+            <StatsCard Title="Best Duos"
+                       Items="summary.BestDuos"
+                       Formatter="@(d => $"{d.WinRate:F1}% WR | {d.Count} games | {d.AvgKda:F1} KDA")" />
+
+            <StatsCard Title="Worst Enemy Duos"
+                       Items="summary.WorstEnemyDuos"
+                       Formatter="@(d => $"{d.WinRate:F1}% WR | {d.Count} games | {d.AvgKda:F1} KDA")" />
         </MudGrid>
 
         <MudDivider Class="my-6" />
 
-        <MudText Typo="Typo.h6" Class="mb-2">Średni CSM: <b>@summary.AverageCsm.ToString("F2")</b></MudText>
+        <MudText Typo="Typo.h6" Class="mb-2">
+            Average CSM: <b>@summary.AverageCsPerMinute.ToString("F2")</b>
+        </MudText>
 
         <MudDivider Class="my-6" />
 
-        <MudText Typo="Typo.h6" Class="mb-2">Aktywność gracza</MudText>
+        <MudText Typo="Typo.h6" Class="mb-2">Player Activity</MudText>
 
-        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
-            <MudDatePicker @bind-Date="selectedMonth"
-                           Label="Wybierz miesiąc"
-                           PickerVariant="PickerVariant.Static"
-                           DateFormat="MMMM yyyy"
-                           Adornment="Adornment.Start"
-                           OpenTo="OpenTo.Month"
-                           DisableToolbar="true"
-                           DisplayMonths="1"
-                           Class="w-64"
-                           OnClosed="(async _ => await RefreshActivity())" />
-        </MudStack>
+        <ActivityHeatmap ActivityMatrix="activityMatrix"
+                         OnDayClick="ShowDaySummary"
+                         GetColor="GetActivityColor" />
 
-        <MudGrid Class="activity-grid">
-            @foreach (var week in activityMatrix)
+        <div class="activity-legend mt-4">
+            <span class="mr-2">Less</span>
+            @foreach (var color in LegendColors)
             {
-                <MudItem xs="12">
-                    <MudStack Spacing="1">
-                        @foreach (var day in week)
-                        {
-                            <MudPaper Class="@($"activity-cell {(day.Count > 0 ? "active" : "")}")"
-                                      Style="@($"background-color: {GetActivityColor(day.Count)}")"
-                                      OnClick="() => ShowDaySummary(day.Date)">
-                            </MudPaper>
-                        }
-                    </MudStack>
-                </MudItem>
+                <div class="activity-cell" style="background-color: @color"></div>
             }
-        </MudGrid>
+            <span class="ml-2">More</span>
+        </div>
     }
 </MudPaper>
 
 @code {
     private StatsSummary? summary;
-    private List<MatchEntry> matches = new();
-    private DateTime? selectedMonth = DateTime.Today;
+    private IReadOnlyList<MatchEntry> matches = Array.Empty<MatchEntry>();
+    private List<EnchanterCardItem> enchanterItems = new();
     private List<List<(DateTime Date, int Count)>> activityMatrix = new();
+    private Timer? refreshTimer;
+
+    private static readonly string[] LegendColors =
+    [
+        "#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"
+    ];
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadStats();
+        ScheduleDailyRefresh();
+    }
+
+    private async Task LoadStats()
+    {
         matches = await MatchService.GetAllAsync();
-        var service = new StatsCalculator(matches);
-        summary = service.GetSummary();
+        summary = new StatsCalculator(matches).GetSummary();
 
-        await RefreshActivity();
+        PrepareEnchanterItems();
+        BuildActivity();
     }
 
-    private async Task RefreshActivity()
+    private void PrepareEnchanterItems()
     {
-        activityMatrix.Clear();
+        if (summary is null) return;
 
-        if (selectedMonth is null)
-            return;
-
-        var firstDay = new DateTime(selectedMonth.Value.Year, selectedMonth.Value.Month, 1);
-        var lastDay = firstDay.AddMonths(1).AddDays(-1);
-
-        // Zapełniamy tygodnie w miesiącu
-        var start = firstDay.AddDays(-(int)firstDay.DayOfWeek);
-        var end = lastDay.AddDays(6 - (int)lastDay.DayOfWeek);
-
-        var current = start;
-        while (current <= end)
+        enchanterItems = new List<EnchanterCardItem>
         {
-            var week = new List<(DateTime, int)>();
-            for (int i = 0; i < 7; i++)
-            {
-                var date = current.AddDays(i);
-                int count = matches.Count(m => m.Date?.Date == date.Date);
-                week.Add((date, count));
-            }
-            activityMatrix.Add(week);
-            current = current.AddDays(7);
-        }
-
-        await InvokeAsync(StateHasChanged);
+            new("You", $"{summary.EnchanterUsage.MyEnchanterGames} games ({summary.EnchanterUsage.MyEnchanterPercentage:F1}%)"),
+            new("Enemy", $"{summary.EnchanterUsage.EnemyEnchanterGames} games ({summary.EnchanterUsage.EnemyEnchanterPercentage:F1}%)")
+        };
     }
 
-    private string GetActivityColor(int count)
+    private void BuildActivity()
     {
-        if (count == 0) return "var(--mud-palette-surface)";
-        if (count == 1) return "#9be9a8";
-        if (count == 2) return "#40c463";
-        if (count == 3) return "#30a14e";
-        return "#216e39";
+        var builder = new ActivityMatrixBuilder(matches);
+        activityMatrix = builder.Build();
+        StateHasChanged();
     }
+
+    private void ScheduleDailyRefresh()
+    {
+        var now = DateTime.Now;
+        var next = now.Date.AddDays(1);
+        var delay = next - now;
+
+        refreshTimer = new Timer(RefreshCallback, null, delay, TimeSpan.FromDays(1));
+    }
+
+    private async void RefreshCallback(object? _)
+    {
+        try
+        {
+            await InvokeAsync(BuildActivity);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Heatmap refresh failed: " + ex);
+        }
+    }
+
+    private static string GetActivityColor(int count, bool future)
+        => future ? "transparent" :
+           count switch
+           {
+               0 => "#ebedf0",
+               1 => "#9be9a8",
+               <= 3 => "#40c463",
+               <= 5 => "#30a14e",
+               _ => "#216e39"
+           };
 
     private void ShowDaySummary(DateTime date)
     {
-        var dayMatches = matches.Where(m => m.Date?.Date == date.Date).ToList();
-        if (!dayMatches.Any())
+        var day = matches.Where(m => m.Date?.Date == date.Date).ToList();
+
+        if (!day.Any())
         {
             Snackbar.Add($"Brak meczy dla {date:dd-MM-yyyy}", Severity.Info);
             return;
         }
 
-        var wins = dayMatches.Count(m => m.Win);
-        var wr = (double)wins / dayMatches.Count * 100;
-        Snackbar.Add($"{date:dd-MM-yyyy}: {dayMatches.Count} meczy ({wr:F1}% WR)", Severity.Success);
+        var wr = day.Average(m => m.Win ? 1 : 0) * 100;
+        Snackbar.Add($"{date:dd-MM-yyyy}: {day.Count} meczy ({wr:F1}% WR)", Severity.Success);
     }
+
+    public void Dispose() => refreshTimer?.Dispose();
 }
-
-<style>
-    .activity-grid {
-        display: grid;
-        grid-auto-flow: column;
-        grid-gap: 4px;
-    }
-
-    .activity-cell {
-        width: 16px;
-        height: 16px;
-        border-radius: 3px;
-        cursor: pointer;
-        transition: transform 0.1s ease-in-out;
-    }
-
-    .activity-cell:hover {
-        transform: scale(1.2);
-        filter: brightness(1.1);
-    }
-</style>
