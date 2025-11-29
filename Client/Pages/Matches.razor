@@ -1,0 +1,176 @@
+@page "/matches"
+@using System.Text.Json
+@using LolStatsTracker.Components
+@using LolStatsTracker.Components.Matches
+@using LolStatsTracker.Services.MatchService
+@using LolStatsTracker.Shared.Models
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IMatchService MatchService
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+    
+    <MatchForm Model="@currentMatch"
+               isEditing="@isEditing"
+               OnSave="SaveMatchData"
+               OnCancel="ResetForm" />
+    
+    <MudDivider Class="my-6" />
+    
+    <MatchesActionBar OnExport="ExportJson"
+                      OnImport="ImportJson"
+                      OnClear="ClearData" />
+    <MatchesTable Matches="@matches"
+                  OnEdit="StartEdit"
+                  OnDelete="DeleteMatch" />
+    
+</MudContainer>
+
+@code {
+    private MatchEntry currentMatch = new();
+    private List<MatchEntry> matches = new();
+    private bool isEditing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        matches = (await MatchService.GetAllAsync())
+            .OrderByDescending(m => m.Date)
+            .ToList();
+    }
+
+    private async Task SaveMatchData(MatchEntry matchData)
+    {
+        if (isEditing)
+        {
+            await MatchService.UpdateAsync(matchData.Id, matchData);
+            Snackbar.Add("Match updated", Severity.Success);
+        }
+        else
+        {
+            await MatchService.AddAsync(matchData);
+            Snackbar.Add("Match added", Severity.Success);
+        }
+
+        ResetForm();
+        await LoadData();
+    }
+    
+    private void StartEdit(MatchEntry match)
+    {
+        currentMatch = new MatchEntry
+        {
+            Id = match.Id,
+            Champion = match.Champion,
+            Support = match.Support,
+            EnemyBot = match.EnemyBot,
+            EnemySupport = match.EnemySupport,
+            Kills = match.Kills,
+            Deaths = match.Deaths,
+            Assists = match.Assists,
+            Cs = match.Cs,
+            GameLengthMinutes = match.GameLengthMinutes,
+            Date = match.Date,
+            Win = match.Win
+        };
+        isEditing = true;
+    }
+
+    private void ResetForm()
+    {
+        currentMatch = new MatchEntry();
+        isEditing = false;
+    }
+
+    private async Task DeleteMatch(MatchEntry match)
+    {
+        await MatchService.DeleteAsync(match.Id);
+        matches.Remove(match);
+        Snackbar.Add("Match deleted", Severity.Success);
+    }
+    
+    private async Task ExportJson()
+    {
+        try
+        {
+            var allMatches = await MatchService.GetAllAsync(); // pobranie z API
+            var json = JsonSerializer.Serialize(allMatches, new JsonSerializerOptions { WriteIndented = true });
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            var base64 = Convert.ToBase64String(bytes);
+
+            await JS.InvokeVoidAsync("downloadFile", "matches.json", "application/json", base64);
+            Snackbar.Add("Exported", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Błąd eksportu: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ImportJson(InputFileChangeEventArgs e)
+    {
+        try 
+        {
+            await using var stream = e.File.OpenReadStream(5 * 1024 * 1024); 
+            using var reader = new StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+            var imported = JsonSerializer.Deserialize<List<MatchEntry>>(json, 
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (imported is null || !imported.Any()) return;
+            
+            int addedCount = 0;
+            foreach (var match in imported)
+            {
+                if (match.Id == Guid.Empty) match.Id = Guid.NewGuid();
+                
+                if (matches.All(existing => existing.Id != match.Id))
+                {
+                    await MatchService.AddAsync(match);
+                    addedCount++;
+                }
+            }
+
+            if (addedCount > 0)
+            {
+                await LoadData();
+                Snackbar.Add($"Zaimportowano {addedCount} meczy", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Nie znaleziono nowych meczy do importu", Severity.Info);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Błąd importu: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ClearData()
+    {
+        var parameters = new DialogParameters
+        {
+            { "ContentText", "Czy na pewno chcesz usunąć CAŁĄ historię meczów? Tej operacji nie da się cofnąć!" },
+            { "ButtonText", "Usuń wszystko" },
+            { "Color", Color.Error }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Strefa niebezpieczna", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is true)
+        {
+            await MatchService.ClearAsync();
+            matches.Clear();
+            Snackbar.Add("Baza danych została wyczyszczona", Severity.Warning);
+        }
+    }
+}

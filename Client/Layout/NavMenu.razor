@@ -1,0 +1,26 @@
+﻿<MudNavMenu Dense="true" Class="pt-4">
+    
+    @foreach (var link in _navLinks)
+    {
+        <MudNavLink Href="@link.Href"
+                    Match="@link.Match"
+                    Icon="@link.Icon"
+                    Class="hover:bg-[#2a2a35] hover:text-white rounded-lg mx-2 my-1 transition-colors duration-200"
+                    ActiveClass="bg-[#2563eb] text-white font-semibold rounded-lg mx-2 my-1 shadow-md shadow-blue-500/20">
+            @link.Title
+        </MudNavLink>
+    }
+    
+</MudNavMenu>
+
+@code {
+    private record NavItem(string Title, string Href, string Icon, NavLinkMatch Match = NavLinkMatch.Prefix);
+    
+    private readonly List<NavItem> _navLinks = new()
+    {
+        new("Dashboard", "", Icons.Material.Filled.Dashboard, NavLinkMatch.All),
+        new("Statystyki Bohaterów", "champions", Icons.Material.Filled.People),
+        new("Analiza Duo & Kontr", "analysis", Icons.Material.Filled.Analytics),
+        new("Historia & Edycja", "matches", Icons.Material.Filled.History),
+    };
+}

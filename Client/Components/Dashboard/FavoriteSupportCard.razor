@@ -1,0 +1,39 @@
+﻿@using LolStatsTracker.Shared.Models
+<MudPaper Class="p-4 rounded-2xl bg-surface shadow-md">
+    <MudText Typo="Typo.h6" Class="font-semibold mb-2">Favorite Support</MudText>
+
+    @if (Favorite != null)
+    {
+        <MudText Typo="Typo.subtitle1" Class="font-medium">@Favorite.Support</MudText>
+        <MudText Typo="Typo.body2" Class="text-gray-400">
+            Games: <span class="text-gray-200">@Favorite.Games</span> |
+            WR: <span class="@UiHelpers.GetWrColor(Favorite.WinRate)">@Favorite.WinRate.ToString("F1")%</span>
+        </MudText>
+        <MudText Typo="Typo.body2" Class="text-gray-400">
+            Avg KDA: <span class="text-gray-200">@Favorite.AvgKda.ToString("F2")</span>
+        </MudText>
+    }
+    else
+    {
+        <MudText Typo="Typo.body2" Class="text-gray-500 italic">No support data available.</MudText>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public List<MatchEntry> Matches { get; set; } = new();
+
+    private SupportStats? Favorite => Matches
+        .Where(m => !string.IsNullOrEmpty(m.Support))
+        .GroupBy(m => m.Support)
+        .Select(g => new SupportStats
+        {
+            Support = g.Key!,
+            Games = g.Count(),
+            Wins = g.Count(m => m.Win),
+            WinRate = Math.Round(100.0 * g.Count(m => m.Win) / g.Count(), 1),
+            AvgKda = Math.Round(g.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths)), 2)
+        })
+        .OrderByDescending(s => s.Games)
+        .ThenByDescending(s => s.WinRate)
+        .FirstOrDefault();
+}

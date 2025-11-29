@@ -1,0 +1,64 @@
+﻿@using LolStatsTracker.Shared.Models
+<MudPaper Class="p-4 rounded-2xl bg-surface shadow-md">
+    <MudText Typo="Typo.h6" Class="font-semibold mb-2">Overall Stats</MudText>
+
+    @if (Matches.Any())
+    {
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Total Matches: <span class="font-semibold text-gray-200">@Matches.Count</span>
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Wins: <span class="font-semibold text-gray-200">@TotalWins</span> /
+            WR: <span class="@UiHelpers.GetWrColor(WinRate) font-semibold">@WinRate.ToString("F1")%</span>
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Average KDA: <span class="font-semibold text-gray-200">@AvgKda.ToString("F2")</span>
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Average CS/min: <span class="font-semibold text-gray-200">@AvgCsm.ToString("F2")</span>
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Longest Win Streak: <span class="text-green-400 font-semibold">@LongestWinStreak</span>
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-1">
+            Longest Lose Streak: <span class="text-red-400 font-semibold">@LongestLoseStreak</span>
+        </MudText>
+    }
+    else
+    {
+        <MudText Typo="Typo.body2" Class="text-gray-500 italic">No match data available.</MudText>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public List<MatchEntry> Matches { get; set; } = new();
+
+    private int TotalWins => Matches.Count(m => m.Win);
+    private double WinRate => Matches.Any() ? Math.Round(100.0 * TotalWins / Matches.Count, 1) : 0;
+    private double AvgKda => Matches.Any() ? Math.Round(Matches.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths)), 2) : 0;
+    private double AvgCsm => Matches.Any() ? Math.Round(Matches.Average(m => m.Cs / Math.Max(1.0, m.GameLengthMinutes)), 2) : 0;
+    private int LongestWinStreak => CalculateStreak(true);
+    private int LongestLoseStreak => CalculateStreak(false);
+
+    private int CalculateStreak(bool win)
+    {
+        int streak = 0, longest = 0;
+        foreach (var m in Matches)
+        {
+            if (m.Win == win)
+            {
+                streak++;
+                if (streak > longest)
+                    longest = streak;
+            }
+            else
+                streak = 0;
+        }
+        return longest;
+    }
+}

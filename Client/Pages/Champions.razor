@@ -1,0 +1,132 @@
+﻿@page "/champions"
+@using LolStatsTracker.Shared.DTOs
+@using LolStatsTracker.Services.ChampionService
+@using LolStatsTracker.Services.StatsService
+@inject IStatsService StatsService
+@inject IChampionService ChampionService
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+    <MudText Typo="Typo.h4" Class="mb-6 font-weight-bold">Statystyki Bohaterów</MudText>
+
+    @if (_isLoading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="rounded-lg"/>
+    }
+    else
+    {
+        <MudTable Items="_championStats" 
+                  Hover="true" 
+                  SortLabel="Sortuj po" 
+                  Filter="new Func<ChampionStatsDto,bool>(FilterFunc)"
+                  Class="rounded-xl elevation-3"
+                  Dense="true">
+            
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Wszyscy Bohaterowie</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="_searchString" 
+                              Placeholder="Szukaj..." 
+                              Adornment="Adornment.Start" 
+                              AdornmentIcon="@Icons.Material.Filled.Search" 
+                              IconSize="Size.Medium" 
+                              Class="mt-0"
+                              Clearable="true" />
+            </ToolBarContent>
+
+            <HeaderContent>
+                <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.ChampionName)">Bohater</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.Games)" InitialDirection="SortDirection.Descending">Gry</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.Winrate)">Winrate</MudTableSortLabel></MudTh>
+                <MudTh>W / L</MudTh>
+                <MudTh>Wydajność</MudTh>
+            </HeaderContent>
+            
+            <RowTemplate>
+                <MudTd DataLabel="Bohater">
+                    <div class="d-flex align-center gap-3">
+                        <img src="@ChampionService.GetChampionIconUrl(context.ChampionName)" 
+                             height="40" width="40" 
+                             style="border-radius: 50%; object-fit: cover;" />
+                        <MudText Class="font-weight-bold">@context.ChampionName</MudText>
+                    </div>
+                </MudTd>
+                
+                <MudTd DataLabel="Gry">
+                    <MudText Typo="Typo.body1">@context.Games</MudText>
+                </MudTd>
+
+                <MudTd DataLabel="Winrate">
+                    <div class="d-flex flex-column" style="width: 100px;">
+                        <div class="d-flex justify-space-between mb-1">
+                            <MudText Typo="Typo.caption" Class="font-weight-bold" 
+                                     Color="@GetWinrateColor(context.Winrate)">
+                                @((context.Winrate * 100).ToString("F0"))%
+                            </MudText>
+                        </div>
+                        <MudProgressLinear Color="@GetColor(context.Winrate)" 
+                                           Value="@(context.Winrate * 100)" 
+                                           Size="Size.Medium" 
+                                           Rounded="true" />
+                    </div>
+                </MudTd>
+
+                <MudTd DataLabel="W/L">
+                    <MudText Class="text-success d-inline">@context.Wins W</MudText> / 
+                    <MudText Class="text-error d-inline">@context.Losses L</MudText>
+                </MudTd>
+                
+                <MudTd DataLabel="Wydajność">
+                    @if (context.Games >= 5 && context.Winrate >= 0.6)
+                    {
+                        <MudChip T="string" Color="Color.Warning" Size="Size.Small" Icon="@Icons.Material.Filled.Star">CARRY</MudChip>
+                    }
+                    else if (context.Games >= 5 && context.Winrate <= 0.4)
+                    {
+                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Icon="@Icons.Material.Filled.TrendingDown">INTING</MudChip>
+                    }
+                    else if (context.Games < 3)
+                    {
+                        <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">New</MudChip>
+                    }
+                </MudTd>
+            </RowTemplate>
+            
+            <PagerContent>
+                <MudTablePager RowsPerPageString="Wierszy na stronę" />
+            </PagerContent>
+        </MudTable>
+    }
+</MudContainer>
+
+@code {
+    private List<ChampionStatsDto> _championStats = new();
+    private bool _isLoading = true;
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChampionService.InitializeAsync();
+        _championStats = await StatsService.GetChampionsAsync();
+        _isLoading = false;
+    }
+
+    private Color GetColor(double wr)
+    {
+        if (wr >= 0.6) return Color.Success; 
+        if (wr >= 0.5) return Color.Info;    
+        return Color.Error;                 
+    }
+    
+    private Color GetWinrateColor(double wr)
+    {
+        if (wr >= 0.5) return Color.Success;
+        return Color.Error;
+    }
+    
+    private bool FilterFunc(ChampionStatsDto element)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString)) return true;
+        if (element.ChampionName.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+}

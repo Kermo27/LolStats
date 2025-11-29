@@ -1,0 +1,165 @@
+﻿@page "/stats"
+@using LolStatsTracker.Components.Stats
+@using LolStatsTracker.Services.MatchService
+@using LolStatsTracker.Shared.Models
+@inject IMatchService MatchService
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<MudPaper Class="p-6 min-h-screen">
+    <MudText Typo="Typo.h4" Color="Color.Primary" Class="mb-4">Stats</MudText>
+
+    @if (summary is null)
+    {
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudGrid Spacing="3">
+            <StatsCard Title="Top 3 Champions"
+                       Items="summary.TopChampions"
+                       Formatter='@(c => $"{c.WinRate:F1}% WR | {c.AvgKda:F2} KDA | {c.Count} games")' />
+
+            <StatsCard Title="Top 3 Supports"
+                       Items="summary.TopSupports"
+                       Formatter='@(s => $"{s.WinRate:F1}% WR | {s.Count} games")' />
+
+            <StatsCard Title="Worst Enemy Bots"
+                       Items="summary.WorstEnemyBots"
+                       Formatter='@(e => $"{e.WinRate:F1}% WR | {e.Count} games")' />
+
+            <StatsCard Title="Worst Enemy Supports"
+                       Items="summary.WorstEnemySupports"
+                       Formatter='@(e => $"{e.WinRate:F1}% WR | {e.Count} games")' />
+
+            <StatsCard Title="Enchanter Usage"
+                       Items="enchanterItems"
+                       Formatter="@(item => item.Desc)" />
+            
+            <StatsCard Title="Best Duos"
+                       Items="summary.BestDuos"
+                       Formatter="@(d => $"{d.WinRate:F1}% WR | {d.Count} games | {d.AvgKda:F1} KDA")" />
+
+            <StatsCard Title="Worst Enemy Duos"
+                       Items="summary.WorstEnemyDuos"
+                       Formatter="@(d => $"{d.WinRate:F1}% WR | {d.Count} games | {d.AvgKda:F1} KDA")" />
+        </MudGrid>
+
+        <MudDivider Class="my-6" />
+
+        <MudText Typo="Typo.h6" Class="mb-2">
+            Average CSM: <b>@summary.AverageCsPerMinute.ToString("F2")</b>
+        </MudText>
+
+        <MudDivider Class="my-6" />
+
+        <MudText Typo="Typo.h6" Class="mb-2">Player Activity</MudText>
+
+        <ActivityHeatmap ActivityMatrix="activityMatrix"
+                         OnDayClick="ShowDaySummary"
+                         GetColor="GetActivityColor" />
+
+        <div class="activity-legend mt-4">
+            <span class="mr-2">Less</span>
+            @foreach (var color in LegendColors)
+            {
+                <div class="activity-cell" style="background-color: @color"></div>
+            }
+            <span class="ml-2">More</span>
+        </div>
+    }
+</MudPaper>
+
+@code {
+    private StatsSummary? summary;
+    private IReadOnlyList<MatchEntry> matches = Array.Empty<MatchEntry>();
+    private List<EnchanterCardItem> enchanterItems = new();
+    private List<List<(DateTime Date, int Count)>> activityMatrix = new();
+    private Timer? refreshTimer;
+
+    private static readonly string[] LegendColors =
+    [
+        "#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStats();
+        ScheduleDailyRefresh();
+    }
+
+    private async Task LoadStats()
+    {
+        matches = await MatchService.GetAllAsync();
+        summary = new StatsCalculator(matches).GetSummary();
+
+        PrepareEnchanterItems();
+        BuildActivity();
+    }
+
+    private void PrepareEnchanterItems()
+    {
+        if (summary is null) return;
+
+        enchanterItems = new List<EnchanterCardItem>
+        {
+            new("You", $"{summary.EnchanterUsage.MyEnchanterGames} games ({summary.EnchanterUsage.MyEnchanterPercentage:F1}%)"),
+            new("Enemy", $"{summary.EnchanterUsage.EnemyEnchanterGames} games ({summary.EnchanterUsage.EnemyEnchanterPercentage:F1}%)")
+        };
+    }
+
+    private void BuildActivity()
+    {
+        var builder = new ActivityMatrixBuilder(matches);
+        activityMatrix = builder.Build();
+        StateHasChanged();
+    }
+
+    private void ScheduleDailyRefresh()
+    {
+        var now = DateTime.Now;
+        var next = now.Date.AddDays(1);
+        var delay = next - now;
+
+        refreshTimer = new Timer(RefreshCallback, null, delay, TimeSpan.FromDays(1));
+    }
+
+    private async void RefreshCallback(object? _)
+    {
+        try
+        {
+            await InvokeAsync(BuildActivity);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Heatmap refresh failed: " + ex);
+        }
+    }
+
+    private static string GetActivityColor(int count, bool future)
+        => future ? "transparent" :
+           count switch
+           {
+               0 => "#ebedf0",
+               1 => "#9be9a8",
+               <= 3 => "#40c463",
+               <= 5 => "#30a14e",
+               _ => "#216e39"
+           };
+
+    private void ShowDaySummary(DateTime date)
+    {
+        var day = matches.Where(m => m.Date.Date == date.Date).ToList();
+
+        if (!day.Any())
+        {
+            Snackbar.Add($"Brak meczy dla {date:dd-MM-yyyy}", Severity.Info);
+            return;
+        }
+
+        var wr = day.Average(m => m.Win ? 1 : 0) * 100;
+        Snackbar.Add($"{date:dd-MM-yyyy}: {day.Count} meczy ({wr:F1}% WR)", Severity.Success);
+    }
+
+    public void Dispose() => refreshTimer?.Dispose();
+}

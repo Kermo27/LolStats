@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.10" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.10" PrivateAssets="all" />
+        <PackageReference Include="MudBlazor" Version="8.13.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Api\appsettings.Development.json" />
+      <_ContentIncludedByDefault Remove="Api\appsettings.json" />
+      <_ContentIncludedByDefault Remove="Api\bin\Debug\net9.0\appsettings.Development.json" />
+      <_ContentIncludedByDefault Remove="Api\bin\Debug\net9.0\appsettings.json" />
+      <_ContentIncludedByDefault Remove="Api\bin\Debug\net9.0\LolStatsTracker.API.deps.json" />
+      <_ContentIncludedByDefault Remove="Api\bin\Debug\net9.0\LolStatsTracker.API.runtimeconfig.json" />
+      <_ContentIncludedByDefault Remove="Api\bin\Debug\net9.0\LolStatsTracker.API.staticwebassets.endpoints.json" />
+      <_ContentIncludedByDefault Remove="Api\obj\Debug\net9.0\LolStatsTracker.API.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="Api\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json" />
+      <_ContentIncludedByDefault Remove="Api\obj\Debug\net9.0\rjsmrazor.dswa.cache.json" />
+      <_ContentIncludedByDefault Remove="Api\obj\Debug\net9.0\rpswa.dswa.cache.json" />
+      <_ContentIncludedByDefault Remove="Api\obj\Debug\net9.0\staticwebassets.build.endpoints.json" />
+      <_ContentIncludedByDefault Remove="Api\obj\Debug\net9.0\staticwebassets.build.json" />
+      <_ContentIncludedByDefault Remove="Api\obj\LolStatsTracker.API.csproj.nuget.dgspec.json" />
+      <_ContentIncludedByDefault Remove="Api\obj\project.assets.json" />
+      <_ContentIncludedByDefault Remove="Api\obj\project.packagespec.json" />
+      <_ContentIncludedByDefault Remove="Api\Properties\launchSettings.json" />
+      <_ContentIncludedByDefault Remove="wwwroot\sample-data\weather.json" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Shared\LolStatsTracker.Shared.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,268 @@
+﻿@using LolStatsTracker.Services.ChampionService
+@using LolStatsTracker.Shared.Models
+@inject IChampionService ChampionService
+
+<MudCard Class="mb-8 p-4 rounded-xl elevation-3">
+    <MudCardContent>
+        <div class="d-flex justify-space-between align-center mb-6">
+            <MudText Typo="Typo.h5" Class="font-bold">
+                @(IsEditing ? "Edit match" : "Add new match")
+            </MudText>
+            
+            @if(Model.Win)
+            {
+                <MudChip T="string" Color="Color.Success" Icon="@Icons.Material.Filled.EmojiEvents">Victory</MudChip>
+            }
+            else
+            {
+                <MudChip T="string" Color="Color.Error" Icon="@Icons.Material.Filled.Close">Defeat</MudChip>
+            }
+        </div>
+
+        <EditForm Model="@Model" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            
+            <MudGrid Spacing="3">
+                
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">TEAMS</MudText>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <div class="d-flex gap-3 align-center">
+                        @if (!string.IsNullOrEmpty(Model.Champion))
+                        {
+                            <img src="@ChampionService.GetChampionIconUrl(Model.Champion)" 
+                                 height="56" width="56"
+                                 style="border-radius: 12px; border: 2px solid var(--mud-palette-primary);" />
+                        }
+                        else
+                        {
+                            <MudAvatar Rounded="true" Size="Size.Large" Color="Color.Primary" Variant="Variant.Outlined">?</MudAvatar>
+                        }
+
+                        <MudAutocomplete T="string"
+                                         @bind-Value="Model.Champion"
+                                         Label="Your champion"
+                                         Placeholder="Champion name"
+                                         Required="true"
+                                         SearchFunc="SearchChampions"
+                                         Clearable="true"
+                                         Variant="Variant.Outlined"
+                                         Class="flex-grow-1">
+                            <ItemTemplate Context="championName">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <img src="@ChampionService.GetChampionIconUrl(championName)" height="32" width="32" style="border-radius: 50%;" />
+                                    <MudText>@championName</MudText>
+                                </MudStack>
+                            </ItemTemplate>
+                        </MudAutocomplete>
+                    </div>
+                    <ValidationMessage For="@(() => Model.Champion)" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <div class="d-flex gap-3 align-center">
+                        @if (!string.IsNullOrEmpty(Model.Support))
+                        {
+                            <img src="@ChampionService.GetChampionIconUrl(Model.Support)" 
+                                 height="56" width="56"
+                                 style="border-radius: 12px; border: 2px solid var(--mud-palette-info);" />
+                        }
+                        else
+                        {
+                            <MudAvatar Rounded="true" Size="Size.Large" Color="Color.Info" Variant="Variant.Outlined">?</MudAvatar>
+                        }
+
+                        <MudAutocomplete T="string" 
+                                         @bind-Value="Model.Support" 
+                                         Label="Support" 
+                                         SearchFunc="SearchChampions" 
+                                         Clearable="true"
+                                         Variant="Variant.Outlined" 
+                                         Class="flex-grow-1">
+                            <ItemTemplate Context="championName">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <img src="@ChampionService.GetChampionIconUrl(championName)" height="32" width="32" style="border-radius: 50%;" />
+                                    <MudText>@championName</MudText>
+                                </MudStack>
+                            </ItemTemplate>
+                        </MudAutocomplete>
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <div class="d-flex gap-3 align-center">
+                        @if (!string.IsNullOrEmpty(Model.EnemyBot))
+                        {
+                            <img src="@ChampionService.GetChampionIconUrl(Model.EnemyBot)" 
+                                 height="56" width="56"
+                                 style="border-radius: 12px; border: 2px solid var(--mud-palette-error);" />
+                        }
+                        else
+                        {
+                            <MudAvatar Rounded="true" Size="Size.Large" Color="Color.Error" Variant="Variant.Outlined">?</MudAvatar>
+                        }
+
+                        <MudAutocomplete T="string" 
+                                         @bind-Value="Model.EnemyBot" 
+                                         Label="Enemy Bot" 
+                                         SearchFunc="SearchChampions" 
+                                         Clearable="true"
+                                         Variant="Variant.Outlined" 
+                                         Class="flex-grow-1">
+                            <ItemTemplate Context="championName">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <img src="@ChampionService.GetChampionIconUrl(championName)" height="32" width="32" style="border-radius: 50%;" />
+                                    <MudText>@championName</MudText>
+                                </MudStack>
+                            </ItemTemplate>
+                        </MudAutocomplete>
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <div class="d-flex gap-3 align-center">
+                        @if (!string.IsNullOrEmpty(Model.EnemySupport))
+                        {
+                            <img src="@ChampionService.GetChampionIconUrl(Model.EnemySupport)" 
+                                 height="56" width="56"
+                                 style="border-radius: 12px; border: 2px solid var(--mud-palette-error);" />
+                        }
+                        else
+                        {
+                            <MudAvatar Rounded="true" Size="Size.Large" Color="Color.Error" Variant="Variant.Outlined">?</MudAvatar>
+                        }
+
+                        <MudAutocomplete T="string" 
+                                         @bind-Value="Model.EnemySupport" 
+                                         Label="Enemy Support" 
+                                         SearchFunc="SearchChampions" 
+                                         Clearable="true"
+                                         Variant="Variant.Outlined" 
+                                         Class="flex-grow-1">
+                            <ItemTemplate Context="championName">
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <img src="@ChampionService.GetChampionIconUrl(championName)" height="32" width="32" style="border-radius: 50%;" />
+                                    <MudText>@championName</MudText>
+                                </MudStack>
+                            </ItemTemplate>
+                        </MudAutocomplete>
+                    </div>
+                </MudItem>
+
+
+                <MudItem xs="12" Class="mt-4">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">STATS (KDA & FARM)</MudText>
+                </MudItem>
+
+                <MudItem xs="4" sm="2">
+                    <MudNumericField @bind-Value="Model.Kills" Label="Kills" Variant="Variant.Outlined"
+                                     Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.FlashOn" AdornmentColor="Color.Warning"
+                                     Min="0" Max="99" />
+                </MudItem>
+                <MudItem xs="4" sm="2">
+                    <MudNumericField @bind-Value="Model.Deaths" Label="Deaths" Variant="Variant.Outlined"
+                                     Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Dangerous" AdornmentColor="Color.Error"
+                                     Min="0" Max="99" />
+                </MudItem>
+                <MudItem xs="4" sm="2">
+                    <MudNumericField @bind-Value="Model.Assists" Label="Assists" Variant="Variant.Outlined"
+                                     Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.VolunteerActivism" AdornmentColor="Color.Success"
+                                     Min="0" Max="99" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3">
+                    <MudNumericField @bind-Value="Model.Cs" Label="CS (Farm)" Variant="Variant.Outlined"
+                                     Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Grain"
+                                     Min="0" Max="999" Step="1" />
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudNumericField @bind-Value="Model.GameLengthMinutes" Label="Game time (min)" Variant="Variant.Outlined"
+                                     Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Timer"
+                                     Min="0" Max="120" />
+                </MudItem>
+
+                <MudItem xs="12" Class="mt-2">
+                    <MudDivider />
+                </MudItem>
+
+                <MudItem xs="12" sm="6" Class="d-flex align-center">
+                    <MudDatePicker Date="@Model.Date" 
+                                   DateChanged="@(val => Model.Date = val ?? DateTime.Now)"
+                                   Label="Match date" 
+                                   Variant="Variant.Outlined"
+                                   AdornmentColor="Color.Primary"
+                                   DateFormat="dd-MM-yyyy" 
+                                   MaxDate="DateTime.Now" 
+                                   Class="w-100"/>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" Class="d-flex justify-center align-center">
+                    <MudPaper Elevation="0" Outlined="true" Class="d-flex align-center px-4 py-2 rounded-lg gap-4" 
+                              Style="@(Model.Win ? "border-color: var(--mud-palette-success);" : "border-color: var(--mud-palette-error);")">
+                        
+                        <MudText Typo="Typo.body1" Color="@(Model.Win ? Color.Default : Color.Error)"><b>DEFEAT</b></MudText>
+                        
+                        <MudSwitch @bind-Value="Model.Win" 
+                                   Color="Color.Success" 
+                                   UnCheckedColor="Color.Error"
+                                   ThumbIcon="@(Model.Win ? Icons.Material.Filled.EmojiEvents : Icons.Material.Filled.Close)" 
+                                   Size="Size.Large" />
+                                   
+                        <MudText Typo="Typo.body1" Color="@(Model.Win ? Color.Success : Color.Default)"><b>VICTORY</b></MudText>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" Class="d-flex justify-end gap-2 mt-4">
+                    @if (IsEditing)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CancelEdit" StartIcon="@Icons.Material.Filled.Cancel">
+                            Anuluj
+                        </MudButton>
+                    }
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" Size="Size.Large">
+                        @(IsEditing ? "Zapisz Zmiany" : "Dodaj Mecz")
+                    </MudButton>
+                </MudItem>
+
+            </MudGrid>
+        </EditForm>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public MatchEntry Model { get; set; } = new();
+    [Parameter] public bool IsEditing { get; set; }
+    
+    [Parameter] public EventCallback<MatchEntry> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChampionService.InitializeAsync();
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmit()
+    {
+        await OnSave.InvokeAsync(Model);
+    }
+
+    private async Task CancelEdit()
+    {
+        await OnCancel.InvokeAsync();
+    }
+    
+    private Task<IEnumerable<string>> SearchChampions(string value, CancellationToken cancellationToken)
+    {
+        var allChamps = ChampionService.GetChampionNames();
+        
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult(allChamps.Take(10));
+        
+        return Task.FromResult(allChamps
+            .Where(x => x.Contains(value, StringComparison.InvariantCultureIgnoreCase))
+            .Take(10));
+    }
+}

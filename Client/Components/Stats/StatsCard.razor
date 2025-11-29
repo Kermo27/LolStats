@@ -1,0 +1,31 @@
+﻿@typeparam TItem
+<MudItem xs="12" sm="4">
+    <MudCard>
+        <MudCardHeader>
+            <MudText Typo="Typo.h6">@Title</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudList T="TItem" Dense="true">
+                @foreach (var item in Items)
+                {
+                    <MudListItem>
+                        <MudText>@GetItemName(item)</MudText>
+                        <MudText Class="ml-auto">@Formatter(item)</MudText>
+                    </MudListItem>
+                }
+            </MudList>
+        </MudCardContent>
+    </MudCard>
+</MudItem>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = default!;
+    [Parameter, EditorRequired] public IEnumerable<TItem> Items { get; set; } = [];
+    [Parameter, EditorRequired] public Func<TItem, string> Formatter { get; set; } = default!;
+
+    private string GetItemName(TItem item)
+    {
+        var prop = typeof(TItem).GetProperty("Name");
+        return prop?.GetValue(item)?.ToString() ?? "Unknown";
+    }
+}
