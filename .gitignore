@@ -1,0 +1,47 @@
+# --- JetBrains Rider / IntelliJ ---
+# Folder konfiguracyjny IDE
+.idea/
+# Pliki ustawień użytkownika (nie powinny trafiać do repo)
+*.sln.dotSettings.user
+*.dotSettings.user
+*.user
+
+# --- .NET Core & Build Folders ---
+# Ignoruj wyniki kompilacji we wszystkich podfolderach
+[Bb]in/
+[Oo]bj/
+
+# --- Visual Studio (kompatybilność) ---
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# --- Web & Blazor Specific ---
+# Generowane pliki frameworka Blazor WASM
+wwwroot/_framework/
+# Logi błędów
+*.log
+# Moduły Node (jeśli używasz w przyszłości npm/yarn)
+node_modules/
+
+# --- Konfiguracja i Sekrety ---
+# Ignoruj pliki konfiguracyjne środowiska developerskiego (mogą zawierać hasła/klucze)
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+
+# --- Inne ---
+# Pliki tymczasowe systemu
+Thumbs.db
+.DS_Store
+
+# --- Testy ---
+TestResults/
+
+# --- SQLite (Twoja baza danych) ---
+# Ignoruj pliki bazy danych SQLite, żeby nie nadpisywać ich sobie nawzajem w zespole
+*.db
+*.db-shm
+*.db-wal

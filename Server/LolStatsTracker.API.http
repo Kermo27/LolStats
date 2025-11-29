@@ -1,0 +1,6 @@
+@LolStatsTracker.API_HostAddress = http://localhost:5031
+
+GET {{LolStatsTracker.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
