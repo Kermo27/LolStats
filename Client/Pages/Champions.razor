@@ -1,12 +1,12 @@
 ﻿@page "/champions"
 @using LolStatsTracker.Shared.DTOs
-@using LolStatsTracker.Services.ChampionService
+@using LolStatsTracker.Services.LeagueAssetsService
 @using LolStatsTracker.Services.StatsService
 @inject IStatsService StatsService
-@inject IChampionService ChampionService
+@inject ILeagueAssetsService LeagueAssetsService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
-    <MudText Typo="Typo.h4" Class="mb-6 font-weight-bold">Statystyki Bohaterów</MudText>
+    <MudText Typo="Typo.h4" Class="mb-6 font-weight-bold">Champion Stats</MudText>
 
     @if (_isLoading)
     {
@@ -22,10 +22,10 @@
                   Dense="true">
             
             <ToolBarContent>
-                <MudText Typo="Typo.h6">Wszyscy Bohaterowie</MudText>
+                <MudText Typo="Typo.h6">All champions</MudText>
                 <MudSpacer />
                 <MudTextField @bind-Value="_searchString" 
-                              Placeholder="Szukaj..." 
+                              Placeholder="Search..." 
                               Adornment="Adornment.Start" 
                               AdornmentIcon="@Icons.Material.Filled.Search" 
                               IconSize="Size.Medium" 
@@ -34,8 +34,8 @@
             </ToolBarContent>
 
             <HeaderContent>
-                <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.ChampionName)">Bohater</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.Games)" InitialDirection="SortDirection.Descending">Gry</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.ChampionName)">Champion</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.Games)" InitialDirection="SortDirection.Descending">Games</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.Winrate)">Winrate</MudTableSortLabel></MudTh>
                 <MudTh>W / L</MudTh>
                 <MudTh>Wydajność</MudTh>
@@ -44,7 +44,7 @@
             <RowTemplate>
                 <MudTd DataLabel="Bohater">
                     <div class="d-flex align-center gap-3">
-                        <img src="@ChampionService.GetChampionIconUrl(context.ChampionName)" 
+                        <img src="@LeagueAssetsService.GetChampionIconUrl(context.ChampionName)" 
                              height="40" width="40" 
                              style="border-radius: 50%; object-fit: cover;" />
                         <MudText Class="font-weight-bold">@context.ChampionName</MudText>
@@ -92,7 +92,7 @@
             </RowTemplate>
             
             <PagerContent>
-                <MudTablePager RowsPerPageString="Wierszy na stronę" />
+                <MudTablePager RowsPerPageString="Rows per page" />
             </PagerContent>
         </MudTable>
     }
@@ -105,7 +105,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await ChampionService.InitializeAsync();
+        await LeagueAssetsService.InitializeAsync();
         _championStats = await StatsService.GetChampionsAsync();
         _isLoading = false;
     }

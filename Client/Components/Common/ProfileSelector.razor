@@ -1,0 +1,127 @@
+﻿
+@using LolStatsTracker.Services.UserState
+@using LolStatsTracker.Shared.Models
+@inject UserProfileState UserState
+@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
+
+@if (UserState.CurrentProfile != null)
+{
+    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="ml-4">
+        <ActivatorContent>
+            <MudChip T="string" Icon="@Icons.Material.Filled.Person" Color="Color.Primary" Variant="Variant.Outlined" Class="cursor-pointer my-0">
+                @UserState.CurrentProfile.Name <span class="ml-1 opacity-70">#@UserState.CurrentProfile.Tag</span>
+            </MudChip>
+        </ActivatorContent>
+        <ChildContent>
+            <MudText Typo="Typo.caption" Class="px-4 py-2 text-muted">Manage accounts</MudText>
+            <MudDivider />
+            
+            @foreach (var profile in UserState.AllProfiles)
+            {
+                <div class="d-flex justify-space-between align-center px-4 py-2 hover:bg-gray-100" style="min-width: 250px;">
+                    
+                    <div class="d-flex flex-column cursor-pointer grow" @onclick="() => SelectProfile(profile)">
+                        <div class="d-flex align-center">
+                            <MudText Class="@(profile.Id == UserState.CurrentProfile.Id ? "font-weight-bold color-primary" : "")">
+                                @profile.Name
+                            </MudText>
+                            @if(profile.Id == UserState.CurrentProfile.Id)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-2" />
+                            }
+                        </div>
+                        <MudText Typo="Typo.caption" Class="text-muted">@profile.Tag</MudText>
+                    </div>
+
+                    <div class="d-flex">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                       Size="Size.Small" 
+                                       OnClick="@((e) => OpenEditDialog(profile))" 
+                                       Color="Color.Default" />
+                                       
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                       Size="Size.Small" 
+                                       OnClick="@((e) => DeleteProfile(profile))" 
+                                       Color="Color.Error" 
+                                       Disabled="@(UserState.AllProfiles.Count <= 1)" /> 
+                                       </div>
+                </div>
+                <MudDivider />
+            }
+            
+            <MudMenuItem OnClick="@OpenAddDialog" Icon="@Icons.Material.Filled.Add">Add new account</MudMenuItem>
+        </ChildContent>
+    </MudMenu>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        UserState.OnChange += StateHasChanged;
+        if (!UserState.IsInitialized)
+        {
+            await UserState.InitializeAsync();
+        }
+    }
+    
+    private async Task SelectProfile(UserProfile profile)
+    {
+        if (profile.Id == UserState.CurrentProfile?.Id) return;
+        
+        await UserState.SetActiveProfileAsync(profile);
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+    }
+
+    private async Task OpenAddDialog()
+    {
+        var dialog = await DialogService.ShowAsync<ProfileDialog>("Dodaj Konto");
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is UserProfile newProfile)
+        {
+            await UserState.AddProfile(newProfile.Name, newProfile.Tag);
+            NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        }
+    }
+    
+    private async Task OpenEditDialog(UserProfile profile)
+    {
+        var profileCopy = new UserProfile 
+        { 
+            Id = profile.Id, 
+            Name = profile.Name, 
+            Tag = profile.Tag,
+            IsDefault = profile.IsDefault
+        };
+
+        var parameters = new DialogParameters { ["Model"] = profileCopy };
+        var dialog = await DialogService.ShowAsync<ProfileDialog>("Edytuj Konto", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is UserProfile updatedProfile)
+        {
+            await UserState.UpdateProfile(updatedProfile);
+            StateHasChanged(); 
+        }
+    }
+    
+    private async Task DeleteProfile(UserProfile profile)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete account", 
+            $"Are you sure you want to delete your profile {profile.Name}? All matches will be lost!", 
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            var wasActive = profile.Id == UserState.CurrentProfile?.Id;
+            await UserState.DeleteProfile(profile.Id);
+
+            if (wasActive)
+            {
+                NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+            }
+        }
+    }
+}

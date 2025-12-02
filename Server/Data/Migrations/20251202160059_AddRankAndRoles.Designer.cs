@@ -3,6 +3,7 @@ using System;
 using LolStatsTracker.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LolStatsTracker.API.Data.Migrations
 {
     [DbContext(typeof(MatchDbContext))]
-    partial class MatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251202160059_AddRankAndRoles")]
+    partial class AddRankAndRoles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
@@ -66,9 +69,6 @@ namespace LolStatsTracker.API.Data.Migrations
                     b.Property<int>("LpChange")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid>("ProfileId")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -82,40 +82,7 @@ namespace LolStatsTracker.API.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProfileId");
-
                     b.ToTable("Matches");
-                });
-
-            modelBuilder.Entity("LolStatsTracker.Shared.Models.UserProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Tag")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("UserProfiles");
-                });
-
-            modelBuilder.Entity("LolStatsTracker.Shared.Models.MatchEntry", b =>
-                {
-                    b.HasOne("LolStatsTracker.Shared.Models.UserProfile", null)
-                        .WithMany()
-                        .HasForeignKey("ProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

@@ -3,11 +3,13 @@
 @using LolStatsTracker.Components
 @using LolStatsTracker.Components.Matches
 @using LolStatsTracker.Services.MatchService
+@using LolStatsTracker.Services.UserState
 @using LolStatsTracker.Shared.Models
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject IMatchService MatchService
+@inject UserProfileState UserState
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
     
@@ -32,9 +34,71 @@
     private List<MatchEntry> matches = new();
     private bool isEditing = false;
 
+    private readonly string[] _tiers =
+    {
+        "Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"
+    };
+
     protected override async Task OnInitializedAsync()
     {
+        if (!UserState.IsInitialized)
+        {
+            await UserState.InitializeAsync();
+        }
+        
+        if (UserState.CurrentProfile == null)
+        {
+            Console.WriteLine("No profile.");
+            return;
+        }
+        
         await LoadData();
+        PrepareNewMatch();
+    }
+
+    private void PrepareNewMatch()
+    {
+        isEditing = false;
+        currentMatch = new MatchEntry();
+        
+        if (!matches.Any())
+            return;
+
+        var lastMatch = matches.First();
+
+        currentMatch.Role = lastMatch.Role;
+
+        var predictedLp = lastMatch.CurrentLp + lastMatch.LpChange;
+        var predictedDiv = lastMatch.CurrentDivision;
+        var predictedTier = lastMatch.CurrentTier;
+
+        while (predictedLp >= 100)
+        {
+            predictedLp -= 100;
+            predictedDiv -= 1;
+
+            if (predictedDiv < 1)
+            {
+                predictedDiv = 4;
+
+                var currentTierIndex = Array.IndexOf(_tiers, predictedTier);
+                if (currentTierIndex != -1 && currentTierIndex < _tiers.Length - 1)
+                {
+                    predictedTier = _tiers[currentTierIndex + 1];
+                }
+            }
+        }
+
+        if (predictedLp < 0)
+        {
+            predictedLp = 0;
+        }
+
+        currentMatch.CurrentTier = predictedTier;
+        currentMatch.CurrentDivision = predictedDiv;
+        currentMatch.CurrentLp = predictedLp;
+
+        currentMatch.Date = DateTime.Now;
     }
 
     private async Task LoadData()
@@ -56,9 +120,9 @@
             await MatchService.AddAsync(matchData);
             Snackbar.Add("Match added", Severity.Success);
         }
-
-        ResetForm();
+        
         await LoadData();
+        PrepareNewMatch();
     }
     
     private void StartEdit(MatchEntry match)
@@ -66,7 +130,9 @@
         currentMatch = new MatchEntry
         {
             Id = match.Id,
+            ProfileId = match.ProfileId,
             Champion = match.Champion,
+            Role = match.Role,
             Support = match.Support,
             EnemyBot = match.EnemyBot,
             EnemySupport = match.EnemySupport,
@@ -76,15 +142,18 @@
             Cs = match.Cs,
             GameLengthMinutes = match.GameLengthMinutes,
             Date = match.Date,
-            Win = match.Win
+            Win = match.Win,
+            LpChange = match.LpChange,
+            CurrentTier = match.CurrentTier,
+            CurrentDivision = match.CurrentDivision,
+            CurrentLp = match.CurrentLp
         };
         isEditing = true;
     }
 
     private void ResetForm()
     {
-        currentMatch = new MatchEntry();
-        isEditing = false;
+        PrepareNewMatch();
     }
 
     private async Task DeleteMatch(MatchEntry match)
@@ -92,6 +161,9 @@
         await MatchService.DeleteAsync(match.Id);
         matches.Remove(match);
         Snackbar.Add("Match deleted", Severity.Success);
+        
+        if (!isEditing)
+            PrepareNewMatch();
     }
     
     private async Task ExportJson()
@@ -156,8 +228,8 @@
     {
         var parameters = new DialogParameters
         {
-            { "ContentText", "Czy na pewno chcesz usunąć CAŁĄ historię meczów? Tej operacji nie da się cofnąć!" },
-            { "ButtonText", "Usuń wszystko" },
+            { "ContentText", "Are you sure you want to delete ALL match history? This operation cannot be undone!" },
+            { "ButtonText", "Delete all" },
             { "Color", Color.Error }
         };
 
@@ -170,7 +242,8 @@
         {
             await MatchService.ClearAsync();
             matches.Clear();
-            Snackbar.Add("Baza danych została wyczyszczona", Severity.Warning);
+            PrepareNewMatch();
+            Snackbar.Add("Databased was erased", Severity.Warning);
         }
     }
 }

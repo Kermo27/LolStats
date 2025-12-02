@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using LolStatsTracker.Services.UserState;
 using LolStatsTracker.Shared.DTOs;
 
 namespace LolStatsTracker.Services.StatsService;
@@ -6,71 +7,67 @@ namespace LolStatsTracker.Services.StatsService;
 public class StatsApiService : IStatsService
 {
     private readonly HttpClient _http;
+    private readonly UserProfileState _userState;
 
-    public StatsApiService(HttpClient http)
+    public StatsApiService(HttpClient http, UserProfileState userState)
     {
         _http = http;
+        _userState = userState;
+    }
+    
+    private async Task<T?> SendRequestAsync<T>(string url)
+    {
+        if (_userState.CurrentProfile == null)
+        {
+            Console.WriteLine($"[StatsService] No profile set, skipping request to {url}");
+            return default;
+        }
+        
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        
+        request.Headers.Add("X-Profile-Id", _userState.CurrentProfile.Id.ToString());
+
+        try
+        {
+            var response = await _http.SendAsync(request);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"[StatsService] Błąd HTTP {response.StatusCode} dla {url}");
+                return default;
+            }
+            
+            return await response.Content.ReadFromJsonAsync<T>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[StatsService] Error {url}: {ex.Message}");
+            return default;
+        }
     }
     
     public async Task<StatsSummaryDto?> GetSummaryAsync(int months = 6)
     {
-        try
-        {
-            return await _http.GetFromJsonAsync<StatsSummaryDto>($"http://localhost:5031/api/stats/summary?months={months}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Błąd pobierania statystyk: {ex.Message}");
-            return null;
-        }
+        return await SendRequestAsync<StatsSummaryDto>($"api/Stats/summary?months={months}");
     }
 
     public async Task<List<ChampionStatsDto>> GetChampionsAsync()
     {
-        try
-        {
-            var result = await _http.GetFromJsonAsync<List<ChampionStatsDto>>($"http://localhost:5031/api/stats/champions");
-            
-            return result ?? new List<ChampionStatsDto>();
-        }
-        catch (Exception ex)
-        {
-            Console.Write($"Error fetching champions: {ex.Message}");
-            return new List<ChampionStatsDto>();
-        }
+        return await SendRequestAsync<List<ChampionStatsDto>>("api/Stats/champions") ?? new();
     }
 
     public async Task<List<DuoSummary>> GetWorstEnemyDuosAsync()
     {
-        try 
-        {
-            var result = await _http.GetFromJsonAsync<List<DuoSummary>>("http://localhost:5031/api/stats/worst-enemy-duos");
-            return result ?? new List<DuoSummary>();
-        }
-        catch { return new List<DuoSummary>(); }
+        return await SendRequestAsync<List<DuoSummary>>("api/Stats/worst-enemy-duos") ?? new();
     }
 
     public async Task<List<EnemyStatsDto>> GetEnemyStatsAsync(string role)
     {
-        try
-        {
-            var result = await _http.GetFromJsonAsync<List<EnemyStatsDto>>($"http://localhost:5031/api/stats/enemies?role={role}");
-            return result ?? new List<EnemyStatsDto>();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error fetching enemies: {ex.Message}");
-            return new List<EnemyStatsDto>();
-        }
+        return await SendRequestAsync<List<EnemyStatsDto>>($"api/Stats/enemies?role={role}") ?? new();
     }
 
     public async Task<List<DuoSummary>> GetBestDuosAsync()
     {
-        try 
-        {
-            var result = await _http.GetFromJsonAsync<List<DuoSummary>>("http://localhost:5031/api/stats/best-duos");
-            return result ?? new List<DuoSummary>();
-        }
-        catch { return new List<DuoSummary>(); }
+        return await SendRequestAsync<List<DuoSummary>>("api/Stats/best-duos") ?? new();
     }
 }

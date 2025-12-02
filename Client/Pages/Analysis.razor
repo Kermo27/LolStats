@@ -1,14 +1,14 @@
 ﻿@page "/analysis"
 @using LolStatsTracker.Shared.DTOs
-@using LolStatsTracker.Services.ChampionService
+@using LolStatsTracker.Services.LeagueAssetsService
 @using LolStatsTracker.Services.StatsService
 @using DuoSummary = LolStatsTracker.Shared.DTOs.DuoSummary
 @inject IStatsService StatsService
-@inject IChampionService ChampionService
+@inject ILeagueAssetsService LeagueAssetsService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
-    <MudText Typo="Typo.h4" Class="mb-4 font-weight-bold">Analiza Strategiczna</MudText>
-    <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">Z kim grać i kogo unikać?</MudText>
+    <MudText Typo="Typo.h4" Class="mb-4 font-weight-bold">Analyze</MudText>
+    <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">Who to play with and who to avoid?</MudText>
 
     @if (_isLoading)
     {
@@ -20,16 +20,16 @@
 
         <MudItem xs="12" md="6">
             <MudPaper Class="p-4 rounded-xl" Elevation="4">
-                <MudText Typo="Typo.h6" Class="mb-4 text-success font-weight-bold">TOP 3 NAJLEPSZE DUO (Wysoki WR)</MudText>
+                <MudText Typo="Typo.h6" Class="mb-4 text-success font-weight-bold">TOP 3 DUO (BEST WR)</MudText>
                 <MudList T="object" DisablePadding="true" Dense="true"> @foreach (var duo in _duos)
                     {
                     <MudListItem T="object" Class="px-0 py-2"> <div class="d-flex align-center justify-space-between w-100">
                             <div class="d-flex align-center gap-3">
                                 <div class="d-flex align-center">
-                                    <img src="@ChampionService.GetChampionIconUrl(duo.Champion)"
+                                    <img src="@LeagueAssetsService.GetChampionIconUrl(duo.Champion)"
                                          height="40" width="40"
                                          style="border-radius: 50%; border: 2px solid var(--mud-palette-primary);" />
-                                    <img src="@ChampionService.GetChampionIconUrl(duo.Support)"
+                                    <img src="@LeagueAssetsService.GetChampionIconUrl(duo.Support)"
                                          height="30" width="30"
                                          style="border-radius: 50%; border: 2px solid var(--mud-palette-info); margin-left: -10px; z-index: 1;" />
                                 </div>
@@ -46,45 +46,45 @@
                     <MudDivider />
                     }
                 </MudList>
-                @if (!_duos.Any()) { <MudText Class="text-muted">Brak danych duo (min 3 gry).</MudText> }
+                @if (!_duos.Any()) { <MudText Class="text-muted">Not enough data (minimum 3 games).</MudText> }
             </MudPaper>
         </MudItem>
 
         <MudItem xs="12" md="6">
             <MudPaper Class="p-4 rounded-xl" Elevation="4">
-                <MudText Typo="Typo.h6" Class="mb-4 text-error font-weight-bold">TOP 3 NAJGORSZE DUO PRZECIWNIKÓW</MudText>
+                <MudText Typo="Typo.h6" Class="mb-4 text-error font-weight-bold">TOP 3 HARDEST ENEY DUO</MudText>
                 <MudList T="object" DisablePadding="true" Dense="true"> @foreach (var duo in _worstDuos)
                     {
                     <MudListItem T="object" Class="px-0 py-2"> <div class="d-flex align-center justify-space-between w-100">
                             <div class="d-flex align-center gap-3">
                                 <div class="d-flex align-center">
-                                    <img src="@ChampionService.GetChampionIconUrl(duo.Champion)"
+                                    <img src="@LeagueAssetsService.GetChampionIconUrl(duo.Champion)"
                                          height="40" width="40"
                                          style="border-radius: 50%; border: 2px solid var(--mud-palette-error);" />
-                                    <img src="@ChampionService.GetChampionIconUrl(duo.Support)"
+                                    <img src="@LeagueAssetsService.GetChampionIconUrl(duo.Support)"
                                          height="30" width="30"
                                          style="border-radius: 50%; border: 2px solid var(--mud-palette-error); margin-left: -10px; z-index: 1;" />
                                 </div>
                                 <div>
                                     <MudText Typo="Typo.body1" Class="font-weight-bold">@duo.Champion & @duo.Support</MudText>
-                                    <MudText Typo="Typo.caption" Class="text-muted">@duo.Count gier</MudText>
+                                    <MudText Typo="Typo.caption" Class="text-muted">@duo.Count games</MudText>
                                 </div>
                             </div>
                             <MudChip T="string" Color="Color.Error" Variant="Variant.Filled" Size="Size.Small">
-                                @((100 - duo.WinRate).ToString("F0"))% straty
+                                @((100 - duo.WinRate).ToString("F0"))% losses
                             </MudChip>
                         </div>
                     </MudListItem>
                     <MudDivider />
                     }
                 </MudList>
-                @if (!_worstDuos.Any()) { <MudText Class="text-muted">Brak danych duo (min 3 gry).</MudText> }
+                @if (!_worstDuos.Any()) { <MudText Class="text-muted">Not enough data (minimum 3 games).</MudText> }
             </MudPaper>
         </MudItem>
 
         <MudItem xs="12">
             <MudPaper Class="p-4 rounded-xl" Elevation="4">
-                <MudText Typo="Typo.h6" Class="mb-4">Potencjalne BANY (Najwyższy WR Przeciwko Tobie)</MudText>
+                <MudText Typo="Typo.h6" Class="mb-4">Potential BANS (Highest WR Against You)</MudText>
 
                 <MudGrid Spacing="3">
                     <MudItem xs="12" sm="6">
@@ -95,11 +95,11 @@
                             {
                             <MudListItem T="object" Class="px-0 py-1"> <div class="d-flex align-center justify-space-between w-100">
                                     <div class="d-flex align-center gap-2">
-                                        <img src="@ChampionService.GetChampionIconUrl(enemy.ChampionName)" height="30" width="30" style="border-radius: 50%; border: 1px solid var(--mud-palette-error);" />
+                                        <img src="@LeagueAssetsService.GetChampionIconUrl(enemy.ChampionName)" height="30" width="30" style="border-radius: 50%; border: 1px solid var(--mud-palette-error);" />
                                         <MudText>@enemy.ChampionName</MudText>
                                     </div>
                                     <MudText Color="Color.Error" Class="font-weight-bold">
-                                        @((enemy.WinrateAgainst * 100).ToString("F0"))% straty
+                                        @((enemy.WinrateAgainst * 100).ToString("F0"))% losses
                                     </MudText>
                                 </div>
                             </MudListItem>
@@ -114,11 +114,11 @@
                             {
                             <MudListItem T="object" Class="px-0 py-1"> <div class="d-flex align-center justify-space-between w-100">
                                     <div class="d-flex align-center gap-2">
-                                        <img src="@ChampionService.GetChampionIconUrl(enemy.ChampionName)" height="30" width="30" style="border-radius: 50%; border: 1px solid var(--mud-palette-error);" />
+                                        <img src="@LeagueAssetsService.GetChampionIconUrl(enemy.ChampionName)" height="30" width="30" style="border-radius: 50%; border: 1px solid var(--mud-palette-error);" />
                                         <MudText>@enemy.ChampionName</MudText>
                                     </div>
                                     <MudText Color="Color.Error" Class="font-weight-bold">
-                                        @((enemy.WinrateAgainst * 100).ToString("F0"))% straty
+                                        @((enemy.WinrateAgainst * 100).ToString("F0"))% losses
                                     </MudText>
                                 </div>
                             </MudListItem>
@@ -135,29 +135,29 @@
 </MudContainer>
 
 @code {
-private bool _isLoading = true;
-private List<DuoSummary> _duos = new();
-private List<DuoSummary> _worstDuos = new();
-private List<EnemyStatsDto> _enemyBotStats = new();
-private List<EnemyStatsDto> _enemySupportStats = new();
+    private bool _isLoading = true;
+    private List<DuoSummary> _duos = new();
+    private List<DuoSummary> _worstDuos = new();
+    private List<EnemyStatsDto> _enemyBotStats = new();
+    private List<EnemyStatsDto> _enemySupportStats = new();
 
-protected override async Task OnInitializedAsync()
-{
-await ChampionService.InitializeAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        await LeagueAssetsService.InitializeAsync();
 
-var duosTask = StatsService.GetBestDuosAsync();
-var worstDuosTask = StatsService.GetWorstEnemyDuosAsync();
-var enemyBotTask = StatsService.GetEnemyStatsAsync("bot");
-var enemySupportTask = StatsService.GetEnemyStatsAsync("support");
+        var duosTask = StatsService.GetBestDuosAsync();
+        var worstDuosTask = StatsService.GetWorstEnemyDuosAsync();
+        var enemyBotTask = StatsService.GetEnemyStatsAsync("bot");
+        var enemySupportTask = StatsService.GetEnemyStatsAsync("support");
 
-await Task.WhenAll(duosTask, worstDuosTask, enemyBotTask, enemySupportTask);
+        await Task.WhenAll(duosTask, worstDuosTask, enemyBotTask, enemySupportTask);
 
-_duos = await duosTask;
-_worstDuos = await worstDuosTask;
+        _duos = await duosTask;
+        _worstDuos = await worstDuosTask;
 
-_enemyBotStats = (await enemyBotTask).OrderByDescending(e => e.WinrateAgainst).ToList();
-_enemySupportStats = (await enemySupportTask).OrderByDescending(e => e.WinrateAgainst).ToList();
+        _enemyBotStats = (await enemyBotTask).OrderByDescending(e => e.WinrateAgainst).ToList();
+        _enemySupportStats = (await enemySupportTask).OrderByDescending(e => e.WinrateAgainst).ToList();
 
-_isLoading = false;
-}
+        _isLoading = false;
+    }
 }

@@ -11,8 +11,4 @@ public interface IMatchService
     Task<MatchEntry> UpdateAsync(Guid id, MatchEntry match);
     Task DeleteAsync(Guid id);
     Task ClearAsync();
-    Task<IEnumerable<MatchStats>> GetChampionStatsAsync();
-    Task<IEnumerable<SupportStats>> GetSupportStatsAsync();
-    Task<IEnumerable<EnemyStats>> GetEnemyBotStatsAsync();
-    Task<IEnumerable<EnemySupportStats>> GetEnemySupportStatsAsync();
 }

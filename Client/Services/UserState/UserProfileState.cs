@@ -1,0 +1,139 @@
+﻿using System.Net.Http.Json;
+using Blazored.LocalStorage;
+using LolStatsTracker.Shared.Models;
+
+namespace LolStatsTracker.Services.UserState;
+
+public class UserProfileState
+{
+    private readonly HttpClient _http;
+    private readonly ILocalStorageService _localStorage;
+
+    public event Action? OnChange;
+    public UserProfile? CurrentProfile { get; private set; }
+    public List<UserProfile> AllProfiles { get; private set; } = new();
+    public bool IsInitialized { get; private set; }
+
+    public UserProfileState(HttpClient http, ILocalStorageService localStorage)
+    {
+        _http = http;
+        _localStorage = localStorage;
+    }
+    
+    public async Task InitializeAsync()
+    {
+        if (IsInitialized) return;
+
+        try
+        {
+            AllProfiles = await _http.GetFromJsonAsync<List<UserProfile>>("api/Profiles") ?? new();
+
+            if (!AllProfiles.Any())
+            {
+                var defaultProfile = new UserProfile { Name = "Main Account", Tag = "EUW", IsDefault = true };
+                var response = await _http.PostAsJsonAsync("api/Profiles", defaultProfile);
+                if (response.IsSuccessStatusCode)
+                {
+                    var created = await response.Content.ReadFromJsonAsync<UserProfile>();
+                    if (created != null) AllProfiles.Add(created);
+                }
+            }
+            
+            var savedId = await _localStorage.GetItemAsync<string>("selectedProfileId");
+            
+            if (!string.IsNullOrEmpty(savedId) && Guid.TryParse(savedId, out var guid))
+            {
+                CurrentProfile = AllProfiles.FirstOrDefault(p => p.Id == guid);
+            }
+            
+            if (CurrentProfile == null && AllProfiles.Any())
+            {
+                CurrentProfile = AllProfiles.First();
+                
+                await _localStorage.SetItemAsync("selectedProfileId", CurrentProfile.Id.ToString());
+            }
+
+            IsInitialized = true;
+            NotifyStateChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching profiles: {ex.Message}");
+        }
+    }
+
+    public async Task SetActiveProfileAsync(UserProfile profile)
+    {
+        CurrentProfile = profile;
+        await _localStorage.SetItemAsync("selectedProfileId", profile.Id.ToString());
+        NotifyStateChanged();
+    }
+
+    public async Task AddProfile(string name, string tag)
+    {
+        var newProfile = new UserProfile { Name = name, Tag = tag };
+        var res = await _http.PostAsJsonAsync("api/Profiles", newProfile);
+        
+        if (res.IsSuccessStatusCode)
+        {
+            var created = await res.Content.ReadFromJsonAsync<UserProfile>();
+            if (created != null)
+            {
+                AllProfiles.Add(created);
+                await SetActiveProfileAsync(created);
+            }
+        }
+    }
+    
+    public async Task UpdateProfile(UserProfile profile)
+    {
+        var response = await _http.PutAsJsonAsync($"api/profiles/{profile.Id}", profile);
+        if (response.IsSuccessStatusCode)
+        {
+            // Aktualizuj listę lokalną
+            var index = AllProfiles.FindIndex(p => p.Id == profile.Id);
+            if (index != -1)
+            {
+                AllProfiles[index] = profile;
+                
+                // Jeśli edytujemy aktualny, odśwież go
+                if (CurrentProfile?.Id == profile.Id)
+                {
+                    CurrentProfile = profile;
+                }
+                NotifyStateChanged();
+            }
+        }
+    }
+    
+    public async Task DeleteProfile(Guid id)
+    {
+        var response = await _http.DeleteAsync($"api/profiles/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            var profileToRemove = AllProfiles.FirstOrDefault(p => p.Id == id);
+            if (profileToRemove != null)
+            {
+                AllProfiles.Remove(profileToRemove);
+
+                // Jeśli usunęliśmy ten, na którym aktualnie jesteśmy -> przełącz na inny
+                if (CurrentProfile?.Id == id)
+                {
+                    var fallback = AllProfiles.FirstOrDefault();
+                    if (fallback != null)
+                    {
+                        await SetActiveProfileAsync(fallback);
+                    }
+                    else
+                    {
+                        CurrentProfile = null; // Brak profili
+                        await _localStorage.RemoveItemAsync("selectedProfileId");
+                    }
+                }
+                NotifyStateChanged();
+            }
+        }
+    }
+    
+    private void NotifyStateChanged() => OnChange?.Invoke();
+}

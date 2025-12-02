@@ -24,6 +24,7 @@ public class MatchEntry
     public string CurrentTier { get; set; } = "Unranked";
     public int CurrentDivision { get; set; } = 4;
     public int CurrentLp { get; set; }
+    public Guid ProfileId { get; set; }
     
     public string KdaDisplay => $"{Kills}/{Deaths}/{Assists}";
 }

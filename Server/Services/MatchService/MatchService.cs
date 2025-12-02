@@ -1,5 +1,4 @@
 ﻿using LolStatsTracker.API.Data;
-using LolStatsTracker.API.Models;
 using LolStatsTracker.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,55 +13,80 @@ public class MatchService : IMatchService
         _db = db;
     }
 
-    public async Task<List<MatchEntry>> GetAllAsync()
+    public async Task<List<MatchEntry>> GetAllAsync(Guid profileId)
     {
         return await _db.Matches
+            .Where(m => m.ProfileId == profileId)
             .OrderByDescending(m => m.Date)
             .AsNoTracking()
             .ToListAsync();
     }
     
-    public async Task<MatchEntry?> GetAsync(Guid id)
+    public async Task<MatchEntry?> GetAsync(Guid id, Guid profileId)
     {
         return await _db.Matches
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Id == id);
+            .FirstOrDefaultAsync(m => m.Id == id && m.ProfileId == profileId);
     }
 
     public async Task<MatchEntry> AddAsync(MatchEntry match)
     {
-        if (match.Id == Guid.Empty)
-            match.Id = Guid.NewGuid();
-
         _db.Matches.Add(match);
         await _db.SaveChangesAsync();
         return match;
     }
-
-    public async Task<MatchEntry> UpdateAsync(Guid id, MatchEntry match)
+    
+    public async Task<MatchEntry?> UpdateAsync(Guid id, MatchEntry updatedMatch, Guid profileId)
     {
-        var existing = await _db.Matches.FindAsync(id);
-        if (existing == null)
-            throw new KeyNotFoundException($"Nie znaleziono meczu o ID {id}");
+        var existingMatch = await _db.Matches
+            .FirstOrDefaultAsync(m => m.Id == id && m.ProfileId == profileId);
 
-        _db.Entry(existing).CurrentValues.SetValues(match);
+        if (existingMatch == null)
+        {
+            return null; 
+        }
+
+        // Map properties
+        existingMatch.Champion = updatedMatch.Champion;
+        existingMatch.Role = updatedMatch.Role;
+        existingMatch.Support = updatedMatch.Support;
+        existingMatch.EnemyBot = updatedMatch.EnemyBot;
+        existingMatch.EnemySupport = updatedMatch.EnemySupport;
+        existingMatch.Kills = updatedMatch.Kills;
+        existingMatch.Deaths = updatedMatch.Deaths;
+        existingMatch.Assists = updatedMatch.Assists;
+        existingMatch.Cs = updatedMatch.Cs;
+        existingMatch.GameLengthMinutes = updatedMatch.GameLengthMinutes;
+        existingMatch.Win = updatedMatch.Win;
+        existingMatch.Date = updatedMatch.Date;
+        existingMatch.LpChange = updatedMatch.LpChange;
+        existingMatch.CurrentTier = updatedMatch.CurrentTier;
+        existingMatch.CurrentDivision = updatedMatch.CurrentDivision;
+        existingMatch.CurrentLp = updatedMatch.CurrentLp;
+        
+        existingMatch.ProfileId = profileId;
+
         await _db.SaveChangesAsync();
-        return existing;
+        return existingMatch;
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
         var match = await _db.Matches.FindAsync(id);
-        if (match != null)
-        {
-            _db.Matches.Remove(match);
-            await _db.SaveChangesAsync();
-        }
+        if (match == null)
+            return false;
+        
+        _db.Matches.Remove(match);
+        await _db.SaveChangesAsync();
+        return true;
+
     }
     
-    public async Task ClearAsync()
+    public async Task ClearAsync(Guid profileId)
     {
-        _db.Matches.RemoveRange(_db.Matches);
+        var matches = await _db.Matches.Where(m => m.ProfileId == profileId).ToListAsync();
+        
+        _db.Matches.RemoveRange(matches); 
         await _db.SaveChangesAsync();
     }
 }

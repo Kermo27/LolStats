@@ -1,0 +1,48 @@
+﻿@using LolStatsTracker.Shared.Models
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form">
+            <MudTextField @bind-Value="Model.Name" 
+                          Label="Account Name (ex. Faker)" 
+                          Variant="Variant.Outlined" 
+                          Required="true" 
+                          RequiredError="Name is required"
+                          Class="mb-3" />
+                          
+            <MudTextField @bind-Value="Model.Tag" 
+                          Label="Tagline (ex. #EUW)" 
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Tagline is required" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">
+            @(IsEditMode ? "Save" : "Add")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public UserProfile Model { get; set; } = new();
+    
+    private bool IsEditMode => Model.Id != Guid.Empty;
+    
+    MudForm form;
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (form.IsValid)
+        {
+            MudDialog.Close(DialogResult.Ok(Model));
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
