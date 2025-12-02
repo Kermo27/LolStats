@@ -1,26 +1,38 @@
 ﻿@using LolStatsTracker.Shared.Models
-@using LolStatsTracker.Services.ChampionService
-@inject IChampionService ChampionService
+@using LolStatsTracker.Services.LeagueAssetsService
+@inject ILeagueAssetsService LeagueAssetsService
 @inject IDialogService DialogService
 
 <MudTable Items="Matches" Hover="true" Bordered="false" Striped="true" Virtualize="true" Class="rounded-xl elevation-3" Dense="true">
     <HeaderContent>
-        <MudTh>Data</MudTh>
+        <MudTh>Date</MudTh>
+        <MudTh>Role</MudTh> 
         <MudTh>Champion</MudTh>
-        <MudTh>Role</MudTh> <MudTh>K/D/A</MudTh>
+        <MudTh>Info (Lane)</MudTh> 
+        <MudTh>Division / LP</MudTh> 
+        <MudTh>K/D/A</MudTh>
         <MudTh>CS</MudTh>
-        <MudTh>Czas</MudTh>
-        <MudTh>Wynik</MudTh>
-        <MudTh>Akcje</MudTh>
+        <MudTh>Time</MudTh>
+        <MudTh>W/L</MudTh>
+        <MudTh>Actions</MudTh>
     </HeaderContent>
     <RowTemplate>
-        <MudTd DataLabel="Data">
+        <MudTd DataLabel="Date">
             <MudText Typo="Typo.body2">@context.Date.ToString("dd-MM-yyyy")</MudText>
+        </MudTd>
+
+        <MudTd DataLabel="Role">
+            <MudTooltip Text="@context.Role">
+                <img src="@LeagueAssetsService.GetRoleIconUrl(context.Role)" 
+                     alt="@context.Role" 
+                     width="28" 
+                     height="28" 
+                     style="filter: grayscale(0.2);" /> </MudTooltip>
         </MudTd>
 
         <MudTd DataLabel="Champion">
             <div class="d-flex align-center gap-2">
-                <img src="@ChampionService.GetChampionIconUrl(context.Champion)" 
+                <img src="@LeagueAssetsService.GetChampionIconUrl(context.Champion)" 
                      height="32" width="32" 
                      style="border-radius: 50%; object-fit: cover;" 
                      alt="@context.Champion" />
@@ -28,16 +40,51 @@
             </div>
         </MudTd>
 
-        <MudTd DataLabel="Role">
-            <div class="d-flex flex-column gap-1">
-                <div class="d-flex align-center gap-1" title="Twój Support">
-                     <MudIcon Icon="@Icons.Material.Filled.Shield" Size="Size.Small" Color="Color.Info" />
-                     <MudText Typo="Typo.caption">@context.Support</MudText>
+        <MudTd DataLabel="Info">
+            @if (context.Role == "ADC")
+            {
+                <div class="d-flex flex-column gap-1">
+                    @if (!string.IsNullOrEmpty(context.Support))
+                    {
+                        <div class="d-flex align-center gap-1" title="Twój Partner">
+                             <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Info" />
+                             <MudText Typo="Typo.caption">@context.Support</MudText>
+                        </div>
+                    }
+                    <div class="d-flex align-center gap-1" title="Przeciwnicy">
+                         <MudIcon Icon="@Icons.Material.Filled.Dangerous" Size="Size.Small" Color="Color.Error" />
+                         <MudText Typo="Typo.caption">
+                             @((!string.IsNullOrEmpty(context.EnemyBot) ? context.EnemyBot : "?")) 
+                             / 
+                             @((!string.IsNullOrEmpty(context.EnemySupport) ? context.EnemySupport : "?"))
+                         </MudText>
+                    </div>
                 </div>
-                <div class="d-flex align-center gap-1" title="Enemy Bot">
-                     <MudIcon Icon="@Icons.Material.Filled.Dangerous" Size="Size.Small" Color="Color.Error" />
-                     <MudText Typo="Typo.caption">@context.EnemyBot / @context.EnemySupport</MudText>
-                </div>
+            }
+            else
+            {
+                <MudText Typo="Typo.caption" Class="text-muted">-</MudText>
+            }
+        </MudTd>
+
+        <MudTd DataLabel="Division / LP">
+            <div class="d-flex flex-column">
+                <MudText Typo="Typo.caption" Class="font-weight-bold">@context.CurrentTier @context.CurrentDivision</MudText>
+                
+                @if (context.LpChange != 0)
+                {
+                    <div class="d-flex align-center gap-1">
+                         <MudText Typo="Typo.caption">@context.CurrentLp LP</MudText>
+                         <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="px-1"
+                                 Color="@(context.LpChange >= 0 ? Color.Success : Color.Error)">
+                            @((context.LpChange > 0 ? "+" : "") + context.LpChange)
+                        </MudChip>
+                    </div>
+                }
+                else
+                {
+                    <MudText Typo="Typo.caption" Class="text-muted">@context.CurrentLp LP</MudText>
+                }
             </div>
         </MudTd>
 
@@ -52,17 +99,17 @@
         <MudTd DataLabel="Game Length">@context.GameLengthMinutes m</MudTd>
 
         <MudTd DataLabel="Win">
-            <MudChip T="string" Size="Size.Small" Color="@(context.Win ? Color.Success : Color.Error)" Variant="Variant.Filled">
+            <MudChip T="string" Size="Size.Small" Color="@(context.Win ? Color.Success : Color.Error)" Variant="Variant.Filled" Style="min-width: 80px;" Class="justify-center">
                 @(context.Win ? "VICTORY" : "DEFEAT")
             </MudChip>
         </MudTd>
 
-        <MudTd DataLabel="Akcje">
+        <MudTd DataLabel="Actions">
             <MudTooltip Text="Edytuj">
                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" 
                                OnClick="() => OnEdit.InvokeAsync(context)" />
             </MudTooltip>
-            <MudTooltip Text="Usuń">
+            <MudTooltip Text="Delete">
                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
                                OnClick="() => ConfirmDelete(context)" />
             </MudTooltip>
@@ -82,7 +129,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await ChampionService.InitializeAsync();
+        await LeagueAssetsService.InitializeAsync();
         StateHasChanged();
     }
 
@@ -90,7 +137,7 @@
     {
         var kda = (match.Kills + match.Assists) / Math.Max(1.0, match.Deaths);
         if (kda >= 4.0) return "text-success font-weight-bold";
-        if (kda >= 2.5) return "text-info";
+        if (kda >= 3.0) return "text-info font-weight-bold";
         if (kda < 1.0) return "text-error";
         return "";
     }
@@ -99,12 +146,12 @@
     {
         var parameters = new DialogParameters
         {
-            { "ContentText", $"Czy na pewno chcesz usunąć mecz {match.Champion} (KDA: {match.Kills}/{match.Deaths}/{match.Assists})?" },
-            { "ButtonText", "Usuń" },
+            { "ContentText", $"Are you sure you want to delete the match {match.Champion} (KDA: {match.Kills}/{match.Deaths}/{match.Assists})?" },
+            { "ButtonText", "Delete" },
             { "Color", Color.Error }
         };
 
-        var dialogRef = await DialogService.ShowAsync<ConfirmDialog>("Potwierdzenie", parameters);
+        var dialogRef = await DialogService.ShowAsync<ConfirmDialog>("Confirm", parameters);
         var result = await dialogRef.Result;
         
         if (!result.Canceled && result.Data is true)

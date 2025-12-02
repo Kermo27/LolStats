@@ -3,6 +3,7 @@ using System;
 using LolStatsTracker.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LolStatsTracker.API.Data.Migrations
 {
     [DbContext(typeof(MatchDbContext))]
-    partial class MatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251202181639_AddUserProfiles")]
+    partial class AddUserProfiles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
@@ -66,7 +69,7 @@ namespace LolStatsTracker.API.Data.Migrations
                     b.Property<int>("LpChange")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid>("ProfileId")
+                    b.Property<Guid?>("ProfileId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Role")
@@ -114,8 +117,7 @@ namespace LolStatsTracker.API.Data.Migrations
                     b.HasOne("LolStatsTracker.Shared.Models.UserProfile", null)
                         .WithMany()
                         .HasForeignKey("ProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 #pragma warning restore 612, 618
         }

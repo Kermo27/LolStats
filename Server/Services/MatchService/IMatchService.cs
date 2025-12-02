@@ -5,10 +5,10 @@ namespace LolStatsTracker.API.Services.MatchService;
 
 public interface IMatchService
 {
-    Task<List<MatchEntry>> GetAllAsync();
-    Task<MatchEntry?> GetAsync(Guid id);
+    Task<List<MatchEntry>> GetAllAsync(Guid profileId);
+    Task<MatchEntry?> GetAsync(Guid id, Guid profileId);
     Task<MatchEntry> AddAsync(MatchEntry match);
     Task<MatchEntry> UpdateAsync(Guid id, MatchEntry match);
-    Task DeleteAsync(Guid id);
-    Task ClearAsync();
+    Task<bool> DeleteAsync(Guid id);
+    Task ClearAsync(Guid profileId);
 }

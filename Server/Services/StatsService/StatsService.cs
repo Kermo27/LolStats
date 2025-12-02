@@ -14,9 +14,11 @@ public class StatsService : IStatsService
         _db = db;
     }
     
-    public async Task<OverviewDto> GetOverviewAsync()
+    public async Task<OverviewDto> GetOverviewAsync(Guid profileId)
     {
-        var matches = await _db.Matches.ToListAsync();
+        var matches = await _db.Matches
+            .Where(m => m.ProfileId == profileId)
+            .ToListAsync();
         if (!matches.Any()) return new OverviewDto(0, "", 0, "", 0);
         
         var winrate = matches.Count(m => m.Win) / (double)matches.Count;
@@ -41,9 +43,11 @@ public class StatsService : IStatsService
         );
     }
 
-    public async Task<List<ChampionStatsDto>> GetChampionStatsAsync()
+    public async Task<List<ChampionStatsDto>> GetChampionStatsAsync(Guid profileId)
     {
-        var matches = await _db.Matches.ToListAsync();
+        var matches = await _db.Matches
+            .Where(m => m.ProfileId == profileId)
+            .ToListAsync();
 
         return matches
             .GroupBy(m => m.Champion)
@@ -62,9 +66,10 @@ public class StatsService : IStatsService
             .ToList();
     }
 
-    public async Task<List<EnemyStatsDto>> GetEnemyStatsAsync(string role)
+    public async Task<List<EnemyStatsDto>> GetEnemyStatsAsync(Guid profileId, string role)
     {
         var matches = await _db.Matches
+            .Where(m => m.ProfileId == profileId)
             .Where(m => m.Role == "ADC")
             .ToListAsync();
 
@@ -80,7 +85,7 @@ public class StatsService : IStatsService
             .ToList();
     }
 
-    public async Task<List<ActivityDayDto>> GetActivityAsync(int months)
+    public async Task<List<ActivityDayDto>> GetActivityAsync(Guid profileId, int months)
     {
         var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-months));
         var matches = await _db.Matches
@@ -97,9 +102,11 @@ public class StatsService : IStatsService
             .ToList();
     }
 
-    public async Task<EnchanterUsageSummary> GetEnchanterUsageAsync()
+    public async Task<EnchanterUsageSummary> GetEnchanterUsageAsync(Guid profileId)
     {
-        var matches = await _db.Matches.ToListAsync();
+        var matches = await _db.Matches
+            .Where(m => m.ProfileId == profileId)
+            .ToListAsync();
         var enchanters = ChampionList.Enchanters;
 
         var mySupportGames = matches.Count(m => !string.IsNullOrWhiteSpace(m.Support));
@@ -116,9 +123,10 @@ public class StatsService : IStatsService
         );
     }
 
-    public async Task<List<DuoSummary>> GetBestDuosAsync()
+    public async Task<List<DuoSummary>> GetBestDuosAsync(Guid profileId)
     {
         var matches = await _db.Matches
+            .Where(m => m.ProfileId == profileId)
             .Where(m => m.Role == "ADC")
             .ToListAsync();
 
@@ -138,9 +146,10 @@ public class StatsService : IStatsService
             .ToList();
     }
 
-    public async Task<List<DuoSummary>> GetWorstEnemyDuosAsync()
+    public async Task<List<DuoSummary>> GetWorstEnemyDuosAsync(Guid profileId)
     {
         var matches = await _db.Matches
+            .Where(m => m.ProfileId == profileId)
             .Where(m => m.Role == "ADC")
             .ToListAsync();
 
@@ -160,16 +169,16 @@ public class StatsService : IStatsService
             .ToList();
     }
 
-    public async Task<StatsSummaryDto> GetStatsSummaryAsync(int activityMonths = 6)
+    public async Task<StatsSummaryDto> GetStatsSummaryAsync(Guid profileId, int activityMonths = 6)
     {
-        var overviewTask = GetOverviewAsync();
-        var championStatsTask = GetChampionStatsAsync();
-        var enemyBotTask = GetEnemyStatsAsync("bot");
-        var enemySupportTask = GetEnemyStatsAsync("support");
-        var activityTask = GetActivityAsync(activityMonths);
-        var enchanterTask = GetEnchanterUsageAsync();
-        var bestDuosTask = GetBestDuosAsync();
-        var worstEnemyDuosTask = GetWorstEnemyDuosAsync();
+        var overviewTask = GetOverviewAsync(profileId);
+        var championStatsTask = GetChampionStatsAsync(profileId);
+        var enemyBotTask = GetEnemyStatsAsync(profileId, "bot");
+        var enemySupportTask = GetEnemyStatsAsync(profileId, "support");
+        var activityTask = GetActivityAsync(profileId, activityMonths);
+        var enchanterTask = GetEnchanterUsageAsync(profileId);
+        var bestDuosTask = GetBestDuosAsync(profileId);
+        var worstEnemyDuosTask = GetWorstEnemyDuosAsync(profileId);
 
         await Task.WhenAll(overviewTask, championStatsTask, enemyBotTask, enemySupportTask,
             activityTask, enchanterTask, bestDuosTask, worstEnemyDuosTask);

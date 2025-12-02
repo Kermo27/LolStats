@@ -16,52 +16,70 @@ public class MatchesController : ControllerBase
         _matchService = matchService;
     }
 
+    private Guid GetProfileId()
+    {
+        if (Request.Headers.TryGetValue("X-Profile-Id", out var profileIdStr) &&
+            Guid.TryParse(profileIdStr, out var profileId))
+        {
+            return profileId;
+        }
+        
+        return Guid.Empty;
+    }
+
     [HttpGet]
     public async Task<ActionResult<List<MatchEntry>>> GetAll()
     {
-        var matches = await _matchService.GetAllAsync();
-        return Ok(matches);
+        var profileId = GetProfileId();
+        if (profileId == Guid.Empty)
+            return BadRequest("Profile ID header is missing.");
+        
+        return Ok(await _matchService.GetAllAsync(profileId));
     }
     
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<MatchEntry>> Get(Guid id)
     {
-        var match = await _matchService.GetAsync(id);
+        var profileId = GetProfileId();
+        if (profileId == Guid.Empty)
+            return BadRequest("Profile ID header is missing.");
+        
+        var match = await _matchService.GetAsync(id, profileId);
         return match != null ? Ok(match) : NotFound();
     }
     
     [HttpPost]
     public async Task<ActionResult<MatchEntry>> Add([FromBody] MatchEntry match)
     {
+        var profileId = GetProfileId();
+        if (profileId == Guid.Empty)
+            return BadRequest("Profile ID header is missing.");
+        
+        match.ProfileId = profileId;
         var added = await _matchService.AddAsync(match);
-        return CreatedAtAction(nameof(Get), new {id = added.Id}, added);
+        return Ok(added);
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<MatchEntry>> Update(Guid id, [FromBody] MatchEntry updated)
+    public async Task<ActionResult<MatchEntry>> Update(Guid id, [FromBody] MatchEntry match)
     {
-        try
-        {
-            var match = await _matchService.UpdateAsync(id, updated);
-            return Ok(match);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        var updated = await _matchService.UpdateAsync(id, match);
+        return updated != null ? Ok(updated) : NotFound();
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        await _matchService.DeleteAsync(id);
-        return NoContent();
+        var success = await _matchService.DeleteAsync(id);
+        return success ? NoContent() : NotFound();
     }
 
-    [HttpDelete]
+    [HttpDelete("clear")]
     public async Task<IActionResult> Clear()
     {
-        await _matchService.ClearAsync();
+        var profileId = GetProfileId();
+        
+        await _matchService.ClearAsync(profileId);
         return NoContent();
     }
 }
