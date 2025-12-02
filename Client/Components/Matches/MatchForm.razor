@@ -108,7 +108,9 @@
                 <MudItem xs="12" sm="6" Class="d-flex justify-center align-center">
                     <MudPaper Outlined="true" Class="px-4 py-2 d-flex align-center gap-4 rounded-lg" Style="@(Model.Win ? "border-color:var(--mud-palette-success)" : "border-color:var(--mud-palette-error)")">
                         <MudText Color="@(Model.Win ? Color.Default : Color.Error)">Defeat</MudText>
-                        <MudSwitch T="bool" Value="Model.Win" ValueChanged="OnWinChanged" Color="Color.Success" Size="Size.Large" />
+                        <MudSwitch @bind-Value="Model.Win" 
+                                   Color="Color.Success" 
+                                   Label="@(Model.Win ? "Victory" : "Defeat")" />
                         <MudText Color="@(Model.Win ? Color.Success : Color.Default)">Victory</MudText>
                     </MudPaper>
                 </MudItem>

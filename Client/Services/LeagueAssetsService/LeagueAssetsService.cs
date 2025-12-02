@@ -30,27 +30,27 @@ public class LeagueAssetsService : ILeagueAssetsService
 
         try
         {
-            var versions = await _http.GetFromJsonAsync<List<string>>($"{DDragonVersionUrl}");
-
-            if (versions != null && versions.Any())
-            {
-                _currentVersion = versions.First();
-            }
-
-            var championUrl = $"{DDragonBaseUrl}/{_currentVersion}/data/en_US/champion.json";
+            var version = await GetLatestVersionAsync();
+            _currentVersion = version;
+            
+            var championUrl = $"https://ddragon.leagueoflegends.com/cdn/{_currentVersion}/data/en_US/champion.json";
             var response = await _http.GetFromJsonAsync<DataDragonResponse>(championUrl);
 
             if (response?.Data != null)
             {
                 _championsMap = response.Data.Values
                     .ToDictionary(c => c.Name, c => c, StringComparer.OrdinalIgnoreCase);
+
+                _sortedChampionNames = _championsMap.Keys
+                    .OrderBy(k => k)
+                    .ToList();
             }
-            
+        
             IsInitialized = true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to initialize LeagueAssetsService");
+            _logger.LogError($"Failed to initialize LeagueAssetsService: {ex.Message}");
         }
     }
 
@@ -88,5 +88,11 @@ public class LeagueAssetsService : ILeagueAssetsService
         };
 
         return fileSuffix != null ? $"{CDragonRoleUrl}{fileSuffix}" : string.Empty;
+    }
+    
+    private async Task<string> GetLatestVersionAsync()
+    {
+        var response = await _http.GetFromJsonAsync<List<string>>(DDragonVersionUrl);
+        return response?.First() ?? _currentVersion;
     }
 }

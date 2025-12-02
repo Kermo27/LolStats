@@ -63,7 +63,11 @@ public class MatchesController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<MatchEntry>> Update(Guid id, [FromBody] MatchEntry match)
     {
-        var updated = await _matchService.UpdateAsync(id, match);
+        var profileId = GetProfileId();
+        if (profileId == Guid.Empty) return BadRequest("Profile ID is missing.");
+        
+        var updated = await _matchService.UpdateAsync(id, match, profileId);
+    
         return updated != null ? Ok(updated) : NotFound();
     }
 

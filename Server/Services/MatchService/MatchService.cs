@@ -35,16 +35,39 @@ public class MatchService : IMatchService
         await _db.SaveChangesAsync();
         return match;
     }
-
-    public async Task<MatchEntry> UpdateAsync(Guid id, MatchEntry match)
+    
+    public async Task<MatchEntry?> UpdateAsync(Guid id, MatchEntry updatedMatch, Guid profileId)
     {
-        var existing = await _db.Matches.FindAsync(id);
-        if (existing == null)
-            return null;
+        var existingMatch = await _db.Matches
+            .FirstOrDefaultAsync(m => m.Id == id && m.ProfileId == profileId);
 
-        _db.Entry(existing).CurrentValues.SetValues(match);
+        if (existingMatch == null)
+        {
+            return null; 
+        }
+
+        // Map properties
+        existingMatch.Champion = updatedMatch.Champion;
+        existingMatch.Role = updatedMatch.Role;
+        existingMatch.Support = updatedMatch.Support;
+        existingMatch.EnemyBot = updatedMatch.EnemyBot;
+        existingMatch.EnemySupport = updatedMatch.EnemySupport;
+        existingMatch.Kills = updatedMatch.Kills;
+        existingMatch.Deaths = updatedMatch.Deaths;
+        existingMatch.Assists = updatedMatch.Assists;
+        existingMatch.Cs = updatedMatch.Cs;
+        existingMatch.GameLengthMinutes = updatedMatch.GameLengthMinutes;
+        existingMatch.Win = updatedMatch.Win;
+        existingMatch.Date = updatedMatch.Date;
+        existingMatch.LpChange = updatedMatch.LpChange;
+        existingMatch.CurrentTier = updatedMatch.CurrentTier;
+        existingMatch.CurrentDivision = updatedMatch.CurrentDivision;
+        existingMatch.CurrentLp = updatedMatch.CurrentLp;
+        
+        existingMatch.ProfileId = profileId;
+
         await _db.SaveChangesAsync();
-        return existing;
+        return existingMatch;
     }
 
     public async Task<bool> DeleteAsync(Guid id)
@@ -62,7 +85,8 @@ public class MatchService : IMatchService
     public async Task ClearAsync(Guid profileId)
     {
         var matches = await _db.Matches.Where(m => m.ProfileId == profileId).ToListAsync();
-        _db.Matches.RemoveRange(_db.Matches);
+        
+        _db.Matches.RemoveRange(matches); 
         await _db.SaveChangesAsync();
     }
 }
