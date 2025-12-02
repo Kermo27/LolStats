@@ -17,7 +17,7 @@ namespace LolStatsTracker.API.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
 
-            modelBuilder.Entity("LolStatsTracker.API.Models.MatchEntry", b =>
+            modelBuilder.Entity("LolStatsTracker.Shared.Models.MatchEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -32,6 +32,16 @@ namespace LolStatsTracker.API.Data.Migrations
 
                     b.Property<int>("Cs")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("CurrentDivision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CurrentLp")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CurrentTier")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("TEXT");
@@ -52,6 +62,13 @@ namespace LolStatsTracker.API.Data.Migrations
 
                     b.Property<int>("Kills")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("LpChange")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Support")
                         .IsRequired()

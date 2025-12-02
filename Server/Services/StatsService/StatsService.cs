@@ -64,7 +64,9 @@ public class StatsService : IStatsService
 
     public async Task<List<EnemyStatsDto>> GetEnemyStatsAsync(string role)
     {
-        var matches = await _db.Matches.ToListAsync();
+        var matches = await _db.Matches
+            .Where(m => m.Role == "ADC")
+            .ToListAsync();
 
         return matches
             .Where(m => role.ToLower() == "bot" ? !string.IsNullOrEmpty(m.EnemyBot) : !string.IsNullOrEmpty(m.EnemySupport))
@@ -116,7 +118,9 @@ public class StatsService : IStatsService
 
     public async Task<List<DuoSummary>> GetBestDuosAsync()
     {
-        var matches = await _db.Matches.ToListAsync();
+        var matches = await _db.Matches
+            .Where(m => m.Role == "ADC")
+            .ToListAsync();
 
         return matches
             .GroupBy(m => (m.Champion, m.Support))
@@ -128,7 +132,7 @@ public class StatsService : IStatsService
                 WinRate = g.Average(m => m.Win ? 1 : 0) * 100,
                 AvgKda = g.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths))
             })
-            .Where(d => d.Count >= 3)
+            .Where(d => d.Count >= 2)
             .OrderByDescending(d => d.WinRate)
             .Take(3)
             .ToList();
@@ -136,7 +140,9 @@ public class StatsService : IStatsService
 
     public async Task<List<DuoSummary>> GetWorstEnemyDuosAsync()
     {
-        var matches = await _db.Matches.ToListAsync();
+        var matches = await _db.Matches
+            .Where(m => m.Role == "ADC")
+            .ToListAsync();
 
         return matches
             .GroupBy(m => (m.EnemyBot, m.EnemySupport))
@@ -148,7 +154,7 @@ public class StatsService : IStatsService
                 WinRate = g.Average(m => m.Win ? 1 : 0) * 100,
                 AvgKda = g.Average(m => (m.Kills + m.Assists) / Math.Max(1.0, m.Deaths))
             })
-            .Where(d => d.Count >= 3)
+            .Where(d => d.Count >= 2)
             .OrderBy(d => d.WinRate)
             .Take(3)
             .ToList();
