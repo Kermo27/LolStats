@@ -9,7 +9,10 @@ public class UserProfileState
     private readonly HttpClient _http;
     private readonly ILocalStorageService _localStorage;
 
+    private readonly SemaphoreSlim _initializationLock = new SemaphoreSlim(1, 1);
+
     public event Action? OnChange;
+    
     public UserProfile? CurrentProfile { get; private set; }
     public List<UserProfile> AllProfiles { get; private set; } = new();
     public bool IsInitialized { get; private set; }
@@ -22,10 +25,13 @@ public class UserProfileState
     
     public async Task InitializeAsync()
     {
-        if (IsInitialized) return;
+        // Only one thread at a time can enter this block
+        await _initializationLock.WaitAsync();
 
         try
         {
+            if (IsInitialized) return;
+
             AllProfiles = await _http.GetFromJsonAsync<List<UserProfile>>("api/Profiles") ?? new();
 
             if (!AllProfiles.Any())
@@ -38,18 +44,18 @@ public class UserProfileState
                     if (created != null) AllProfiles.Add(created);
                 }
             }
-            
+
             var savedId = await _localStorage.GetItemAsync<string>("selectedProfileId");
-            
+
             if (!string.IsNullOrEmpty(savedId) && Guid.TryParse(savedId, out var guid))
             {
                 CurrentProfile = AllProfiles.FirstOrDefault(p => p.Id == guid);
             }
-            
+
             if (CurrentProfile == null && AllProfiles.Any())
             {
                 CurrentProfile = AllProfiles.First();
-                
+
                 await _localStorage.SetItemAsync("selectedProfileId", CurrentProfile.Id.ToString());
             }
 
@@ -59,6 +65,10 @@ public class UserProfileState
         catch (Exception ex)
         {
             Console.WriteLine($"Error fetching profiles: {ex.Message}");
+        }
+        finally
+        {
+            _initializationLock.Release();
         }
     }
 
@@ -90,13 +100,11 @@ public class UserProfileState
         var response = await _http.PutAsJsonAsync($"api/profiles/{profile.Id}", profile);
         if (response.IsSuccessStatusCode)
         {
-            // Aktualizuj listę lokalną
             var index = AllProfiles.FindIndex(p => p.Id == profile.Id);
             if (index != -1)
             {
                 AllProfiles[index] = profile;
                 
-                // Jeśli edytujemy aktualny, odśwież go
                 if (CurrentProfile?.Id == profile.Id)
                 {
                     CurrentProfile = profile;
@@ -115,8 +123,7 @@ public class UserProfileState
             if (profileToRemove != null)
             {
                 AllProfiles.Remove(profileToRemove);
-
-                // Jeśli usunęliśmy ten, na którym aktualnie jesteśmy -> przełącz na inny
+                
                 if (CurrentProfile?.Id == id)
                 {
                     var fallback = AllProfiles.FirstOrDefault();

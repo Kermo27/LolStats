@@ -1,5 +1,4 @@
-﻿
-@using LolStatsTracker.Services.UserState
+﻿@using LolStatsTracker.Services.UserState
 @using LolStatsTracker.Shared.Models
 @inject UserProfileState UserState
 @inject IDialogService DialogService
@@ -96,7 +95,7 @@
         };
 
         var parameters = new DialogParameters { ["Model"] = profileCopy };
-        var dialog = await DialogService.ShowAsync<ProfileDialog>("Edytuj Konto", parameters);
+        var dialog = await DialogService.ShowAsync<ProfileDialog>("Edit account", parameters);
         var result = await dialog.Result;
 
         if (!result.Canceled && result.Data is UserProfile updatedProfile)
