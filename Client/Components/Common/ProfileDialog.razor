@@ -27,13 +27,13 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
 
     [Parameter] public UserProfile Model { get; set; } = new();
     
     private bool IsEditMode => Model.Id != Guid.Empty;
     
-    MudForm form;
+    MudForm form = null!;
 
     private async Task Submit()
     {

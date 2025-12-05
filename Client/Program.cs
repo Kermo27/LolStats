@@ -14,7 +14,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 var apiUrl = builder.Configuration["ApiUrl"];
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiUrl) });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiUrl ?? "http://localhost:5109") });
 
 builder.Services.AddMudServices();
 builder.Services.AddBlazoredLocalStorage();

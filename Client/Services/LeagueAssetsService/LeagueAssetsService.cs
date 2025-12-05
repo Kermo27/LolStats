@@ -11,12 +11,13 @@ public class LeagueAssetsService : ILeagueAssetsService
     
     private readonly HttpClient _http;
     private readonly ILogger<LeagueAssetsService> _logger;
+    private readonly SemaphoreSlim _initLock = new(1, 1);
     
     private Dictionary<string, ChampionDto> _championsMap = new();
     private List<string> _sortedChampionNames = new();
     private string _currentVersion = "14.23.1"; // Default backup
     
-    public bool IsInitialized { get; private set; } = false;
+    public bool IsInitialized { get; private set; }
 
     public LeagueAssetsService(HttpClient http, ILogger<LeagueAssetsService> logger)
     {
@@ -28,8 +29,11 @@ public class LeagueAssetsService : ILeagueAssetsService
     {
         if (IsInitialized) return;
 
+        await _initLock.WaitAsync();
         try
         {
+            if (IsInitialized) return; // Double-check after acquiring lock
+            
             var version = await GetLatestVersionAsync();
             _currentVersion = version;
             
@@ -51,6 +55,10 @@ public class LeagueAssetsService : ILeagueAssetsService
         catch (Exception ex)
         {
             _logger.LogError($"Failed to initialize LeagueAssetsService: {ex.Message}");
+        }
+        finally
+        {
+            _initLock.Release();
         }
     }
 

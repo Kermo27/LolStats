@@ -4,12 +4,13 @@ using LolStatsTracker.Shared.Models;
 
 namespace LolStatsTracker.Services.UserState;
 
-public class UserProfileState
+public class UserProfileState : IDisposable
 {
     private readonly HttpClient _http;
     private readonly ILocalStorageService _localStorage;
 
     private readonly SemaphoreSlim _initializationLock = new SemaphoreSlim(1, 1);
+    private bool _disposed;
 
     public event Action? OnChange;
     
@@ -143,4 +144,22 @@ public class UserProfileState
     }
     
     private void NotifyStateChanged() => OnChange?.Invoke();
+    
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _initializationLock.Dispose();
+            }
+            _disposed = true;
+        }
+    }
 }

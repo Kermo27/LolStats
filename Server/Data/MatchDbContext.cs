@@ -17,5 +17,18 @@ public class MatchDbContext : DbContext
             .WithMany()
             .HasForeignKey(m => m.ProfileId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Performance indexes
+        modelBuilder.Entity<MatchEntry>()
+            .HasIndex(m => m.ProfileId)
+            .HasDatabaseName("IX_Matches_ProfileId");
+
+        modelBuilder.Entity<MatchEntry>()
+            .HasIndex(m => m.Date)
+            .HasDatabaseName("IX_Matches_Date");
+
+        modelBuilder.Entity<MatchEntry>()
+            .HasIndex(m => new { m.ProfileId, m.Date })
+            .HasDatabaseName("IX_Matches_ProfileId_Date");
     }
 }

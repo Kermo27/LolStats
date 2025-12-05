@@ -6,24 +6,13 @@ namespace LolStatsTracker.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class StatsController : ControllerBase
+public class StatsController : BaseApiController
 {
     private readonly IStatsService _statsService;
 
     public StatsController(IStatsService statsService)
     {
         _statsService = statsService;
-    }
-
-    private Guid GetProfileId()
-    {
-        if (Request.Headers.TryGetValue("X-Profile-Id", out var profileIdStr) &&
-            Guid.TryParse(profileIdStr, out var profileId))
-        {
-            return profileId;
-        }
-        
-        return Guid.Empty;
     }
 
     [HttpGet("overview")]

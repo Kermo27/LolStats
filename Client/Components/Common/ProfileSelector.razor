@@ -77,7 +77,7 @@
         var dialog = await DialogService.ShowAsync<ProfileDialog>("Dodaj Konto");
         var result = await dialog.Result;
 
-        if (!result.Canceled && result.Data is UserProfile newProfile)
+        if (result is { Canceled: false, Data: UserProfile newProfile })
         {
             await UserState.AddProfile(newProfile.Name, newProfile.Tag);
             NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
@@ -98,7 +98,7 @@
         var dialog = await DialogService.ShowAsync<ProfileDialog>("Edit account", parameters);
         var result = await dialog.Result;
 
-        if (!result.Canceled && result.Data is UserProfile updatedProfile)
+        if (result is { Canceled: false, Data: UserProfile updatedProfile })
         {
             await UserState.UpdateProfile(updatedProfile);
             StateHasChanged(); 

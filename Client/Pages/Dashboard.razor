@@ -144,7 +144,7 @@
             <MudItem xs="12" md="5">
                 <MudPaper Class="p-4 rounded-xl" Elevation="2">
                     <MudText Typo="Typo.h6" Class="mb-4">HARD ENEMY (BOT)</MudText>
-                    <MudList T="string" Dense="true" DisablePadding="true">
+                    <MudList T="string" Dense="true" Padding="false">
                         @foreach (var enemy in _stats.EnemyBotStats.Take(5))
                         {
                             <MudListItem>
