@@ -154,7 +154,7 @@
         var dialogRef = await DialogService.ShowAsync<ConfirmDialog>("Confirm", parameters);
         var result = await dialogRef.Result;
         
-        if (!result.Canceled && result.Data is true)
+        if (result is { Canceled: false, Data: true })
         {
             await OnDelete.InvokeAsync(match);
         }

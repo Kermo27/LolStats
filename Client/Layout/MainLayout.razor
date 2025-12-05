@@ -26,11 +26,12 @@
         
         <ProfileSelector />
 
-        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                       Color="Color.Inherit"
-                       OnClick="ToggleTheme"
-                       Class="hover:text-white transition-transform duration-300 hover:rotate-12"
-                       Title="@(_isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")" />
+        <MudTooltip Text="@(_isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")">
+            <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                           Color="Color.Inherit"
+                           OnClick="ToggleTheme"
+                           Class="hover:text-white transition-transform duration-300 hover:rotate-12" />
+        </MudTooltip>
     </MudAppBar>
 
     <MudDrawer @bind-Open="_drawerOpen"

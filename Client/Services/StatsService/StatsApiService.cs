@@ -15,59 +15,122 @@ public class StatsApiService : IStatsService
         _userState = userState;
     }
     
-    private async Task<T?> SendRequestAsync<T>(string url)
-    {
-        if (_userState.CurrentProfile == null)
-        {
-            Console.WriteLine($"[StatsService] No profile set, skipping request to {url}");
-            return default;
-        }
-        
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        
-        request.Headers.Add("X-Profile-Id", _userState.CurrentProfile.Id.ToString());
-
-        try
-        {
-            var response = await _http.SendAsync(request);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"[StatsService] Błąd HTTP {response.StatusCode} dla {url}");
-                return default;
-            }
-            
-            return await response.Content.ReadFromJsonAsync<T>();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[StatsService] Error {url}: {ex.Message}");
-            return default;
-        }
-    }
-    
     public async Task<StatsSummaryDto?> GetSummaryAsync(int months = 6)
     {
-        return await SendRequestAsync<StatsSummaryDto>($"api/Stats/summary?months={months}");
+        if (_userState.CurrentProfile == null) return null;
+        
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/Stats/summary?months={months}");
+            AddProfileHeader(request);
+            var response = await _http.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<StatsSummaryDto>();
+            }
+            return null;
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"[StatsService] Error: {ex.Message}");
+            return null;
+        }
     }
 
     public async Task<List<ChampionStatsDto>> GetChampionsAsync()
     {
-        return await SendRequestAsync<List<ChampionStatsDto>>("api/Stats/champions") ?? new();
+        if (_userState.CurrentProfile == null) return new();
+        
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "api/Stats/champions");
+            AddProfileHeader(request);
+            var response = await _http.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<ChampionStatsDto>>() ?? new();
+            }
+            return new();
+        }
+        catch (HttpRequestException)
+        {
+            return new();
+        }
     }
 
     public async Task<List<DuoSummary>> GetWorstEnemyDuosAsync()
     {
-        return await SendRequestAsync<List<DuoSummary>>("api/Stats/worst-enemy-duos") ?? new();
+        if (_userState.CurrentProfile == null) return new();
+        
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "api/Stats/worst-enemy-duos");
+            AddProfileHeader(request);
+            var response = await _http.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<DuoSummary>>() ?? new();
+            }
+            return new();
+        }
+        catch (HttpRequestException)
+        {
+            return new();
+        }
     }
 
     public async Task<List<EnemyStatsDto>> GetEnemyStatsAsync(string role)
     {
-        return await SendRequestAsync<List<EnemyStatsDto>>($"api/Stats/enemies?role={role}") ?? new();
+        if (_userState.CurrentProfile == null) return new();
+        
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/Stats/enemies?role={role}");
+            AddProfileHeader(request);
+            var response = await _http.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<EnemyStatsDto>>() ?? new();
+            }
+            return new();
+        }
+        catch (HttpRequestException)
+        {
+            return new();
+        }
     }
 
     public async Task<List<DuoSummary>> GetBestDuosAsync()
     {
-        return await SendRequestAsync<List<DuoSummary>>("api/Stats/best-duos") ?? new();
+        if (_userState.CurrentProfile == null) return new();
+        
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "api/Stats/best-duos");
+            AddProfileHeader(request);
+            var response = await _http.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<DuoSummary>>() ?? new();
+            }
+            return new();
+        }
+        catch (HttpRequestException)
+        {
+            return new();
+        }
+    }
+    
+    private void AddProfileHeader(HttpRequestMessage request)
+    {
+        if (_userState.CurrentProfile != null)
+        {
+            request.Headers.Add("X-Profile-Id", _userState.CurrentProfile.Id.ToString());
+        }
     }
 }

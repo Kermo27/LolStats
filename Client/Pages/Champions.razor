@@ -1,9 +1,5 @@
 ﻿@page "/champions"
 @using LolStatsTracker.Shared.DTOs
-@using LolStatsTracker.Services.LeagueAssetsService
-@using LolStatsTracker.Services.StatsService
-@inject IStatsService StatsService
-@inject ILeagueAssetsService LeagueAssetsService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
     <MudText Typo="Typo.h4" Class="mb-6 font-weight-bold">Champion Stats</MudText>
@@ -97,36 +93,3 @@
         </MudTable>
     }
 </MudContainer>
-
-@code {
-    private List<ChampionStatsDto> _championStats = new();
-    private bool _isLoading = true;
-    private string _searchString = "";
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LeagueAssetsService.InitializeAsync();
-        _championStats = await StatsService.GetChampionsAsync();
-        _isLoading = false;
-    }
-
-    private Color GetColor(double wr)
-    {
-        if (wr >= 0.6) return Color.Success; 
-        if (wr >= 0.5) return Color.Info;    
-        return Color.Error;                 
-    }
-    
-    private Color GetWinrateColor(double wr)
-    {
-        if (wr >= 0.5) return Color.Success;
-        return Color.Error;
-    }
-    
-    private bool FilterFunc(ChampionStatsDto element)
-    {
-        if (string.IsNullOrWhiteSpace(_searchString)) return true;
-        if (element.ChampionName.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) return true;
-        return false;
-    }
-}

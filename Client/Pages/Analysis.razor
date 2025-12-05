@@ -1,10 +1,6 @@
 ﻿@page "/analysis"
 @using LolStatsTracker.Shared.DTOs
-@using LolStatsTracker.Services.LeagueAssetsService
-@using LolStatsTracker.Services.StatsService
 @using DuoSummary = LolStatsTracker.Shared.DTOs.DuoSummary
-@inject IStatsService StatsService
-@inject ILeagueAssetsService LeagueAssetsService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
     <MudText Typo="Typo.h4" Class="mb-4 font-weight-bold">Analyze</MudText>
@@ -21,7 +17,7 @@
         <MudItem xs="12" md="6">
             <MudPaper Class="p-4 rounded-xl" Elevation="4">
                 <MudText Typo="Typo.h6" Class="mb-4 text-success font-weight-bold">TOP 3 DUO (BEST WR)</MudText>
-                <MudList T="object" DisablePadding="true" Dense="true"> @foreach (var duo in _duos)
+                <MudList T="object" Padding="false" Dense="true"> @foreach (var duo in _duos)
                     {
                     <MudListItem T="object" Class="px-0 py-2"> <div class="d-flex align-center justify-space-between w-100">
                             <div class="d-flex align-center gap-3">
@@ -53,7 +49,7 @@
         <MudItem xs="12" md="6">
             <MudPaper Class="p-4 rounded-xl" Elevation="4">
                 <MudText Typo="Typo.h6" Class="mb-4 text-error font-weight-bold">TOP 3 HARDEST ENEY DUO</MudText>
-                <MudList T="object" DisablePadding="true" Dense="true"> @foreach (var duo in _worstDuos)
+                <MudList T="object" Padding="false" Dense="true"> @foreach (var duo in _worstDuos)
                     {
                     <MudListItem T="object" Class="px-0 py-2"> <div class="d-flex align-center justify-space-between w-100">
                             <div class="d-flex align-center gap-3">
@@ -91,7 +87,7 @@
                         <MudText Typo="Typo.subtitle1" Color="Color.Primary" Class="mb-3">Enemy ADC/APC (Bot)</MudText>
                         @if (_enemyBotStats.Any())
                         {
-                        <MudList T="object" DisablePadding="true" Dense="true"> @foreach (var enemy in _enemyBotStats.OrderByDescending(e => e.WinrateAgainst).Take(5))
+                        <MudList T="object" Padding="false" Dense="true"> @foreach (var enemy in _enemyBotStats.OrderByDescending(e => e.WinrateAgainst).Take(5))
                             {
                             <MudListItem T="object" Class="px-0 py-1"> <div class="d-flex align-center justify-space-between w-100">
                                     <div class="d-flex align-center gap-2">
@@ -110,7 +106,7 @@
                     <MudItem xs="12" sm="6">
                         <MudText Typo="Typo.subtitle1" Color="Color.Primary" Class="mb-3">Enemy Support</MudText> @if (_enemySupportStats.Any())
                         {
-                        <MudList T="object" DisablePadding="true" Dense="true"> @foreach (var enemy in _enemySupportStats.OrderByDescending(e => e.WinrateAgainst).Take(5))
+                        <MudList T="object" Padding="false" Dense="true"> @foreach (var enemy in _enemySupportStats.OrderByDescending(e => e.WinrateAgainst).Take(5))
                             {
                             <MudListItem T="object" Class="px-0 py-1"> <div class="d-flex align-center justify-space-between w-100">
                                     <div class="d-flex align-center gap-2">
@@ -133,31 +129,3 @@
     </MudGrid>
     }
 </MudContainer>
-
-@code {
-    private bool _isLoading = true;
-    private List<DuoSummary> _duos = new();
-    private List<DuoSummary> _worstDuos = new();
-    private List<EnemyStatsDto> _enemyBotStats = new();
-    private List<EnemyStatsDto> _enemySupportStats = new();
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LeagueAssetsService.InitializeAsync();
-
-        var duosTask = StatsService.GetBestDuosAsync();
-        var worstDuosTask = StatsService.GetWorstEnemyDuosAsync();
-        var enemyBotTask = StatsService.GetEnemyStatsAsync("bot");
-        var enemySupportTask = StatsService.GetEnemyStatsAsync("support");
-
-        await Task.WhenAll(duosTask, worstDuosTask, enemyBotTask, enemySupportTask);
-
-        _duos = await duosTask;
-        _worstDuos = await worstDuosTask;
-
-        _enemyBotStats = (await enemyBotTask).OrderByDescending(e => e.WinrateAgainst).ToList();
-        _enemySupportStats = (await enemySupportTask).OrderByDescending(e => e.WinrateAgainst).ToList();
-
-        _isLoading = false;
-    }
-}
