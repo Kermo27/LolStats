@@ -1,10 +1,6 @@
 ﻿@page "/analysis"
 @using LolStatsTracker.Shared.DTOs
-@using LolStatsTracker.Services.LeagueAssetsService
-@using LolStatsTracker.Services.StatsService
 @using DuoSummary = LolStatsTracker.Shared.DTOs.DuoSummary
-@inject IStatsService StatsService
-@inject ILeagueAssetsService LeagueAssetsService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
     <MudText Typo="Typo.h4" Class="mb-4 font-weight-bold">Analyze</MudText>
@@ -133,31 +129,3 @@
     </MudGrid>
     }
 </MudContainer>
-
-@code {
-    private bool _isLoading = true;
-    private List<DuoSummary> _duos = new();
-    private List<DuoSummary> _worstDuos = new();
-    private List<EnemyStatsDto> _enemyBotStats = new();
-    private List<EnemyStatsDto> _enemySupportStats = new();
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LeagueAssetsService.InitializeAsync();
-
-        var duosTask = StatsService.GetBestDuosAsync();
-        var worstDuosTask = StatsService.GetWorstEnemyDuosAsync();
-        var enemyBotTask = StatsService.GetEnemyStatsAsync("bot");
-        var enemySupportTask = StatsService.GetEnemyStatsAsync("support");
-
-        await Task.WhenAll(duosTask, worstDuosTask, enemyBotTask, enemySupportTask);
-
-        _duos = await duosTask;
-        _worstDuos = await worstDuosTask;
-
-        _enemyBotStats = (await enemyBotTask).OrderByDescending(e => e.WinrateAgainst).ToList();
-        _enemySupportStats = (await enemySupportTask).OrderByDescending(e => e.WinrateAgainst).ToList();
-
-        _isLoading = false;
-    }
-}

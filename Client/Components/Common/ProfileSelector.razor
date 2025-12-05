@@ -2,7 +2,6 @@
 @using LolStatsTracker.Shared.Models
 @inject UserProfileState UserState
 @inject IDialogService DialogService
-@inject NavigationManager NavigationManager
 
 @if (UserState.CurrentProfile != null)
 {
@@ -69,7 +68,6 @@
         if (profile.Id == UserState.CurrentProfile?.Id) return;
         
         await UserState.SetActiveProfileAsync(profile);
-        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 
     private async Task OpenAddDialog()
@@ -80,7 +78,6 @@
         if (result is { Canceled: false, Data: UserProfile newProfile })
         {
             await UserState.AddProfile(newProfile.Name, newProfile.Tag);
-            NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
         }
     }
     
@@ -116,11 +113,6 @@
         {
             var wasActive = profile.Id == UserState.CurrentProfile?.Id;
             await UserState.DeleteProfile(profile.Id);
-
-            if (wasActive)
-            {
-                NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
-            }
         }
     }
 }

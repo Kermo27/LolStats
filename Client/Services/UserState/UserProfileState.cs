@@ -13,6 +13,8 @@ public class UserProfileState : IDisposable
     private bool _disposed;
 
     public event Action? OnChange;
+
+    public event Func<Task>? OnProfileChanged;
     
     public UserProfile? CurrentProfile { get; private set; }
     public List<UserProfile> AllProfiles { get; private set; } = new();
@@ -75,9 +77,15 @@ public class UserProfileState : IDisposable
 
     public async Task SetActiveProfileAsync(UserProfile profile)
     {
+        var profileChanged = CurrentProfile?.Id != profile.Id;
         CurrentProfile = profile;
         await _localStorage.SetItemAsync("selectedProfileId", profile.Id.ToString());
         NotifyStateChanged();
+        
+        if (profileChanged)
+        {
+            await NotifyProfileChangedAsync();
+        }
     }
 
     public async Task AddProfile(string name, string tag)
@@ -144,6 +152,17 @@ public class UserProfileState : IDisposable
     }
     
     private void NotifyStateChanged() => OnChange?.Invoke();
+    
+    private async Task NotifyProfileChangedAsync()
+    {
+        if (OnProfileChanged != null)
+        {
+            foreach (var handler in OnProfileChanged.GetInvocationList().Cast<Func<Task>>())
+            {
+                await handler();
+            }
+        }
+    }
     
     public void Dispose()
     {

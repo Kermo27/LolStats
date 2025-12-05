@@ -1,14 +1,5 @@
 ﻿@page "/"
-@using LolStatsTracker.Shared.DTOs
-@using LolStatsTracker.Services.LeagueAssetsService
-@using LolStatsTracker.Services.MatchService
-@using LolStatsTracker.Services.StatsService
-@using LolStatsTracker.Services.UserState
-@using LolStatsTracker.Shared.Models
-@inject IStatsService StatsService
-@inject ILeagueAssetsService LeagueAssetsService
-@inject IMatchService MatchService
-@inject UserProfileState UserState
+@using LolStatsTracker.Helpers
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
     
@@ -48,7 +39,7 @@
                         
                         <div>
                             <MudText Typo="Typo.h6">@_stats.Overview.MostPlayedChampion</MudText>
-                            <MudText Typo="Typo.caption">@_stats.Overview.MostPlayedChampionGames gier</MudText>
+                            <MudText Typo="Typo.caption">@_stats.Overview.MostPlayedChampionGames games</MudText>
                         </div>
                     </div>
                 </MudPaper>
@@ -231,75 +222,3 @@
         border: 1px solid white;
     }
 </style>
-
-@code {
-    private StatsSummaryDto? _stats;
-    
-    private List<List<(DateTime Date, int Count)>> _matrix = new();
-    
-    private int _maxGamesPerDay = 0;
-    private List<ChartSeries> _lpSeries = new();
-    private string[] _lpLabels = Array.Empty<string>();
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LeagueAssetsService.InitializeAsync();
-        
-        if (!UserState.IsInitialized) await UserState.InitializeAsync();
-        
-        if (UserState.CurrentProfile == null)
-        {
-            Console.WriteLine("Dashboard: Brak wybranego profilu. Przerywam ładowanie danych.");
-            return;
-        }
-        
-        _stats = await StatsService.GetSummaryAsync();
-        var matches = (await MatchService.GetAllAsync()).OrderBy(m => m.Date).TakeLast(20).ToList();
-        
-        if (_stats != null)
-        {
-            PrepareActivityMatrix();
-            PrepareLpChart(matches);
-        }
-    }
-
-    private void PrepareActivityMatrix()
-    {
-        var builder = new ActivityMatrixBuilder(_stats!.Activity);
-        _matrix = builder.Build();
-        
-        _maxGamesPerDay = _stats.Activity.Any() ? _stats.Activity.Max(x => x.GamesPlayed) : 1; 
-    }
-    
-    private string GetHeatmapColor(int gameCount)
-    {
-        if (gameCount == 0) return "#282830"; 
-
-        var normalized = (double)gameCount / _maxGamesPerDay;
-
-        return normalized switch
-        {
-            >= 0.75 => "#594ae2",
-            >= 0.40 => "#4840b0",
-            _ => "#3f3c6e"
-        };
-    }
-    
-    private void PrepareLpChart(List<MatchEntry> matches)
-    {
-        var data = new List<double>();
-        double currentNet = 0;
-        var labels = new List<string>();
-
-        var i = 1;
-        foreach (var m in matches)
-        {
-            currentNet += m.LpChange;
-            data.Add(currentNet);
-            labels.Add(i++.ToString());
-        }
-
-        _lpSeries.Add(new ChartSeries { Name = "Net LP Change", Data = data.ToArray() });
-        _lpLabels = labels.ToArray();
-    }
-}
