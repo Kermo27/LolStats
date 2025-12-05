@@ -1,6 +1,7 @@
 using LolStatsTracker.Helpers;
 using LolStatsTracker.Services.LeagueAssetsService;
 using LolStatsTracker.Services.MatchService;
+using LolStatsTracker.Services.SeasonState;
 using LolStatsTracker.Services.StatsService;
 using LolStatsTracker.Services.UserState;
 using LolStatsTracker.Shared.DTOs;
@@ -16,6 +17,7 @@ public partial class Dashboard : IDisposable
     [Inject] private ILeagueAssetsService LeagueAssetsService { get; set; } = null!;
     [Inject] private IMatchService MatchService { get; set; } = null!;
     [Inject] private UserProfileState UserState { get; set; } = null!;
+    [Inject] private SeasonState SeasonState { get; set; } = null!;
 
     private StatsSummaryDto? _stats;
     private List<List<(DateTime Date, int Count)>> _matrix = new();
@@ -25,18 +27,28 @@ public partial class Dashboard : IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to profile changes
+        // Subscribe to profile and season changes
         UserState.OnProfileChanged += OnProfileChangedAsync;
+        SeasonState.OnSeasonChanged += OnSeasonChangedAsync;
         
         await LeagueAssetsService.InitializeAsync();
         
         if (!UserState.IsInitialized) 
             await UserState.InitializeAsync();
         
+        if (!SeasonState.IsInitialized)
+            await SeasonState.InitializeAsync();
+        
         await LoadDashboardDataAsync();
     }
 
     private async Task OnProfileChangedAsync()
+    {
+        await LoadDashboardDataAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnSeasonChangedAsync()
     {
         await LoadDashboardDataAsync();
         await InvokeAsync(StateHasChanged);
@@ -55,25 +67,31 @@ public partial class Dashboard : IDisposable
         _lpSeries = new List<ChartSeries>();
         _lpLabels = Array.Empty<string>();
         
-        _stats = await StatsService.GetSummaryAsync();
-        var matches = (await MatchService.GetAllAsync())
+        // Get season filtered stats from server
+        var seasonId = SeasonState.CurrentSeason?.Id;
+        _stats = await StatsService.GetSummaryAsync(6, seasonId);
+        
+        // Get matches and filter by season
+        var allMatches = await MatchService.GetAllAsync();
+        var matches = allMatches
+            .Where(m => SeasonState.IsDateInCurrentSeason(m.Date))
             .OrderBy(m => m.Date)
             .TakeLast(20)
             .ToList();
         
         if (_stats != null)
         {
-            PrepareActivityMatrix();
+            PrepareActivityMatrix(_stats.Activity);
             PrepareLpChart(matches);
         }
     }
 
-    private void PrepareActivityMatrix()
+    private void PrepareActivityMatrix(List<ActivityDayDto> activity)
     {
-        var builder = new ActivityMatrixBuilder(_stats!.Activity);
+        var builder = new ActivityMatrixBuilder(activity);
         _matrix = builder.Build();
         
-        _maxGamesPerDay = _stats.Activity.Any() ? _stats.Activity.Max(x => x.GamesPlayed) : 1; 
+        _maxGamesPerDay = activity.Any() ? activity.Max(x => x.GamesPlayed) : 1; 
     }
     
     private string GetHeatmapColor(int gameCount)
@@ -111,5 +129,6 @@ public partial class Dashboard : IDisposable
     public void Dispose()
     {
         UserState.OnProfileChanged -= OnProfileChangedAsync;
+        SeasonState.OnSeasonChanged -= OnSeasonChangedAsync;
     }
 }

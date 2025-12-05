@@ -1,0 +1,77 @@
+@using LolStatsTracker.Services.SeasonState
+@using LolStatsTracker.Shared.Models
+@inject SeasonState SeasonState
+
+<MudSelect T="int?" 
+           Value="@_selectedSeasonId" 
+           ValueChanged="OnSeasonChanged"
+           Label="Season" 
+           Variant="Variant.Outlined" 
+           Dense="true"
+           Class="season-selector"
+           Style="min-width: 150px;">
+    
+    <MudSelectItem T="int?" Value="@((int?)null)">
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.AllInclusive" Size="Size.Small" />
+            <span>All Seasons</span>
+        </div>
+    </MudSelectItem>
+    
+    @foreach (var season in SeasonState.AllSeasons)
+    {
+        <MudSelectItem T="int?" Value="@((int?)season.Id)">
+            <div class="d-flex align-center gap-2">
+                <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" Color="@GetSeasonColor(season)" />
+                <span>@season.Name</span>
+                @if (season.ContainsDate(DateTime.Today))
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">Aktualny</MudChip>
+                }
+            </div>
+        </MudSelectItem>
+    }
+</MudSelect>
+
+@code {
+    private int? _selectedSeasonId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SeasonState.OnChange += StateHasChanged;
+        
+        if (!SeasonState.IsInitialized)
+        {
+            await SeasonState.InitializeAsync();
+        }
+        
+        _selectedSeasonId = SeasonState.CurrentSeason?.Id;
+    }
+
+    private async Task OnSeasonChanged(int? seasonId)
+    {
+        _selectedSeasonId = seasonId;
+        
+        if (seasonId == null)
+        {
+            await SeasonState.ClearSeasonFilterAsync();
+        }
+        else
+        {
+            var season = SeasonState.AllSeasons.FirstOrDefault(s => s.Id == seasonId);
+            await SeasonState.SetActiveSeasonAsync(season);
+        }
+    }
+
+    private Color GetSeasonColor(Season season)
+    {
+        if (season.ContainsDate(DateTime.Today)) return Color.Success;
+        if (season.EndDate.HasValue && season.EndDate < DateTime.Today) return Color.Default;
+        return Color.Info;
+    }
+
+    public void Dispose()
+    {
+        SeasonState.OnChange -= StateHasChanged;
+    }
+}

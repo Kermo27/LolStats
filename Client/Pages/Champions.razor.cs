@@ -1,4 +1,5 @@
 using LolStatsTracker.Services.LeagueAssetsService;
+using LolStatsTracker.Services.SeasonState;
 using LolStatsTracker.Services.StatsService;
 using LolStatsTracker.Services.UserState;
 using LolStatsTracker.Shared.DTOs;
@@ -12,6 +13,7 @@ public partial class Champions : IDisposable
     [Inject] private IStatsService StatsService { get; set; } = null!;
     [Inject] private ILeagueAssetsService LeagueAssetsService { get; set; } = null!;
     [Inject] private UserProfileState UserState { get; set; } = null!;
+    [Inject] private SeasonState SeasonState { get; set; } = null!;
 
     private List<ChampionStatsDto> _championStats = new();
     private bool _isLoading = true;
@@ -20,16 +22,29 @@ public partial class Champions : IDisposable
     protected override async Task OnInitializedAsync()
     {
         UserState.OnProfileChanged += OnProfileChangedAsync;
+        SeasonState.OnSeasonChanged += OnSeasonChangedAsync;
         
         await LeagueAssetsService.InitializeAsync();
         
         if (!UserState.IsInitialized)
             await UserState.InitializeAsync();
+        
+        if (!SeasonState.IsInitialized)
+            await SeasonState.InitializeAsync();
             
         await LoadDataAsync();
     }
 
     private async Task OnProfileChangedAsync()
+    {
+        _isLoading = true;
+        await InvokeAsync(StateHasChanged);
+        
+        await LoadDataAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnSeasonChangedAsync()
     {
         _isLoading = true;
         await InvokeAsync(StateHasChanged);
@@ -47,7 +62,8 @@ public partial class Champions : IDisposable
             return;
         }
         
-        _championStats = await StatsService.GetChampionsAsync();
+        var seasonId = SeasonState.CurrentSeason?.Id;
+        _championStats = await StatsService.GetChampionsAsync(seasonId);
         _isLoading = false;
     }
 
@@ -74,5 +90,6 @@ public partial class Champions : IDisposable
     public void Dispose()
     {
         UserState.OnProfileChanged -= OnProfileChangedAsync;
+        SeasonState.OnSeasonChanged -= OnSeasonChangedAsync;
     }
 }

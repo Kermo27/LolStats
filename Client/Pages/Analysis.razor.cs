@@ -1,4 +1,5 @@
 using LolStatsTracker.Services.LeagueAssetsService;
+using LolStatsTracker.Services.SeasonState;
 using LolStatsTracker.Services.StatsService;
 using LolStatsTracker.Services.UserState;
 using LolStatsTracker.Shared.DTOs;
@@ -11,6 +12,7 @@ public partial class Analysis : IDisposable
     [Inject] private IStatsService StatsService { get; set; } = null!;
     [Inject] private ILeagueAssetsService LeagueAssetsService { get; set; } = null!;
     [Inject] private UserProfileState UserState { get; set; } = null!;
+    [Inject] private SeasonState SeasonState { get; set; } = null!;
 
     private bool _isLoading = true;
     private List<DuoSummary> _duos = new();
@@ -21,16 +23,29 @@ public partial class Analysis : IDisposable
     protected override async Task OnInitializedAsync()
     {
         UserState.OnProfileChanged += OnProfileChangedAsync;
+        SeasonState.OnSeasonChanged += OnSeasonChangedAsync;
         
         await LeagueAssetsService.InitializeAsync();
         
         if (!UserState.IsInitialized)
             await UserState.InitializeAsync();
+        
+        if (!SeasonState.IsInitialized)
+            await SeasonState.InitializeAsync();
             
         await LoadDataAsync();
     }
 
     private async Task OnProfileChangedAsync()
+    {
+        _isLoading = true;
+        await InvokeAsync(StateHasChanged);
+        
+        await LoadDataAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnSeasonChangedAsync()
     {
         _isLoading = true;
         await InvokeAsync(StateHasChanged);
@@ -47,10 +62,12 @@ public partial class Analysis : IDisposable
             return;
         }
 
-        var duosTask = StatsService.GetBestDuosAsync();
-        var worstDuosTask = StatsService.GetWorstEnemyDuosAsync();
-        var enemyBotTask = StatsService.GetEnemyStatsAsync("bot");
-        var enemySupportTask = StatsService.GetEnemyStatsAsync("support");
+        var seasonId = SeasonState.CurrentSeason?.Id;
+        
+        var duosTask = StatsService.GetBestDuosAsync(seasonId);
+        var worstDuosTask = StatsService.GetWorstEnemyDuosAsync(seasonId);
+        var enemyBotTask = StatsService.GetEnemyStatsAsync("bot", seasonId);
+        var enemySupportTask = StatsService.GetEnemyStatsAsync("support", seasonId);
 
         await Task.WhenAll(duosTask, worstDuosTask, enemyBotTask, enemySupportTask);
 
@@ -66,5 +83,6 @@ public partial class Analysis : IDisposable
     public void Dispose()
     {
         UserState.OnProfileChanged -= OnProfileChangedAsync;
+        SeasonState.OnSeasonChanged -= OnSeasonChangedAsync;
     }
 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LolStatsTracker.Components;
 using LolStatsTracker.Services.MatchService;
+using LolStatsTracker.Services.SeasonState;
 using LolStatsTracker.Services.UserState;
 using LolStatsTracker.Shared.Models;
 using Microsoft.AspNetCore.Components;
@@ -17,8 +18,10 @@ public partial class Matches : IDisposable
     [Inject] private IDialogService DialogService { get; set; } = null!;
     [Inject] private IMatchService MatchService { get; set; } = null!;
     [Inject] private UserProfileState UserState { get; set; } = null!;
+    [Inject] private SeasonState SeasonState { get; set; } = null!;
 
     private MatchEntry currentMatch = new();
+    private List<MatchEntry> _allMatches = new();
     private List<MatchEntry> matches = new();
     private bool isEditing;
 
@@ -29,12 +32,18 @@ public partial class Matches : IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to profile changes
+        // Subscribe to profile and season changes
         UserState.OnProfileChanged += OnProfileChangedAsync;
+        SeasonState.OnSeasonChanged += OnSeasonChangedAsync;
         
         if (!UserState.IsInitialized)
         {
             await UserState.InitializeAsync();
+        }
+        
+        if (!SeasonState.IsInitialized)
+        {
+            await SeasonState.InitializeAsync();
         }
         
         if (UserState.CurrentProfile == null)
@@ -52,6 +61,20 @@ public partial class Matches : IDisposable
         await LoadDataAsync();
         PrepareNewMatch();
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnSeasonChangedAsync()
+    {
+        ApplySeasonFilter();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ApplySeasonFilter()
+    {
+        matches = _allMatches
+            .Where(m => SeasonState.IsDateInCurrentSeason(m.Date))
+            .OrderByDescending(m => m.Date)
+            .ToList();
     }
 
     private void PrepareNewMatch()
@@ -98,9 +121,11 @@ public partial class Matches : IDisposable
 
     private async Task LoadDataAsync()
     {
-        matches = (await MatchService.GetAllAsync())
+        _allMatches = (await MatchService.GetAllAsync())
             .OrderByDescending(m => m.Date)
             .ToList();
+        
+        ApplySeasonFilter();
     }
 
     private async Task SaveMatchData(MatchEntry matchData)
@@ -242,5 +267,6 @@ public partial class Matches : IDisposable
     public void Dispose()
     {
         UserState.OnProfileChanged -= OnProfileChangedAsync;
+        SeasonState.OnSeasonChanged -= OnSeasonChangedAsync;
     }
 }
