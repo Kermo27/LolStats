@@ -9,6 +9,7 @@ public class MatchDbContext : DbContext
     
     public DbSet<MatchEntry> Matches => Set<MatchEntry>();
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+    public DbSet<Season> Seasons => Set<Season>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,5 +31,15 @@ public class MatchDbContext : DbContext
         modelBuilder.Entity<MatchEntry>()
             .HasIndex(m => new { m.ProfileId, m.Date })
             .HasDatabaseName("IX_Matches_ProfileId_Date");
+
+        modelBuilder.Entity<Season>().HasData(
+            new Season 
+            { 
+                Id = 1, 
+                Number = 15, 
+                StartDate = new DateTime(2025, 1, 9), 
+                EndDate = new DateTime(2026, 1, 6) 
+            }
+        );
     }
 }

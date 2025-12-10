@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using LolStatsTracker;
 using LolStatsTracker.Services.LeagueAssetsService;
 using LolStatsTracker.Services.MatchService;
+using LolStatsTracker.Services.SeasonState;
 using LolStatsTracker.Services.StatsService;
 using LolStatsTracker.Services.UserState;
 using MudBlazor.Services;
@@ -20,6 +21,7 @@ builder.Services.AddMudServices();
 builder.Services.AddBlazoredLocalStorage();
 
 builder.Services.AddScoped<UserProfileState>();
+builder.Services.AddScoped<SeasonState>();
 builder.Services.AddScoped<IMatchService, MatchApiService>();
 builder.Services.AddScoped<ILeagueAssetsService, LeagueAssetsService>();
 builder.Services.AddScoped<IStatsService, StatsApiService>();
