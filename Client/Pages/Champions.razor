@@ -1,8 +1,16 @@
 ﻿@page "/champions"
 @using LolStatsTracker.Shared.DTOs
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
-    <MudText Typo="Typo.h4" Class="mb-6 font-weight-bold">Champion Stats</MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-8">
+    <div class="page-header d-flex align-center gap-4">
+        <div class="icon-badge">
+            <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Medium" Color="Color.Surface" />
+        </div>
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold">Champion Stats</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Performance breakdown by champion</MudText>
+        </div>
+    </div>
 
     @if (_isLoading)
     {
@@ -14,7 +22,7 @@
                   Hover="true" 
                   SortLabel="Sortuj po" 
                   Filter="new Func<ChampionStatsDto,bool>(FilterFunc)"
-                  Class="rounded-xl elevation-3"
+                  Class="rounded-xl glass-card"
                   Dense="true">
             
             <ToolBarContent>

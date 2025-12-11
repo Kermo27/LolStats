@@ -2,14 +2,14 @@
 @using LolStatsTracker.Shared.Models
 @inject ILeagueAssetsService LeagueAssetsService
 
-<MudCard Class="mb-8 p-4 rounded-xl elevation-3">
+<MudCard Class="mb-8 p-4 rounded-xl glass-card" Elevation="0">
     <MudCardContent>
         <div class="d-flex justify-space-between align-center mb-6">
-            <MudText Typo="Typo.h5" Class="font-bold">
+            <MudText Typo="Typo.h5" Class="font-bold gradient-text">
                 @(IsEditing ? "Edit Match" : "Add New Match")
             </MudText>
-            @if(Model.Win) { <MudChip T="string" Color="Color.Success" Icon="@Icons.Material.Filled.EmojiEvents">Victory</MudChip> }
-            else { <MudChip T="string" Color="Color.Error" Icon="@Icons.Material.Filled.Close">Defeat</MudChip> }
+            @if(Model.Win) { <MudChip T="string" Class="victory-badge" Icon="@Icons.Material.Filled.EmojiEvents">Victory</MudChip> }
+            else { <MudChip T="string" Class="defeat-badge" Icon="@Icons.Material.Filled.Close">Defeat</MudChip> }
         </div>
 
         <EditForm Model="@Model" OnValidSubmit="HandleSubmit">

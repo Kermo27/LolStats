@@ -1,7 +1,16 @@
 @page "/matches"
 @using LolStatsTracker.Components.Matches
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-8">
+    <div class="page-header d-flex align-center gap-4">
+        <div class="icon-badge">
+            <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Medium" Color="Color.Surface" />
+        </div>
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold">Match History</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Add, edit, and manage your matches</MudText>
+        </div>
+    </div>
     
     <MatchForm Model="@currentMatch"
                IsEditing="@isEditing"
