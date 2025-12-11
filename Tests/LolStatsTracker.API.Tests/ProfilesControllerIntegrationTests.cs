@@ -5,8 +5,6 @@ using LolStatsTracker.Shared.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
-using System.Linq;
 using LolStatsTracker.API.Data;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
