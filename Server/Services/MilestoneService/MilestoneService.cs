@@ -1,4 +1,5 @@
 using LolStatsTracker.API.Data;
+using LolStatsTracker.Shared.Constants;
 using LolStatsTracker.Shared.DTOs;
 using LolStatsTracker.Shared.Models;
 using Microsoft.EntityFrameworkCore;
@@ -8,20 +9,6 @@ namespace LolStatsTracker.API.Services.MilestoneService;
 public class MilestoneService : IMilestoneService
 {
     private readonly MatchDbContext _db;
-    
-    private static readonly Dictionary<string, int> TierOrder = new()
-    {
-        ["Iron"] = 1,
-        ["Bronze"] = 2,
-        ["Silver"] = 3,
-        ["Gold"] = 4,
-        ["Platinum"] = 5,
-        ["Emerald"] = 6,
-        ["Diamond"] = 7,
-        ["Master"] = 8,
-        ["Grandmaster"] = 9,
-        ["Challenger"] = 10
-    };
 
     public MilestoneService(MatchDbContext db) => _db = db;
 
@@ -59,12 +46,10 @@ public class MilestoneService : IMilestoneService
 
         if (prevTier == newTier && prevDiv == newDiv) return;
 
-        var prevRank = GetRankValue(prevTier, prevDiv);
-        var newRank = GetRankValue(newTier, newDiv);
+        var comparison = RankConstants.CompareRanks(newTier, newDiv, prevTier, prevDiv);
+        if (comparison == 0) return;
 
-        if (prevRank == newRank) return;
-
-        var type = newRank > prevRank ? "Promotion" : "Demotion";
+        var type = comparison > 0 ? "Promotion" : "Demotion";
 
         var milestone = new RankMilestone
         {
@@ -78,14 +63,5 @@ public class MilestoneService : IMilestoneService
 
         _db.RankMilestones.Add(milestone);
         await _db.SaveChangesAsync();
-    }
-
-    private static int GetRankValue(string tier, int division)
-    {
-        if (!TierOrder.TryGetValue(tier, out var tierValue)) return 0;
-        // Higher tier = higher value, Lower division (1) = higher rank
-        // Master+ have no divisions, treat as division 0
-        if (tierValue >= 8) return tierValue * 10;
-        return tierValue * 10 + (4 - division);
     }
 }

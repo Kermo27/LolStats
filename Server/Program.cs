@@ -1,6 +1,7 @@
 using LolStatsTracker.API.Data;
 using LolStatsTracker.API.Services.ChampionPoolService;
 using LolStatsTracker.API.Services.MatchService;
+using LolStatsTracker.API.Services.MetaService;
 using LolStatsTracker.API.Services.MilestoneService;
 using LolStatsTracker.API.Services.ProfileService;
 using LolStatsTracker.API.Services.StatsService;
@@ -28,6 +29,7 @@ builder.Services.AddScoped<IStatsService ,StatsService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IChampionPoolService, ChampionPoolService>();
 builder.Services.AddScoped<IMilestoneService, MilestoneService>();
+builder.Services.AddScoped<IMetaService, MetaService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
