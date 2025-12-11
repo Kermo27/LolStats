@@ -1,9 +1,12 @@
 ﻿@page "/"
 @using LolStatsTracker.Helpers
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-8">
     
-    <div class="d-flex justify-space-between align-center mb-6">
+    <div class="page-header d-flex align-center gap-4">
+        <div class="icon-badge">
+            <MudIcon Icon="@Icons.Material.Filled.Dashboard" Size="Size.Medium" Color="Color.Surface" />
+        </div>
         <div>
             <MudText Typo="Typo.h4" Class="font-weight-bold">Dashboard</MudText>
             <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Summary for: @(UserState.CurrentProfile?.Name ?? "...")</MudText>
@@ -14,7 +17,7 @@
     {
         <MudStack AlignItems="AlignItems.Center" Class="mt-10">
             <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
-            <MudText>Analyzing</MudText>
+            <MudText Color="Color.Secondary">Analyzing your stats...</MudText>
         </MudStack>
     }
     else
@@ -22,16 +25,16 @@
         <MudGrid Spacing="3">
             
             <MudItem xs="12" sm="6" md="4">
-                <MudPaper Class="p-4 rounded-xl d-flex flex-column gap-2 align-center justify-center text-center" Elevation="2" Height="100%">
-                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Overall WinRate</MudText>
+            <MudPaper Class="rounded-xl stat-card d-flex flex-column gap-2 align-center justify-center text-center" Elevation="0" Height="100%">
+                    <span class="card-title">Overall WinRate</span>
                     <div class="d-flex align-end gap-2 justify-center">
                         <MudText Typo="Typo.h3" Color="@(_stats.Overview.Winrate * 100 >= 50 ? Color.Success : Color.Error)" Class="font-weight-bold">
                             @((_stats.Overview.Winrate * 100).ToString("F1"))%
                         </MudText>
                         <MudText Typo="Typo.body1" Class="mb-1">WR</MudText>
                     </div>
-                    <MudDivider Class="my-2"/>
-                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">MOST PLAYED</MudText>
+                    <MudDivider Class="my-3 w-100" Style="opacity: 0.3" />
+                    <span class="card-title">Most Played</span>
                     <div class="d-flex flex-column align-center gap-3">
                         <img src="@LeagueAssetsService.GetChampionIconUrl(_stats.Overview.MostPlayedChampion)" 
                              height="48" width="48" 
@@ -46,8 +49,8 @@
             </MudItem>
 
             <MudItem xs="12" sm="6" md="4">
-                <MudPaper Class="p-4 rounded-xl" Elevation="2" Height="100%">
-                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="text-center mb-3">BEST DUO</MudText>
+            <MudPaper Class="rounded-xl glass-card" Elevation="0" Height="100%">
+                    <span class="card-title">Best Duo</span>
                     
                     @if (_stats.BestDuos.Any())
                     {
@@ -82,8 +85,8 @@
             </MudItem>
 
             <MudItem xs="12" md="4">
-                <MudPaper Class="p-4 rounded-xl" Elevation="2" Height="100%">
-                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-4 text-center">ENCHANTERS</MudText>
+                <MudPaper Class="rounded-xl glass-card" Elevation="0" Height="100%">
+                    <span class="card-title">Enchanters</span>
                     
                     <div class="mb-4">
                         <div class="d-flex justify-space-between mb-1">
@@ -104,8 +107,8 @@
             </MudItem>
 
             <MudItem xs="12" md="7">
-                <MudPaper Class="p-4 rounded-xl" Elevation="2">
-                    <MudText Typo="Typo.h6" Class="mb-4">TOP 5 MOST PLAYED</MudText>
+                <MudPaper Class="rounded-xl glass-card" Elevation="0">
+                    <MudText Typo="Typo.h6" Class="mb-4 gradient-text">Top 5 Most Played</MudText>
                     <MudTable Items="_stats.ChampionStats.Take(5)" Hover="true" Dense="true" Elevation="0">
                         <HeaderContent>
                             <MudTh>Champion</MudTh>
@@ -133,8 +136,8 @@
             </MudItem>
 
             <MudItem xs="12" md="5">
-                <MudPaper Class="p-4 rounded-xl" Elevation="2">
-                    <MudText Typo="Typo.h6" Class="mb-4">HARD ENEMY (BOT)</MudText>
+                <MudPaper Class="rounded-xl glass-card" Elevation="0">
+                    <MudText Typo="Typo.h6" Class="mb-4" Color="Color.Error">Hard Enemy (Bot)</MudText>
                     <MudList T="string" Dense="true" Padding="false">
                         @foreach (var enemy in _stats.EnemyBotStats.Take(5))
                         {
@@ -161,7 +164,7 @@
             </MudItem>
             
             <MudItem xs="12">
-                <MudPaper Class="p-4 rounded-xl" Elevation="2">
+                <MudPaper Class="rounded-xl glass-card" Elevation="0">
                     <MudText Typo="Typo.h6" Class="mb-4">Activity Matrix</MudText>
                     
                     <div class="d-flex align-center gap-2 mb-3">
@@ -207,8 +210,8 @@
             </MudItem>
 
             <MudItem xs="12">
-                <MudPaper Class="p-4 rounded-xl" Elevation="2">
-                    <MudText Typo="Typo.h6" Class="mb-4">LP Trend (20 last games)</MudText>
+                <MudPaper Class="rounded-xl glass-card" Elevation="0">
+                    <MudText Typo="Typo.h6" Class="mb-4 gradient-text">LP Trend (20 last games)</MudText>
                     <MudChart ChartType="ChartType.Line" ChartSeries="@_lpSeries" XAxisLabels="@_lpLabels" Width="100%" Height="300px" ChartOptions="@(new ChartOptions { InterpolationOption = InterpolationOption.Straight })" />
                 </MudPaper>
             </MudItem>
