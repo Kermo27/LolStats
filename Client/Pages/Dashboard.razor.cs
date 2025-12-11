@@ -1,6 +1,7 @@
 using LolStatsTracker.Helpers;
 using LolStatsTracker.Services.LeagueAssetsService;
 using LolStatsTracker.Services.MatchService;
+using LolStatsTracker.Services.MilestoneService;
 using LolStatsTracker.Services.SeasonState;
 using LolStatsTracker.Services.StatsService;
 using LolStatsTracker.Services.UserState;
@@ -16,6 +17,7 @@ public partial class Dashboard : IDisposable
     [Inject] private IStatsService StatsService { get; set; } = null!;
     [Inject] private ILeagueAssetsService LeagueAssetsService { get; set; } = null!;
     [Inject] private IMatchService MatchService { get; set; } = null!;
+    [Inject] private IMilestoneService MilestoneService { get; set; } = null!;
     [Inject] private UserProfileState UserState { get; set; } = null!;
     [Inject] private SeasonState SeasonState { get; set; } = null!;
 
@@ -24,6 +26,7 @@ public partial class Dashboard : IDisposable
     private int _maxGamesPerDay;
     private List<ChartSeries> _lpSeries = new();
     private string[] _lpLabels = Array.Empty<string>();
+    private List<RankMilestoneDto> _milestones = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -84,6 +87,9 @@ public partial class Dashboard : IDisposable
             PrepareActivityMatrix(_stats.Activity);
             PrepareLpChart(matches);
         }
+        
+        // Load rank milestones
+        _milestones = await MilestoneService.GetMilestonesAsync();
     }
 
     private void PrepareActivityMatrix(List<ActivityDayDto> activity)
@@ -132,6 +138,15 @@ public partial class Dashboard : IDisposable
         TiltLevel.Danger => Severity.Warning,
         TiltLevel.Warning => Severity.Info,
         _ => Severity.Normal
+    };
+
+    private static string GetDivisionRoman(int division) => division switch
+    {
+        1 => "I",
+        2 => "II",
+        3 => "III",
+        4 => "IV",
+        _ => ""
     };
 
     public void Dispose()

@@ -1,0 +1,113 @@
+@page "/meta"
+@using LolStatsTracker.Shared.DTOs
+@using LolStatsTracker.Services.MetaService
+@using LolStatsTracker.Services.LeagueAssetsService
+@using LolStatsTracker.Services.UserState
+@inject IMetaService MetaService
+@inject ILeagueAssetsService LeagueAssetsService
+@inject UserProfileState UserState
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-8">
+    <div class="page-header d-flex align-center gap-4">
+        <div class="icon-badge">
+            <MudIcon Icon="@Icons.Material.Filled.Compare" Size="Size.Medium" Color="Color.Surface" />
+        </div>
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold">Meta Comparison</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Compare your picks with the current meta tier list</MudText>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="rounded-lg" />
+    }
+    else if (_data == null)
+    {
+        <MudAlert Severity="Severity.Info" Class="rounded-xl">No data available.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="rounded-xl glass-card mb-4">
+            <MudText Typo="Typo.h6" Class="gradient-text mb-3">Summary</MudText>
+            <div class="d-flex gap-4 flex-wrap">
+                <MudChip T="string" Color="Color.Success" Size="Size.Large">@_data.TotalMetaPlayed S/A Tier Played</MudChip>
+                <MudChip T="string" Color="Color.Warning" Size="Size.Large">@_data.TotalOffMeta Off-Meta Picks</MudChip>
+            </div>
+            <MudAlert Severity="Severity.Info" Class="mt-4 rounded-lg">@_data.Recommendation</MudAlert>
+        </MudPaper>
+
+        @foreach (var tier in new[] { "S", "A", "B", "C", "D" })
+        {
+            var tierChamps = _data.MetaChampions.Where(c => c.Tier == tier).ToList();
+            var tierColor = tier switch { "S" => Color.Warning, "A" => Color.Success, "B" => Color.Primary, "C" => Color.Default, _ => Color.Error };
+            var tierEmoji = tier switch { "S" => "🏆", "A" => "⭐", "B" => "👍", "C" => "👌", _ => "👎" };
+
+            <MudPaper Class="rounded-xl glass-card mb-3" Elevation="0">
+                <div class="d-flex align-center gap-2 mb-3">
+                    <MudChip T="string" Color="@tierColor" Size="Size.Small">@tierEmoji @tier-Tier</MudChip>
+                </div>
+
+                <div class="d-flex flex-wrap gap-3">
+                    @foreach (var champ in tierChamps)
+                    {
+                        <MudCard Class="@($"rounded-xl {(champ.IsPlayed ? "played-card" : "")}")" 
+                                 Style="@GetCardStyle(champ.IsPlayed)" 
+                                 Elevation="@(champ.IsPlayed ? 4 : 1)">
+                            <MudCardContent Class="pa-3">
+                                <div class="d-flex flex-column align-center gap-2">
+                                    <img src="@LeagueAssetsService.GetChampionIconUrl(champ.Champion)" 
+                                         height="56" width="56" 
+                                         style="border-radius: 50%; border: 3px solid @(champ.IsPlayed ? "var(--mud-palette-success)" : "transparent");" />
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold text-center">@champ.Champion</MudText>
+                                    
+                                    @if (champ.IsPlayed)
+                                    {
+                                        <div class="d-flex gap-1">
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Default">@champ.GamesPlayed G</MudChip>
+                                            <MudChip T="string" Size="Size.Small" Color="@(champ.Winrate >= 0.5 ? Color.Success : Color.Error)">
+                                                @((champ.Winrate * 100).ToString("F0"))%
+                                            </MudChip>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">Not played</MudText>
+                                    }
+                                </div>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                </div>
+            </MudPaper>
+        }
+    }
+</MudContainer>
+
+<style>
+    .played-card {
+        border: 2px solid var(--mud-palette-success);
+    }
+</style>
+
+@code {
+    private bool _isLoading = true;
+    private MetaComparisonSummaryDto? _data;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LeagueAssetsService.InitializeAsync();
+        if (!UserState.IsInitialized) await UserState.InitializeAsync();
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        _data = await MetaService.GetComparisonAsync();
+        _isLoading = false;
+    }
+
+    private static string GetCardStyle(bool isPlayed) => 
+        $"width: 140px; opacity: {(isPlayed ? "1" : "0.6")};";
+}

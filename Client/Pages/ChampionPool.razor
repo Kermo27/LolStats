@@ -1,0 +1,185 @@
+@page "/champion-pool"
+@using LolStatsTracker.Shared.DTOs
+@using LolStatsTracker.Services.ChampionPoolService
+@using LolStatsTracker.Services.LeagueAssetsService
+@using LolStatsTracker.Services.UserState
+@inject IChampionPoolService PoolService
+@inject ILeagueAssetsService LeagueAssetsService
+@inject UserProfileState UserState
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-8">
+    <div class="page-header d-flex align-center gap-4">
+        <div class="icon-badge">
+            <MudIcon Icon="@Icons.Material.Filled.GroupWork" Size="Size.Medium" Color="Color.Surface" />
+        </div>
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold">Champion Pool</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Manage your champion pool by tiers</MudText>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="rounded-lg" />
+    }
+    else
+    {
+        <MudPaper Class="rounded-xl glass-card mb-4">
+            <div class="d-flex align-center gap-4 flex-wrap">
+                <MudAutocomplete T="string" 
+                                 @bind-Value="_newChampion" 
+                                 Label="Add Champion"
+                                 SearchFunc="SearchChampions"
+                                 Variant="Variant.Outlined"
+                                 Dense="true"
+                                 Style="min-width: 200px;" />
+                
+                <MudSelect T="string" @bind-Value="_newTier" Label="Tier" Variant="Variant.Outlined" Dense="true" Style="min-width: 140px;">
+                    <MudSelectItem Value="@("Primary")">🥇 Primary</MudSelectItem>
+                    <MudSelectItem Value="@("Secondary")">🥈 Secondary</MudSelectItem>
+                    <MudSelectItem Value="@("Pocket")">🎯 Pocket Pick</MudSelectItem>
+                </MudSelect>
+                
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           OnClick="AddChampion"
+                           Disabled="@string.IsNullOrEmpty(_newChampion)"
+                           StartIcon="@Icons.Material.Filled.Add">
+                    Add
+                </MudButton>
+            </div>
+        </MudPaper>
+
+        @foreach (var tier in new[] { "Primary", "Secondary", "Pocket" })
+        {
+            var tierPool = _pool.Where(p => p.Tier == tier).OrderBy(p => p.Priority).ToList();
+            var tierIcon = tier switch { "Primary" => "🥇", "Secondary" => "🥈", _ => "🎯" };
+            
+            <MudPaper Class="rounded-xl glass-card mb-4" Elevation="0">
+                <div class="d-flex align-center gap-2 mb-3">
+                    <MudText Typo="Typo.h6" Class="gradient-text">@tierIcon @tier Picks</MudText>
+                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@tierPool.Count</MudChip>
+                </div>
+
+                @if (!tierPool.Any())
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">No champions in this tier yet.</MudText>
+                }
+                else
+                {
+                    <div class="d-flex flex-wrap gap-3">
+                        @foreach (var champ in tierPool)
+                        {
+                            <MudCard Class="rounded-xl" Style="width: 180px;" Elevation="2">
+                                <MudCardContent Class="pa-3">
+                                    <div class="d-flex flex-column align-center gap-2">
+                                        <img src="@LeagueAssetsService.GetChampionIconUrl(champ.Champion)" 
+                                             height="64" width="64" 
+                                             style="border-radius: 50%; border: 3px solid @GetTierColor(champ.Tier);" />
+                                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold">@champ.Champion</MudText>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Default">@champ.GamesPlayed G</MudChip>
+                                            <MudChip T="string" Size="Size.Small" Color="@(champ.Winrate >= 0.5 ? Color.Success : Color.Error)">
+                                                @((champ.Winrate * 100).ToString("F0"))%
+                                            </MudChip>
+                                        </div>
+                                        
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">KDA: @champ.AvgKda.ToString("F2")</MudText>
+                                    </div>
+                                </MudCardContent>
+                                <MudCardActions Class="justify-center">
+                                    <MudTooltip Text="Change Tier">
+                                        <MudMenu Icon="@Icons.Material.Filled.SwapVert" Size="Size.Small" Dense="true">
+                                            @foreach (var t in new[] { "Primary", "Secondary", "Pocket" }.Where(t => t != champ.Tier))
+                                            {
+                                                <MudMenuItem OnClick="@(() => ChangeTier(champ.Id, t))">Move to @t</MudMenuItem>
+                                            }
+                                        </MudMenu>
+                                    </MudTooltip>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                   Size="Size.Small" 
+                                                   Color="Color.Error" 
+                                                   OnClick="@(() => RemoveChampion(champ.Id))" />
+                                </MudCardActions>
+                            </MudCard>
+                        }
+                    </div>
+                }
+            </MudPaper>
+        }
+    }
+</MudContainer>
+
+@code {
+    private bool _isLoading = true;
+    private List<ChampionPoolDto> _pool = new();
+    private List<string> _allChampions = new();
+    private string? _newChampion;
+    private string _newTier = "Primary";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LeagueAssetsService.InitializeAsync();
+        if (!UserState.IsInitialized) await UserState.InitializeAsync();
+        _allChampions = LeagueAssetsService.GetChampionNames().ToList();
+        await LoadPoolAsync();
+    }
+
+    private async Task LoadPoolAsync()
+    {
+        _isLoading = true;
+        _pool = await PoolService.GetPoolAsync();
+        _isLoading = false;
+    }
+
+    private Task<IEnumerable<string>> SearchChampions(string value, CancellationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult(_allChampions.Take(10));
+
+        return Task.FromResult(_allChampions
+            .Where(c => c.Contains(value, StringComparison.OrdinalIgnoreCase))
+            .Take(10));
+    }
+
+    private async Task AddChampion()
+    {
+        if (string.IsNullOrEmpty(_newChampion)) return;
+        
+        if (_pool.Any(p => p.Champion.Equals(_newChampion, StringComparison.OrdinalIgnoreCase)))
+        {
+            Snackbar.Add("Champion already in pool!", Severity.Warning);
+            return;
+        }
+
+        var maxPriority = _pool.Where(p => p.Tier == _newTier).Select(p => p.Priority).DefaultIfEmpty(0).Max();
+        await PoolService.CreateAsync(new ChampionPoolCreateDto(_newChampion, _newTier, maxPriority + 1));
+        _newChampion = null;
+        await LoadPoolAsync();
+        Snackbar.Add("Champion added to pool!", Severity.Success);
+    }
+
+    private async Task ChangeTier(Guid id, string newTier)
+    {
+        var maxPriority = _pool.Where(p => p.Tier == newTier).Select(p => p.Priority).DefaultIfEmpty(0).Max();
+        await PoolService.UpdateAsync(id, new ChampionPoolUpdateDto(newTier, maxPriority + 1));
+        await LoadPoolAsync();
+        Snackbar.Add($"Moved to {newTier}!", Severity.Info);
+    }
+
+    private async Task RemoveChampion(Guid id)
+    {
+        await PoolService.DeleteAsync(id);
+        await LoadPoolAsync();
+        Snackbar.Add("Champion removed from pool.", Severity.Normal);
+    }
+
+    private string GetTierColor(string tier) => tier switch
+    {
+        "Primary" => "var(--mud-palette-warning)",
+        "Secondary" => "var(--mud-palette-info)",
+        _ => "var(--mud-palette-secondary)"
+    };
+}

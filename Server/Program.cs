@@ -1,5 +1,7 @@
 using LolStatsTracker.API.Data;
+using LolStatsTracker.API.Services.ChampionPoolService;
 using LolStatsTracker.API.Services.MatchService;
+using LolStatsTracker.API.Services.MilestoneService;
 using LolStatsTracker.API.Services.ProfileService;
 using LolStatsTracker.API.Services.StatsService;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +26,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IMatchService ,MatchService>();
 builder.Services.AddScoped<IStatsService ,StatsService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IChampionPoolService, ChampionPoolService>();
+builder.Services.AddScoped<IMilestoneService, MilestoneService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
