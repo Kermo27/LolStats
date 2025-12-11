@@ -9,7 +9,8 @@ public record StatsSummaryDto(
     EnchanterUsageSummary EnchanterUsage,
     List<DuoSummary> BestDuos,
     List<DuoSummary> WorstEnemyDuos,
-    StreakDto Streak
+    StreakDto Streak,
+    TimeAnalysisDto TimeAnalysis
 );
 
 public record OverviewDto(double Winrate, string MostPlayedChampion, int MostPlayedChampionGames, string FavoriteSupport, int FavoriteSupportGames);

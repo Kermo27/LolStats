@@ -251,6 +251,51 @@ public class StatsService : IStatsService
         };
     }
 
+    public async Task<TimeAnalysisDto> GetTimeAnalysisAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null)
+    {
+        var matches = await GetFilteredMatches(profileId, startDate, endDate).ToListAsync();
+        
+        if (!matches.Any())
+        {
+            return new TimeAnalysisDto();
+        }
+
+        var dayNames = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+        
+        var byHour = Enumerable.Range(0, 24)
+            .Select(hour =>
+            {
+                var hourMatches = matches.Where(m => m.Date.Hour == hour).ToList();
+                var games = hourMatches.Count;
+                var wins = hourMatches.Count(m => m.Win);
+                return new HourWinrateDto(hour, games, wins, games > 0 ? (double)wins / games : 0);
+            })
+            .ToList();
+
+        var byDay = Enumerable.Range(0, 7)
+            .Select(dayIndex =>
+            {
+                var dayMatches = matches.Where(m => (int)m.Date.DayOfWeek == dayIndex).ToList();
+                var games = dayMatches.Count;
+                var wins = dayMatches.Count(m => m.Win);
+                return new DayWinrateDto(dayNames[dayIndex], dayIndex, games, wins, games > 0 ? (double)wins / games : 0);
+            })
+            .ToList();
+
+        var bestHour = byHour.Where(h => h.Games >= 3).OrderByDescending(h => h.Winrate).FirstOrDefault();
+        var bestDay = byDay.Where(d => d.Games >= 3).OrderByDescending(d => d.Winrate).FirstOrDefault();
+
+        return new TimeAnalysisDto
+        {
+            ByHour = byHour,
+            ByDayOfWeek = byDay,
+            BestHourRange = bestHour != null ? $"{bestHour.Hour}:00 - {bestHour.Hour + 1}:00" : "N/A",
+            BestDay = bestDay?.Day ?? "N/A",
+            BestHourWinrate = bestHour?.Winrate ?? 0,
+            BestDayWinrate = bestDay?.Winrate ?? 0
+        };
+    }
+
     public async Task<StatsSummaryDto> GetStatsSummaryAsync(Guid profileId, int activityMonths = 6, DateTime? startDate = null, DateTime? endDate = null)
     {
         var overviewTask = GetOverviewAsync(profileId, startDate, endDate);
@@ -262,9 +307,10 @@ public class StatsService : IStatsService
         var bestDuosTask = GetBestDuosAsync(profileId, startDate, endDate);
         var worstEnemyDuosTask = GetWorstEnemyDuosAsync(profileId, startDate, endDate);
         var streakTask = GetStreakAsync(profileId, startDate, endDate);
+        var timeAnalysisTask = GetTimeAnalysisAsync(profileId, startDate, endDate);
 
         await Task.WhenAll(overviewTask, championStatsTask, enemyBotTask, enemySupportTask,
-            activityTask, enchanterTask, bestDuosTask, worstEnemyDuosTask, streakTask);
+            activityTask, enchanterTask, bestDuosTask, worstEnemyDuosTask, streakTask, timeAnalysisTask);
 
         return new StatsSummaryDto(
             Overview: await overviewTask,
@@ -275,7 +321,8 @@ public class StatsService : IStatsService
             EnchanterUsage: await enchanterTask,
             BestDuos: await bestDuosTask,
             WorstEnemyDuos: await worstEnemyDuosTask,
-            Streak: await streakTask
+            Streak: await streakTask,
+            TimeAnalysis: await timeAnalysisTask
         );
     }
 }

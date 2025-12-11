@@ -148,6 +148,39 @@
                     </div>
                 </MudPaper>
             </MudItem>
+        
+            <MudItem xs="12" sm="6" md="4">
+                <MudPaper Class="rounded-xl glass-card d-flex flex-column" Elevation="0" Height="100%">
+                    <span class="card-title">Best Time to Play</span>
+                    
+                    @if (_stats.TimeAnalysis.BestHourRange != "N/A")
+                    {
+                        <div class="d-flex gap-4 justify-center flex-grow-1 align-center">
+                            <MudTooltip Text="Best performing hour">
+                                <div class="d-flex flex-column align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Large" Color="Color.Primary" />
+                                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">@_stats.TimeAnalysis.BestHourRange</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Success">@((_stats.TimeAnalysis.BestHourWinrate * 100).ToString("F0"))% WR</MudText>
+                                </div>
+                            </MudTooltip>
+                            
+                            <MudDivider Vertical="true" FlexItem="true" />
+                            
+                            <MudTooltip Text="Best performing day">
+                                <div class="d-flex flex-column align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Large" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">@_stats.TimeAnalysis.BestDay</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Success">@((_stats.TimeAnalysis.BestDayWinrate * 100).ToString("F0"))% WR</MudText>
+                                </div>
+                            </MudTooltip>
+                        </div>
+                    }
+                    else
+                    {
+                        <MudText Color="Color.Secondary" Class="text-center">Not enough data (min 3 games)</MudText>
+                    }
+                </MudPaper>
+            </MudItem>
 
             <MudItem xs="12" md="7">
                 <MudPaper Class="rounded-xl glass-card" Elevation="0">
