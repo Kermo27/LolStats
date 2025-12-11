@@ -16,6 +16,7 @@
         <MudTh>Time</MudTh>
         <MudTh>Score</MudTh>
         <MudTh>W/L</MudTh>
+        <MudTh><MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Title="Notes" /></MudTh>
         <MudTh>Actions</MudTh>
     </HeaderContent>
     <RowTemplate>
@@ -114,6 +115,15 @@
             <MudChip T="string" Size="Size.Small" Color="@(context.Win ? Color.Success : Color.Error)" Variant="Variant.Filled" Style="min-width: 80px;" Class="justify-center">
                 @(context.Win ? "VICTORY" : "DEFEAT")
             </MudChip>
+        </MudTd>
+
+        <MudTd DataLabel="Notes">
+            @if (!string.IsNullOrEmpty(context.Notes))
+            {
+                <MudTooltip Text="@context.Notes">
+                    <MudIcon Icon="@Icons.Material.Filled.StickyNote2" Size="Size.Small" Color="Color.Info" />
+                </MudTooltip>
+            }
         </MudTd>
 
         <MudTd DataLabel="Actions">

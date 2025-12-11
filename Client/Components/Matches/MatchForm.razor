@@ -115,6 +115,15 @@
                     </MudPaper>
                 </MudItem>
 
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Model.Notes" 
+                                  Label="Notes" 
+                                  Placeholder="What did you learn? What could you improve?"
+                                  Variant="Variant.Outlined" 
+                                  Lines="2"
+                                  HelperText="Optional reflection on this game" />
+                </MudItem>
+
                 <MudItem xs="12" Class="d-flex justify-end gap-2 mt-4">
                     @if (IsEditing) { <MudButton Variant="Variant.Outlined" OnClick="CancelEdit">Cancel</MudButton> }
                     <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary">Save</MudButton>
