@@ -126,6 +126,14 @@ public partial class Dashboard : IDisposable
         _lpLabels = labels.ToArray();
     }
 
+    private Severity GetTiltSeverity(TiltLevel level) => level switch
+    {
+        TiltLevel.Critical => Severity.Error,
+        TiltLevel.Danger => Severity.Warning,
+        TiltLevel.Warning => Severity.Info,
+        _ => Severity.Normal
+    };
+
     public void Dispose()
     {
         UserState.OnProfileChanged -= OnProfileChangedAsync;

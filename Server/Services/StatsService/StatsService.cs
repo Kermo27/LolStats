@@ -296,6 +296,68 @@ public class StatsService : IStatsService
         };
     }
 
+    public async Task<TiltStatusDto> GetTiltStatusAsync(Guid profileId)
+    {
+        var today = DateTime.Today;
+        var recentMatches = await _db.Matches
+            .Where(m => m.ProfileId == profileId)
+            .OrderByDescending(m => m.Date)
+            .Take(10)
+            .ToListAsync();
+
+        if (!recentMatches.Any())
+        {
+            return new TiltStatusDto { Message = "Play some games to see your tilt status!" };
+        }
+
+        var last5 = recentMatches.Take(5).ToList();
+        var todayMatches = recentMatches.Where(m => m.Date.Date == today).ToList();
+        
+        var recentLosses = 0;
+        foreach (var match in recentMatches)
+        {
+            if (!match.Win) recentLosses++;
+            else break;
+        }
+
+        var last5Winrate = last5.Count > 0 ? last5.Count(m => m.Win) / (double)last5.Count : 0;
+        var todayLosses = todayMatches.Count(m => !m.Win);
+
+        TiltLevel level;
+        string message;
+
+        if (recentLosses >= 4 || (todayMatches.Count >= 4 && todayLosses >= 3))
+        {
+            level = TiltLevel.Critical;
+            message = "🚨 STOP! Take a break. You're on a major losing streak.";
+        }
+        else if (recentLosses >= 3 || (last5.Count >= 5 && last5Winrate < 0.3))
+        {
+            level = TiltLevel.Danger;
+            message = "⚠️ Consider taking a break. Recent performance is rough.";
+        }
+        else if (recentLosses >= 2)
+        {
+            level = TiltLevel.Warning;
+            message = "😤 2 losses in a row. Stay focused or take a short break.";
+        }
+        else
+        {
+            level = TiltLevel.None;
+            message = "✅ You're playing well! Keep it up.";
+        }
+
+        return new TiltStatusDto
+        {
+            IsTilted = level >= TiltLevel.Warning,
+            RecentLosses = recentLosses,
+            RecentGames = last5.Count,
+            RecentWinrate = last5Winrate,
+            Message = message,
+            Level = level
+        };
+    }
+
     public async Task<StatsSummaryDto> GetStatsSummaryAsync(Guid profileId, int activityMonths = 6, DateTime? startDate = null, DateTime? endDate = null)
     {
         var overviewTask = GetOverviewAsync(profileId, startDate, endDate);
@@ -308,9 +370,10 @@ public class StatsService : IStatsService
         var worstEnemyDuosTask = GetWorstEnemyDuosAsync(profileId, startDate, endDate);
         var streakTask = GetStreakAsync(profileId, startDate, endDate);
         var timeAnalysisTask = GetTimeAnalysisAsync(profileId, startDate, endDate);
+        var tiltStatusTask = GetTiltStatusAsync(profileId);
 
         await Task.WhenAll(overviewTask, championStatsTask, enemyBotTask, enemySupportTask,
-            activityTask, enchanterTask, bestDuosTask, worstEnemyDuosTask, streakTask, timeAnalysisTask);
+            activityTask, enchanterTask, bestDuosTask, worstEnemyDuosTask, streakTask, timeAnalysisTask, tiltStatusTask);
 
         return new StatsSummaryDto(
             Overview: await overviewTask,
@@ -322,7 +385,8 @@ public class StatsService : IStatsService
             BestDuos: await bestDuosTask,
             WorstEnemyDuos: await worstEnemyDuosTask,
             Streak: await streakTask,
-            TimeAnalysis: await timeAnalysisTask
+            TimeAnalysis: await timeAnalysisTask,
+            TiltStatus: await tiltStatusTask
         );
     }
 }

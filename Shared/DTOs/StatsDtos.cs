@@ -10,7 +10,8 @@ public record StatsSummaryDto(
     List<DuoSummary> BestDuos,
     List<DuoSummary> WorstEnemyDuos,
     StreakDto Streak,
-    TimeAnalysisDto TimeAnalysis
+    TimeAnalysisDto TimeAnalysis,
+    TiltStatusDto TiltStatus
 );
 
 public record OverviewDto(double Winrate, string MostPlayedChampion, int MostPlayedChampionGames, string FavoriteSupport, int FavoriteSupportGames);

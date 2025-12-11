@@ -21,6 +21,17 @@
     }
     else
     {
+        @if (_stats.TiltStatus.IsTilted)
+        {
+            <MudAlert Severity="@GetTiltSeverity(_stats.TiltStatus.Level)" 
+                      Variant="Variant.Filled" 
+                      Class="mb-4 rounded-xl"
+                      Icon="@Icons.Material.Filled.Warning">
+                <strong>@_stats.TiltStatus.Message</strong>
+                <MudText Typo="Typo.caption">Last 5 games: @((_stats.TiltStatus.RecentWinrate * 100).ToString("F0"))% WR</MudText>
+            </MudAlert>
+        }
+        
         <MudGrid Spacing="3">
             
             <MudItem xs="12" sm="6" md="4">
