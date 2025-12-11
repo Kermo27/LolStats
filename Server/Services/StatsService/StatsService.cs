@@ -183,6 +183,74 @@ public class StatsService : IStatsService
             .ToList();
     }
 
+    public async Task<StreakDto> GetStreakAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null)
+    {
+        var matches = await GetFilteredMatches(profileId, startDate, endDate)
+            .OrderByDescending(m => m.Date)
+            .ToListAsync();
+
+        if (!matches.Any())
+        {
+            return new StreakDto
+            {
+                IsWinStreak = true,
+                Count = 0,
+                BestWinStreak = 0,
+                WorstLossStreak = 0,
+                TotalGames = 0
+            };
+        }
+
+        // Calculate current streak
+        var currentStreak = 0;
+        var isWinStreak = matches.First().Win;
+        
+        foreach (var match in matches)
+        {
+            if (match.Win == isWinStreak)
+                currentStreak++;
+            else
+                break;
+        }
+        
+        var bestWinStreak = 0;
+        var worstLossStreak = 0;
+        var tempStreak = 0;
+        bool? lastResult = null;
+
+        foreach (var match in matches.OrderBy(m => m.Date))
+        {
+            if (lastResult == null || match.Win == lastResult)
+            {
+                tempStreak++;
+            }
+            else
+            {
+                if (lastResult == true && tempStreak > bestWinStreak)
+                    bestWinStreak = tempStreak;
+                if (lastResult == false && tempStreak > worstLossStreak)
+                    worstLossStreak = tempStreak;
+                
+                tempStreak = 1;
+            }
+            lastResult = match.Win;
+        }
+        
+        if (lastResult == true && tempStreak > bestWinStreak)
+            bestWinStreak = tempStreak;
+        if (lastResult == false && tempStreak > worstLossStreak)
+            worstLossStreak = tempStreak;
+
+        return new StreakDto
+        {
+            IsWinStreak = isWinStreak,
+            Count = currentStreak,
+            BestWinStreak = bestWinStreak,
+            WorstLossStreak = worstLossStreak,
+            TotalGames = matches.Count
+        };
+    }
+
     public async Task<StatsSummaryDto> GetStatsSummaryAsync(Guid profileId, int activityMonths = 6, DateTime? startDate = null, DateTime? endDate = null)
     {
         var overviewTask = GetOverviewAsync(profileId, startDate, endDate);
@@ -193,9 +261,10 @@ public class StatsService : IStatsService
         var enchanterTask = GetEnchanterUsageAsync(profileId, startDate, endDate);
         var bestDuosTask = GetBestDuosAsync(profileId, startDate, endDate);
         var worstEnemyDuosTask = GetWorstEnemyDuosAsync(profileId, startDate, endDate);
+        var streakTask = GetStreakAsync(profileId, startDate, endDate);
 
         await Task.WhenAll(overviewTask, championStatsTask, enemyBotTask, enemySupportTask,
-            activityTask, enchanterTask, bestDuosTask, worstEnemyDuosTask);
+            activityTask, enchanterTask, bestDuosTask, worstEnemyDuosTask, streakTask);
 
         return new StatsSummaryDto(
             Overview: await overviewTask,
@@ -205,7 +274,8 @@ public class StatsService : IStatsService
             Activity: await activityTask,
             EnchanterUsage: await enchanterTask,
             BestDuos: await bestDuosTask,
-            WorstEnemyDuos: await worstEnemyDuosTask
+            WorstEnemyDuos: await worstEnemyDuosTask,
+            Streak: await streakTask
         );
     }
 }

@@ -11,5 +11,6 @@ public interface IStatsService
     Task<EnchanterUsageSummary> GetEnchanterUsageAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null);
     Task<List<DuoSummary>> GetBestDuosAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null);
     Task<List<DuoSummary>> GetWorstEnemyDuosAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null);
+    Task<StreakDto> GetStreakAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null);
     Task<StatsSummaryDto> GetStatsSummaryAsync(Guid profileId, int activityMonths, DateTime? startDate = null, DateTime? endDate = null);
 }

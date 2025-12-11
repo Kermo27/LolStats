@@ -1,5 +1,4 @@
 ﻿@page "/"
-@using LolStatsTracker.Helpers
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-8">
     
@@ -47,11 +46,55 @@
                     </div>
                 </MudPaper>
             </MudItem>
+            
+            <MudItem xs="12" sm="6" md="4">
+                <MudPaper Class="rounded-xl glass-card d-flex flex-column align-center justify-center text-center" Elevation="0" Height="100%">
+                    <span class="card-title">Current Streak</span>
+                    
+                    @if (_stats.Streak.Count > 0)
+                    {
+                        <div class="d-flex align-center gap-3">
+                            <MudIcon Icon="@(_stats.Streak.IsWinStreak ? Icons.Material.Filled.LocalFireDepartment : Icons.Material.Filled.HeartBroken)" 
+                                     Size="Size.Large"
+                                     Color="@(_stats.Streak.IsWinStreak ? Color.Success : Color.Error)"
+                                     Class="@(_stats.Streak.Count >= 3 ? "animate-glow" : "")" />
+                            <div>
+                                <MudText Typo="Typo.h3" Color="@(_stats.Streak.IsWinStreak ? Color.Success : Color.Error)" Class="font-weight-bold">
+                                    @_stats.Streak.Count
+                                </MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @(_stats.Streak.IsWinStreak ? "Wins" : "Losses")
+                                </MudText>
+                            </div>
+                        </div>
+                        
+                        <MudDivider Class="my-3 w-100" Style="opacity: 0.3" />
+                        
+                        <div class="d-flex gap-4">
+                            <MudTooltip Text="Best win streak this season">
+                                <div class="d-flex flex-column align-center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Best</MudText>
+                                    <MudText Typo="Typo.h6" Color="Color.Success" Class="font-weight-bold">@_stats.Streak.BestWinStreak 🔥</MudText>
+                                </div>
+                            </MudTooltip>
+                            <MudTooltip Text="Worst loss streak this season">
+                                <div class="d-flex flex-column align-center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Worst</MudText>
+                                    <MudText Typo="Typo.h6" Color="Color.Error" Class="font-weight-bold">@_stats.Streak.WorstLossStreak 💀</MudText>
+                                </div>
+                            </MudTooltip>
+                        </div>
+                    }
+                    else
+                    {
+                        <MudText Color="Color.Secondary">No matches yet</MudText>
+                    }
+                </MudPaper>
+            </MudItem>
 
             <MudItem xs="12" sm="6" md="4">
             <MudPaper Class="rounded-xl glass-card" Elevation="0" Height="100%">
                     <span class="card-title">Best Duo</span>
-                    
                     @if (_stats.BestDuos.Any())
                     {
                         var best = _stats.BestDuos.First();
