@@ -1,9 +1,10 @@
 ﻿@using LolStatsTracker.Shared.Models
+@using LolStatsTracker.Shared.Helpers
 @using LolStatsTracker.Services.LeagueAssetsService
 @inject ILeagueAssetsService LeagueAssetsService
 @inject IDialogService DialogService
 
-<MudTable Items="Matches" Hover="true" Bordered="false" Striped="true" Virtualize="true" Class="rounded-xl elevation-3" Dense="true">
+<MudTable Items="Matches" Hover="true" Bordered="false" Striped="true" Virtualize="true" Class="rounded-xl glass-card" Dense="true">
     <HeaderContent>
         <MudTh>Date</MudTh>
         <MudTh>Role</MudTh> 
@@ -13,6 +14,7 @@
         <MudTh>K/D/A</MudTh>
         <MudTh>CS</MudTh>
         <MudTh>Time</MudTh>
+        <MudTh>Score</MudTh>
         <MudTh>W/L</MudTh>
         <MudTh>Actions</MudTh>
     </HeaderContent>
@@ -98,6 +100,16 @@
 
         <MudTd DataLabel="Game Length">@context.GameLengthMinutes m</MudTd>
 
+        <MudTd DataLabel="Score">
+            <MudTooltip Text="@($"Score: {context.PerformanceScore}/100")">
+                <MudChip T="string" Size="Size.Small" 
+                         Class="@GetScoreChipClass(context.PerformanceScore)" 
+                         Variant="Variant.Filled">
+                    @context.PerformanceRating
+                </MudChip>
+            </MudTooltip>
+        </MudTd>
+
         <MudTd DataLabel="Win">
             <MudChip T="string" Size="Size.Small" Color="@(context.Win ? Color.Success : Color.Error)" Variant="Variant.Filled" Style="min-width: 80px;" Class="justify-center">
                 @(context.Win ? "VICTORY" : "DEFEAT")
@@ -141,6 +153,13 @@
         if (kda < 1.0) return "text-error";
         return "";
     }
+
+    private string GetScoreChipClass(int score) => score switch
+    {
+        >= 80 => "gradient-success",
+        >= 60 => "gradient-primary",
+        _ => ""
+    };
 
     private async Task ConfirmDelete(MatchEntry match)
     {

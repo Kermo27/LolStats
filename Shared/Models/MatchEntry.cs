@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using LolStatsTracker.Shared.Helpers;
 
 namespace LolStatsTracker.Shared.Models;
 
@@ -26,5 +28,12 @@ public class MatchEntry
     public int CurrentLp { get; set; }
     public Guid? ProfileId { get; set; }
     
+    [NotMapped]
     public string KdaDisplay => $"{Kills}/{Deaths}/{Assists}";
+    
+    [NotMapped]
+    public int PerformanceScore => PerformanceScoreHelper.Calculate(Kills, Deaths, Assists, Cs, GameLengthMinutes, Win);
+    
+    [NotMapped]
+    public string PerformanceRating => PerformanceScoreHelper.GetRating(PerformanceScore);
 }
