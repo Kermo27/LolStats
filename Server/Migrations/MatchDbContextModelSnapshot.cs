@@ -17,6 +17,36 @@ namespace LolStatsTracker.API.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
 
+            modelBuilder.Entity("LolStatsTracker.Shared.Models.ChampionPool", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Champion")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Tier")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProfileId");
+
+                    b.ToTable("ChampionPools");
+                });
+
             modelBuilder.Entity("LolStatsTracker.Shared.Models.MatchEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -97,6 +127,39 @@ namespace LolStatsTracker.API.Migrations
                     b.ToTable("Matches");
                 });
 
+            modelBuilder.Entity("LolStatsTracker.Shared.Models.RankMilestone", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("AchievedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Division")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("MatchId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Tier")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProfileId");
+
+                    b.ToTable("RankMilestones");
+                });
+
             modelBuilder.Entity("LolStatsTracker.Shared.Models.Season", b =>
                 {
                     b.Property<int>("Id")
@@ -148,12 +211,30 @@ namespace LolStatsTracker.API.Migrations
                     b.ToTable("UserProfiles");
                 });
 
+            modelBuilder.Entity("LolStatsTracker.Shared.Models.ChampionPool", b =>
+                {
+                    b.HasOne("LolStatsTracker.Shared.Models.UserProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("LolStatsTracker.Shared.Models.MatchEntry", b =>
                 {
                     b.HasOne("LolStatsTracker.Shared.Models.UserProfile", null)
                         .WithMany()
                         .HasForeignKey("ProfileId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("LolStatsTracker.Shared.Models.RankMilestone", b =>
+                {
+                    b.HasOne("LolStatsTracker.Shared.Models.UserProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
