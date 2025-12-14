@@ -114,3 +114,15 @@ public class LcuPlayerStats
     [JsonProperty("WIN")]
     public bool Win { get; set; }
 }
+
+public class LcuGame
+{
+    [JsonProperty("gameId")]
+    public long GameId { get; set; }
+    
+    [JsonProperty("queueId")]
+    public int QueueId { get; set; }
+    
+    [JsonProperty("gameType")]
+    public string GameType { get; set; } = string.Empty;
+}

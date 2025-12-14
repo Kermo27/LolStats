@@ -39,17 +39,15 @@ public class ApiSyncService
             match.ProfileId = _config.ProfileId;
             
             var json = JsonConvert.SerializeObject(match);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/matches");
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
             
             // Add Profile ID header
-            if (!_httpClient.DefaultRequestHeaders.Contains("X-Profile-Id"))
-            {
-                _httpClient.DefaultRequestHeaders.Add("X-Profile-Id", _config.ProfileId.ToString());
-            }
+            request.Headers.Add("X-Profile-Id", _config.ProfileId.ToString());
             
             _logger.LogInformation("Syncing match: {Champion} {Result}", match.Champion, match.Win ? "Win" : "Loss");
             
-            var response = await _httpClient.PostAsync("/api/matches", content);
+            var response = await _httpClient.SendAsync(request);
             
             if (response.IsSuccessStatusCode)
             {

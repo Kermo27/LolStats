@@ -119,6 +119,31 @@ public class LcuApiClient : IDisposable
         }
     }
     
+    public async Task<LcuGame?> GetGameDetailsAsync(long gameId)
+    {
+        try
+        {
+            if (_httpClient == null)
+                throw new InvalidOperationException("Client not initialized");
+            
+            var response = await _httpClient.GetAsync($"/lol-match-history/v1/games/{gameId}");
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogDebug("Game details not available for {GameId}: {StatusCode}", gameId, response.StatusCode);
+                return null;
+            }
+            
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<LcuGame>(json);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting game details for {GameId}", gameId);
+            return null;
+        }
+    }
+    
     public void Dispose()
     {
         _httpClient?.Dispose();

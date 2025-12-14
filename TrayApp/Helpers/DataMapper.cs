@@ -74,6 +74,8 @@ public static class DataMapper
         
         var match = new MatchEntry
         {
+            Id = Guid.NewGuid(),
+            GameId = eogStats.GameId,
             ProfileId = profileId,
             Champion = championName,
             Role = position,

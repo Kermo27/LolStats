@@ -17,6 +17,7 @@ public class TrayBackgroundService : BackgroundService
     
     private bool _isLcuConnected = false;
     private LcuQueueStats? _cachedRankedStats;
+    private readonly HashSet<long> _processedGameIds = new();
     
     public event EventHandler<string>? StatusChanged;
     
@@ -126,12 +127,32 @@ public class TrayBackgroundService : BackgroundService
     private async void OnGameEnded(object? sender, LcuEndOfGameStats eogStats)
     {
         _logger.LogInformation("Game ended - processing match data");
+        
+        // Prevent duplicate processing
+        if (_processedGameIds.Contains(eogStats.GameId))
+        {
+            _logger.LogInformation("Match {GameId} already processed - skipping", eogStats.GameId);
+            return;
+        }
+        
         StatusChanged?.Invoke(this, "Processing match...");
         
         try
         {
             // Filter: Only Ranked Solo/Duo (queueId 420)
             const int RANKED_SOLO_DUO_QUEUE_ID = 420;
+            
+            // Fix: If queueId is 0, fetch details from match history
+            if (eogStats.QueueId == 0)
+            {
+                _logger.LogInformation("QueueId is 0, fetching game details for GameId: {GameId}", eogStats.GameId);
+                var gameDetails = await _lcuApiClient.GetGameDetailsAsync(eogStats.GameId);
+                if (gameDetails != null)
+                {
+                    eogStats.QueueId = gameDetails.QueueId;
+                    _logger.LogInformation("Retrieved QueueId: {QueueId} from match history", eogStats.QueueId);
+                }
+            }
             
             if (eogStats.QueueId != RANKED_SOLO_DUO_QUEUE_ID)
             {
@@ -160,6 +181,7 @@ public class TrayBackgroundService : BackgroundService
             
             if (success)
             {
+                _processedGameIds.Add(match.GameId);
                 StatusChanged?.Invoke(this, $"Synced: {match.Champion} ({(match.Win ? "Win" : "Loss")})");
             }
             else
