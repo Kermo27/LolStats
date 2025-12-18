@@ -80,6 +80,18 @@ public class LcuPlayer
 {
     [JsonProperty("summonerName")]
     public string SummonerName { get; set; } = string.Empty;
+
+    [JsonProperty("gameName")]
+    public string GameName { get; set; } = string.Empty;
+
+    [JsonProperty("tagLine")]
+    public string TagLine { get; set; } = string.Empty;
+    
+    [JsonProperty("summonerId")]
+    public long SummonerId { get; set; }
+    
+    [JsonProperty("puuid")]
+    public string Puuid { get; set; } = string.Empty;
     
     [JsonProperty("championId")]
     public int ChampionId { get; set; }
@@ -89,6 +101,9 @@ public class LcuPlayer
     
     [JsonProperty("stats")]
     public LcuPlayerStats Stats { get; set; } = new();
+
+    [JsonIgnore]
+    public string DisplayName => !string.IsNullOrEmpty(GameName) ? $"{GameName}#{TagLine}" : SummonerName;
 }
 
 public class LcuPlayerStats
@@ -110,6 +125,15 @@ public class LcuPlayerStats
     
     [JsonProperty("INDIVIDUAL_POSITION")]
     public string Position { get; set; } = string.Empty;
+
+    [JsonProperty("LANE")]
+    public string Lane { get; set; } = string.Empty;
+
+    [JsonProperty("ROLE")]
+    public string Role { get; set; } = string.Empty;
+
+    [JsonProperty("PLAYER_POSITION")]
+    public string PlayerPosition { get; set; } = string.Empty;
     
     [JsonProperty("WIN")]
     public bool Win { get; set; }
@@ -125,4 +149,58 @@ public class LcuGame
     
     [JsonProperty("gameType")]
     public string GameType { get; set; } = string.Empty;
+
+    [JsonProperty("participants")]
+    public List<LcuGameParticipant> Participants { get; set; } = new();
+
+    [JsonProperty("participantIdentities")]
+    public List<LcuGameParticipantIdentity> ParticipantIdentities { get; set; } = new();
+}
+
+public class LcuGameParticipant
+{
+    [JsonProperty("participantId")]
+    public int ParticipantId { get; set; }
+
+    [JsonProperty("teamId")]
+    public int TeamId { get; set; }
+
+    [JsonProperty("championId")]
+    public int ChampionId { get; set; }
+
+    [JsonProperty("timeline")]
+    public LcuGameTimeline Timeline { get; set; } = new();
+}
+
+public class LcuGameTimeline
+{
+    [JsonProperty("lane")]
+    public string Lane { get; set; } = string.Empty;
+
+    [JsonProperty("role")]
+    public string Role { get; set; } = string.Empty;
+}
+
+public class LcuGameParticipantIdentity
+{
+    [JsonProperty("participantId")]
+    public int ParticipantId { get; set; }
+
+    [JsonProperty("player")]
+    public LcuGamePlayer Player { get; set; } = new();
+}
+
+public class LcuGamePlayer
+{
+    [JsonProperty("summonerName")]
+    public string SummonerName { get; set; } = string.Empty;
+
+    [JsonProperty("gameName")]
+    public string GameName { get; set; } = string.Empty;
+
+    [JsonProperty("tagLine")]
+    public string TagLine { get; set; } = string.Empty;
+
+    [JsonProperty("puuid")]
+    public string Puuid { get; set; } = string.Empty;
 }

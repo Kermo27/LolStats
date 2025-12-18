@@ -8,9 +8,6 @@ public class MatchEntry
 {
     [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
-    
-    public long GameId { get; set; }
-    
     [Required]
     public string Champion { get; set; } = string.Empty;
     [Required] 

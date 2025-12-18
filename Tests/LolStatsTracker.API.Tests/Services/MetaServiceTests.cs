@@ -21,7 +21,7 @@ public class MetaServiceTests : IDisposable
         _db = new MatchDbContext(options);
         _service = new MetaService(_db);
 
-        _db.UserProfiles.Add(new UserProfile { Id = _profileId, SummonerName = "TestUser" });
+        _db.UserProfiles.Add(new UserProfile { Id = _profileId, Name = "TestUser" });
         _db.SaveChanges();
     }
 

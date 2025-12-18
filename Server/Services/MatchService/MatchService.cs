@@ -1,16 +1,20 @@
 ﻿using LolStatsTracker.API.Data;
+using LolStatsTracker.API.Services.MilestoneService;
 using LolStatsTracker.Shared.Models;
 using Microsoft.EntityFrameworkCore;
+using LolStatsTracker.Shared.Constants;
 
 namespace LolStatsTracker.API.Services.MatchService;
 
 public class MatchService : IMatchService
 {
     private readonly MatchDbContext _db;
+    private readonly IMilestoneService _milestoneService;
 
-    public MatchService(MatchDbContext db)
+    public MatchService(MatchDbContext db, IMilestoneService milestoneService)
     {
         _db = db;
+        _milestoneService = milestoneService;
     }
 
     public async Task<List<MatchEntry>> GetAllAsync(Guid profileId)

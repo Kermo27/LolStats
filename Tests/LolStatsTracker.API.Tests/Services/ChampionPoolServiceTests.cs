@@ -23,7 +23,7 @@ public class ChampionPoolServiceTests : IDisposable
         _service = new ChampionPoolService(_db);
 
         // Seed a user profile
-        _db.UserProfiles.Add(new UserProfile { Id = _profileId, SummonerName = "TestUser" });
+        _db.UserProfiles.Add(new UserProfile { Id = _profileId, Name = "TestUser" });
         _db.SaveChanges();
     }
 

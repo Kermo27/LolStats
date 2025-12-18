@@ -18,6 +18,7 @@ public class TrayBackgroundService : BackgroundService
     private bool _isLcuConnected = false;
     private LcuQueueStats? _cachedRankedStats;
     private readonly HashSet<long> _processedGameIds = new();
+    private string? _currentSummonerName;
     
     public event EventHandler<string>? StatusChanged;
     
@@ -54,10 +55,13 @@ public class TrayBackgroundService : BackgroundService
                 // Check LCU connection every interval
                 await _connectionManager.TryConnectAsync();
                 
-                // If connected, cache ranked stats periodically
+                // If connected, cache ranked stats and check for account changes
                 if (_isLcuConnected)
                 {
                     _cachedRankedStats = await _lcuApiClient.GetRankedStatsAsync();
+                    
+                    // Check if summoner changed (account switch detection)
+                    await CheckForAccountChangeAsync();
                 }
                 
                 await Task.Delay(TimeSpan.FromSeconds(_config.CheckIntervalSeconds), stoppingToken);
@@ -75,6 +79,29 @@ public class TrayBackgroundService : BackgroundService
         }
         
         _logger.LogInformation("Tray Background Service stopped");
+    }
+    
+    private async Task CheckForAccountChangeAsync()
+    {
+        try
+        {
+            var summoner = await _lcuApiClient.GetCurrentSummonerAsync();
+            if (summoner != null)
+            {
+                var displayName = $"{summoner.GameName}#{summoner.TagLine}";
+                
+                if (_currentSummonerName != displayName)
+                {
+                    _currentSummonerName = displayName;
+                    _logger.LogInformation("Account changed to: {DisplayName}", displayName);
+                    StatusChanged?.Invoke(this, $"Connected - {displayName}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to check for account change");
+        }
     }
     
     private async void OnLcuConnected(object? sender, LcuConnectionInfo connectionInfo)
@@ -126,10 +153,10 @@ public class TrayBackgroundService : BackgroundService
     
     private async void OnGameEnded(object? sender, LcuEndOfGameStats eogStats)
     {
-        _logger.LogInformation("Game ended - processing match data");
+        _logger.LogInformation("Game ended - processing match data for GameId: {GameId}", eogStats.GameId);
         
-        // Prevent duplicate processing
-        if (_processedGameIds.Contains(eogStats.GameId))
+        // Prevent duplicate processing - add to set BEFORE processing
+        if (!_processedGameIds.Add(eogStats.GameId))
         {
             _logger.LogInformation("Match {GameId} already processed - skipping", eogStats.GameId);
             return;
@@ -142,16 +169,13 @@ public class TrayBackgroundService : BackgroundService
             // Filter: Only Ranked Solo/Duo (queueId 420)
             const int RANKED_SOLO_DUO_QUEUE_ID = 420;
             
-            // Fix: If queueId is 0, fetch details from match history
-            if (eogStats.QueueId == 0)
+            // Fetch game details from match history to get reliable lane/role info
+            _logger.LogInformation("Fetching game details for GameId: {GameId}", eogStats.GameId);
+            var gameDetails = await _lcuApiClient.GetGameDetailsAsync(eogStats.GameId);
+            if (gameDetails != null)
             {
-                _logger.LogInformation("QueueId is 0, fetching game details for GameId: {GameId}", eogStats.GameId);
-                var gameDetails = await _lcuApiClient.GetGameDetailsAsync(eogStats.GameId);
-                if (gameDetails != null)
-                {
-                    eogStats.QueueId = gameDetails.QueueId;
-                    _logger.LogInformation("Retrieved QueueId: {QueueId} from match history", eogStats.QueueId);
-                }
+                eogStats.QueueId = gameDetails.QueueId;
+                _logger.LogInformation("Retrieved detailed game info for GameId: {GameId}", eogStats.GameId);
             }
             
             if (eogStats.QueueId != RANKED_SOLO_DUO_QUEUE_ID)
@@ -168,8 +192,8 @@ public class TrayBackgroundService : BackgroundService
                 return;
             }
             
-            // Map LCU data to MatchEntry
-            var match = Helpers.DataMapper.MapToMatchEntry(eogStats, _cachedRankedStats, _config.ProfileId);
+            // Map LCU data to MatchEntry, passing gameDetails for better mapping
+            var match = Helpers.DataMapper.MapToMatchEntry(eogStats, _cachedRankedStats, _config.ProfileId, gameDetails);
             
             _logger.LogInformation("Match mapped: {Champion} {Result} ({KDA})", 
                 match.Champion, 
@@ -181,7 +205,6 @@ public class TrayBackgroundService : BackgroundService
             
             if (success)
             {
-                _processedGameIds.Add(match.GameId);
                 StatusChanged?.Invoke(this, $"Synced: {match.Champion} ({(match.Win ? "Win" : "Loss")})");
             }
             else
