@@ -29,8 +29,6 @@ public partial class SettingsWindow : Window
             if (appConfig != null)
             {
                 ApiUrlTextBox.Text = appConfig["ApiBaseUrl"]?.Value<string>() ?? "";
-                var profileId = appConfig["ProfileId"]?.Value<string>() ?? "";
-                ProfileIdTextBox.Text = profileId != "00000000-0000-0000-0000-000000000000" ? profileId : "";
                 AutoStartCheckBox.IsChecked = appConfig["AutoStartWithWindows"]?.Value<bool>() ?? false;
             }
         }
@@ -59,17 +57,18 @@ public partial class SettingsWindow : Window
             httpClient.BaseAddress = new Uri(ApiUrlTextBox.Text);
             httpClient.Timeout = TimeSpan.FromSeconds(5);
             
-            var response = await httpClient.GetAsync("/api/Matches");
+            // Test with the auth endpoint (doesn't require authentication)
+            var response = await httpClient.GetAsync("/swagger/index.html");
             
             if (response.IsSuccessStatusCode)
             {
-                MessageBox.Show("Connection successful!", "Success", 
+                MessageBox.Show("Connection successful! API is reachable.", "Success", 
                     MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                MessageBox.Show($"Connection failed: {response.StatusCode}", "Error", 
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"API responded with: {response.StatusCode}", "Warning", 
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
         catch (Exception ex)
@@ -96,20 +95,6 @@ public partial class SettingsWindow : Window
                 return;
             }
             
-            if (string.IsNullOrWhiteSpace(ProfileIdTextBox.Text))
-            {
-                MessageBox.Show("Please enter a Profile ID", "Validation", 
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            
-            if (!Guid.TryParse(ProfileIdTextBox.Text, out _))
-            {
-                MessageBox.Show("Profile ID must be a valid GUID", "Validation", 
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            
             // Load existing settings
             var json = File.ReadAllText(_settingsPath);
             var settings = JObject.Parse(json);
@@ -119,7 +104,6 @@ public partial class SettingsWindow : Window
                 settings["AppConfiguration"] = new JObject();
             
             settings["AppConfiguration"]!["ApiBaseUrl"] = ApiUrlTextBox.Text.TrimEnd('/');
-            settings["AppConfiguration"]!["ProfileId"] = ProfileIdTextBox.Text;
             settings["AppConfiguration"]!["AutoStartWithWindows"] = AutoStartCheckBox.IsChecked ?? false;
             
             // Save

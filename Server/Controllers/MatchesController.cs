@@ -1,12 +1,14 @@
 ﻿using LolStatsTracker.API.Models;
 using LolStatsTracker.API.Services.MatchService;
 using LolStatsTracker.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LolStatsTracker.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MatchesController : BaseApiController
 {
     private readonly IMatchService _matchService;

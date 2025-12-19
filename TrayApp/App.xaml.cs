@@ -15,6 +15,7 @@ public partial class App : Application
 {
     private IHost? _host;
     private TaskbarIcon? _trayIcon;
+    private TrayAuthService? _authService;
     
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -29,6 +30,9 @@ public partial class App : Application
             {
                 services.Configure<AppConfiguration>(context.Configuration.GetSection("AppConfiguration"));
                 
+                // Add Auth Service as singleton (shared across services)
+                services.AddSingleton<TrayAuthService>();
+                
                 services.AddSingleton<LcuConnectionManager>();
                 services.AddSingleton<LcuApiClient>();
                 services.AddSingleton<LcuEventListener>();
@@ -42,6 +46,24 @@ public partial class App : Application
                 });
             })
             .Build();
+        
+        // Get auth service and check if user is authenticated
+        _authService = _host.Services.GetRequiredService<TrayAuthService>();
+        var isAuthenticated = await _authService.TryLoadStoredTokenAsync();
+        
+        if (!isAuthenticated)
+        {
+            // Show login window
+            var loginWindow = new LoginWindow(_authService);
+            var result = loginWindow.ShowDialog();
+            
+            if (result != true || !loginWindow.LoginSuccessful)
+            {
+                // User cancelled login, exit application
+                Shutdown();
+                return;
+            }
+        }
         
         await _host.StartAsync();
         

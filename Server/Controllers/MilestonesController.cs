@@ -1,12 +1,14 @@
 using LolStatsTracker.API.Services.MilestoneService;
 using LolStatsTracker.Shared.DTOs;
 using LolStatsTracker.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LolStatsTracker.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MilestonesController : BaseApiController
 {
     private readonly IMilestoneService _service;

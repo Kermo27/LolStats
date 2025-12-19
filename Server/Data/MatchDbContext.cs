@@ -7,6 +7,7 @@ public class MatchDbContext : DbContext
 {
     public MatchDbContext(DbContextOptions<MatchDbContext> options) : base(options) {}
     
+    public DbSet<User> Users => Set<User>();
     public DbSet<MatchEntry> Matches => Set<MatchEntry>();
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<Season> Seasons => Set<Season>();
@@ -15,6 +16,24 @@ public class MatchDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // User configuration
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Username)
+            .IsUnique()
+            .HasDatabaseName("IX_Users_Username");
+
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Email)
+            .HasDatabaseName("IX_Users_Email");
+
+        // UserProfile -> User relationship (nullable for legacy profiles)
+        modelBuilder.Entity<UserProfile>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(p => p.UserId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<MatchEntry>()
             .HasOne<UserProfile>()
             .WithMany()

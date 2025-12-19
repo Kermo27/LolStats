@@ -19,6 +19,7 @@ public class TrayBackgroundService : BackgroundService
     private LcuQueueStats? _cachedRankedStats;
     private readonly HashSet<long> _processedGameIds = new();
     private string? _currentSummonerName;
+    private Guid _activeProfileId = Guid.Empty;
     
     public event EventHandler<string>? StatusChanged;
     
@@ -118,12 +119,16 @@ public class TrayBackgroundService : BackgroundService
             // Start WebSocket listener
             await _eventListener.StartAsync(connectionInfo);
             
-            // Get initial summoner info
+            // Get initial summoner info and auto-create/find profile
             var summoner = await _lcuApiClient.GetCurrentSummonerAsync();
             if (summoner != null)
             {
-                _logger.LogInformation("Logged in as: {DisplayName}", summoner.GameName);
-                StatusChanged?.Invoke(this, $"Connected - {summoner.GameName}#{summoner.TagLine}");
+                _currentSummonerName = $"{summoner.GameName}#{summoner.TagLine}";
+                _logger.LogInformation("Logged in as: {DisplayName}", _currentSummonerName);
+                StatusChanged?.Invoke(this, $"Connected - {_currentSummonerName}");
+                
+                // Auto-create or find profile for this summoner
+                await SetupProfileForSummonerAsync(summoner);
             }
             
             // Cache ranked stats
@@ -132,6 +137,34 @@ public class TrayBackgroundService : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error initializing LCU services");
+        }
+    }
+    
+    private async Task SetupProfileForSummonerAsync(LcuSummoner summoner)
+    {
+        try
+        {
+            var profileId = await _apiSyncService.GetOrCreateProfileAsync(
+                summoner.GameName, 
+                summoner.TagLine, 
+                summoner.Puuid);
+            
+            if (profileId.HasValue)
+            {
+                _activeProfileId = profileId.Value;
+                _logger.LogInformation("Using profile {ProfileId} for {SummonerName}", 
+                    _activeProfileId, _currentSummonerName);
+                StatusChanged?.Invoke(this, $"Ready - {_currentSummonerName}");
+            }
+            else
+            {
+                _logger.LogWarning("Failed to get/create profile for summoner");
+                StatusChanged?.Invoke(this, "Error: Could not setup profile");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting up profile for summoner");
         }
     }
     
@@ -185,15 +218,15 @@ public class TrayBackgroundService : BackgroundService
                 return;
             }
             
-            if (_config.ProfileId == Guid.Empty)
+            if (_activeProfileId == Guid.Empty)
             {
-                _logger.LogWarning("Profile ID not configured - skipping sync");
-                StatusChanged?.Invoke(this, "Error: Profile ID not configured");
+                _logger.LogWarning("No active profile - skipping sync");
+                StatusChanged?.Invoke(this, "Error: No profile available");
                 return;
             }
             
             // Map LCU data to MatchEntry, passing gameDetails for better mapping
-            var match = Helpers.DataMapper.MapToMatchEntry(eogStats, _cachedRankedStats, _config.ProfileId, gameDetails);
+            var match = Helpers.DataMapper.MapToMatchEntry(eogStats, _cachedRankedStats, _activeProfileId, gameDetails);
             
             _logger.LogInformation("Match mapped: {Champion} {Result} ({KDA})", 
                 match.Champion, 

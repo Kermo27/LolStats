@@ -1,3 +1,4 @@
+using System.Linq;
 using LolStatsTracker.Shared.Models;
 using LolStatsTracker.TrayApp.Models.Lcu;
 
@@ -91,10 +92,10 @@ public static class DataMapper
         var championName = GetChampionName(sourcePlayer.ChampionId);
         var position = MapPosition(sourcePlayer.Stats.Position, sourcePlayer.Stats.Lane, sourcePlayer.Stats.Role, sourcePlayer.Stats.PlayerPosition);
         
-        // Fallback for position if all fields were still empty after augmentation
-        if (string.IsNullOrEmpty(sourcePlayer.Stats.Position) && 
-            string.IsNullOrEmpty(sourcePlayer.Stats.Lane) && 
-            string.IsNullOrEmpty(sourcePlayer.Stats.Role))
+        // Fallback for position if all fields were still empty or "NONE" after augmentation
+        if (IsNoneOrEmpty(sourcePlayer.Stats.Position) && 
+            IsNoneOrEmpty(sourcePlayer.Stats.Lane) && 
+            IsNoneOrEmpty(sourcePlayer.Stats.Role))
         {
             // Guess position based on team index (Top, Jungle, Mid, Bot, Support)
             var team = eogStats.Teams.FirstOrDefault(t => t.Players.Any(p => p.TeamId == sourcePlayer.TeamId));
@@ -112,6 +113,14 @@ public static class DataMapper
                 };
                 Console.WriteLine($"[DataMapper] Guessing position by index {index}: {position}");
             }
+        }
+        
+        // Special case: If mapped as Support but champion is a known ADC (like Vayne), and we have "NONE" signals
+        if (position == "Support" && IsCommonAdc(sourcePlayer.ChampionId) && 
+            (IsNoneOrEmpty(sourcePlayer.Stats.Position) || IsNoneOrEmpty(sourcePlayer.Stats.Lane)))
+        {
+            Console.WriteLine($"[DataMapper] Correcting position for {championName}: Support -> ADC based on champion type");
+            position = "ADC";
         }
 
         var totalCs = sourcePlayer.Stats.MinionsKilled + sourcePlayer.Stats.NeutralMinionsKilled;
@@ -159,7 +168,7 @@ public static class DataMapper
         string[] candidates = { pos, lane, role, playerPos };
         foreach (var c in candidates)
         {
-            if (string.IsNullOrWhiteSpace(c)) continue;
+            if (string.IsNullOrWhiteSpace(c) || IsNone(c)) continue;
             
             var upper = c.ToUpperInvariant();
             if (upper == "TOP") return "Top";
@@ -170,6 +179,25 @@ public static class DataMapper
         }
         
         return "ADC"; // Default fallback
+    }
+
+    private static bool IsNoneOrEmpty(string? s) => string.IsNullOrEmpty(s) || IsNone(s);
+
+    private static bool IsNone(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return true;
+        var upper = s.ToUpperInvariant();
+        return upper == "NONE" || upper == "NULL" || upper == "UNKNOWN";
+    }
+
+    private static bool IsCommonAdc(int championId)
+    {
+        // Common ADCs - based on ID
+        int[] adcs = { 
+            15, 18, 21, 22, 29, 42, 51, 67, 81, 96, 110, 119, 133, 145, 202, 
+            221, 222, 235, 236, 360, 429, 523, 895, 901 
+        };
+        return adcs.Contains(championId);
     }
     
     private static int ParseDivision(string? division)
@@ -191,16 +219,23 @@ public static class DataMapper
         var enemyBot = "";
         var enemySupport = "";
         
+        // Find the most complete local player data in the teams list
+        var sourcePlayer = eogStats.Teams
+            .SelectMany(t => t.Players)
+            .FirstOrDefault(p => p.Puuid == localPlayer.Puuid || (p.TeamId == localPlayer.TeamId && p.ChampionId == localPlayer.ChampionId)) ?? localPlayer;
+
         // Log all players and their positions for debugging
-        Console.WriteLine($"[DataMapper] Local player: {localPlayer.SummonerName}, TeamId: {localPlayer.TeamId}, Mapped Position: {position}");
-        Console.WriteLine($"[DataMapper] Stats - Position: '{localPlayer.Stats.Position}', Lane: '{localPlayer.Stats.Lane}', Role: '{localPlayer.Stats.Role}'");
+        Console.WriteLine($"[DataMapper] Local player: {sourcePlayer.DisplayName}, TeamId: {sourcePlayer.TeamId}, Mapped Position: {position}");
+        Console.WriteLine($"[DataMapper] Stats - Position: '{sourcePlayer.Stats.Position}', Lane: '{sourcePlayer.Stats.Lane}', Role: '{sourcePlayer.Stats.Role}'");
         
         foreach (var team in eogStats.Teams)
         {
-            Console.WriteLine($"[DataMapper] Team - IsWinning: {team.IsWinningTeam}, TeamId detected from players: {team.Players.FirstOrDefault()?.TeamId}");
+            var isAlly = team.Players.Any(p => p.Puuid == sourcePlayer.Puuid);
+            Console.WriteLine($"[DataMapper] Team ({(isAlly ? "ALLY" : "ENEMY")}) - IsWinning: {team.IsWinningTeam}, TeamId: {team.Players.FirstOrDefault()?.TeamId}");
             foreach (var player in team.Players)
             {
-                Console.WriteLine($"[DataMapper]   Player: '{player.SummonerName}', ChampId: {player.ChampionId}, Pos: '{player.Stats.Position}', Lane: '{player.Stats.Lane}', Role: '{player.Stats.Role}'");
+                var isLocal = player.Puuid == sourcePlayer.Puuid;
+                Console.WriteLine($"[DataMapper]   {(isLocal ? ">>> " : "    ")}Player: '{player.DisplayName}', ChampId: {player.ChampionId}, Pos: '{player.Stats.Position}', Lane: '{player.Stats.Lane}', Role: '{player.Stats.Role}'");
             }
         }
         

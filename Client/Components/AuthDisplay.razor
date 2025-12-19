@@ -1,0 +1,84 @@
+@using LolStatsTracker.Services.AuthService
+@implements IDisposable
+@inject IAuthService AuthService
+@inject JwtAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <Authorized>
+        <MudMenu Icon="@Icons.Material.Filled.AccountCircle"
+                 Color="Color.Inherit"
+                 AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight"
+                 Class="ml-2">
+            <ChildContent>
+                <MudMenuItem>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+                        <MudText>@_username</MudText>
+                    </MudStack>
+                </MudMenuItem>
+                <MudDivider />
+                <MudMenuItem OnClick="HandleLogout">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" />
+                        <MudText>Logout</MudText>
+                    </MudStack>
+                </MudMenuItem>
+            </ChildContent>
+        </MudMenu>
+    </Authorized>
+    <NotAuthorized>
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="ml-2">
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Inherit"
+                       Href="/login"
+                       StartIcon="@Icons.Material.Filled.Login"
+                       Size="Size.Small">
+                Login
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Href="/register"
+                       StartIcon="@Icons.Material.Filled.PersonAdd"
+                       Size="Size.Small">
+                Register
+            </MudButton>
+        </MudStack>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string _username = "User";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Subscribe to auth state changes
+        AuthStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
+        await LoadUserAsync();
+    }
+
+    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    {
+        await LoadUserAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadUserAsync()
+    {
+        var user = await AuthService.GetCurrentUserAsync();
+        _username = user?.Username ?? "User";
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        AuthStateProvider.NotifyAuthenticationStateChanged();
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+
+    public void Dispose()
+    {
+        AuthStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
+    }
+}

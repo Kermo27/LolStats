@@ -1,6 +1,7 @@
 ﻿using LolStatsTracker.API.Data;
 using LolStatsTracker.API.Services.StatsService;
 using LolStatsTracker.Shared.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace LolStatsTracker.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class StatsController : BaseApiController
 {
     private readonly IStatsService _statsService;
