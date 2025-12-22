@@ -9,15 +9,15 @@
             <!-- Tray Icon -->
             <tb:TaskbarIcon x:Key="TrayIcon"
                            IconSource="/Assets/icon.ico"
-                           ToolTipText="LoL Stats Tracker - Disconnected">
+                           ToolTipText="{Binding ToolTipText}">
                 <tb:TaskbarIcon.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="Status: Disconnected" x:Name="StatusMenuItem" IsEnabled="False" FontWeight="Bold"/>
+                        <MenuItem Header="{Binding StatusText}" IsEnabled="False" FontWeight="Bold"/>
                         <Separator/>
-                        <MenuItem Header="Settings..." x:Name="SettingsMenuItem"/>
-                        <MenuItem Header="Open Dashboard" x:Name="DashboardMenuItem"/>
+                        <MenuItem Header="Settings..." Command="{Binding OpenSettingsCommand}"/>
+                        <MenuItem Header="Open Dashboard" Command="{Binding OpenDashboardCommand}"/>
                         <Separator/>
-                        <MenuItem Header="Exit" x:Name="ExitMenuItem"/>
+                        <MenuItem Header="Exit" Command="{Binding ExitApplicationCommand}"/>
                     </ContextMenu>
                 </tb:TaskbarIcon.ContextMenu>
             </tb:TaskbarIcon>

@@ -1,8 +1,8 @@
-using System.Diagnostics;
 using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using LolStatsTracker.TrayApp.Models;
 using LolStatsTracker.TrayApp.Services;
+using LolStatsTracker.TrayApp.ViewModels;
 using LolStatsTracker.TrayApp.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +16,7 @@ public partial class App : Application
     private IHost? _host;
     private TaskbarIcon? _trayIcon;
     private TrayAuthService? _authService;
+    private TrayIconViewModel? _trayIconViewModel;
     
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -30,14 +31,22 @@ public partial class App : Application
             {
                 services.Configure<AppConfiguration>(context.Configuration.GetSection("AppConfiguration"));
                 
-                // Add Auth Service as singleton (shared across services)
+                // Services
                 services.AddSingleton<TrayAuthService>();
-                
-                services.AddSingleton<LcuConnectionManager>();
-                services.AddSingleton<LcuApiClient>();
-                services.AddSingleton<LcuEventListener>();
+                services.AddSingleton<LcuService>();
                 services.AddHttpClient<ApiSyncService>();
-                services.AddHostedService<TrayBackgroundService>();
+                
+                services.AddSingleton<TrayBackgroundService>();
+                services.AddHostedService(provider => provider.GetRequiredService<TrayBackgroundService>());
+                
+                // ViewModels
+                services.AddSingleton<TrayIconViewModel>();
+                services.AddTransient<LoginViewModel>();
+                services.AddTransient<SettingsViewModel>();
+                
+                // Views
+                services.AddTransient<LoginWindow>();
+                services.AddTransient<SettingsWindow>();
                 
                 services.AddLogging(builder =>
                 {
@@ -47,19 +56,32 @@ public partial class App : Application
             })
             .Build();
         
-        // Get auth service and check if user is authenticated
+        // Authenticate
         _authService = _host.Services.GetRequiredService<TrayAuthService>();
         var isAuthenticated = await _authService.TryLoadStoredTokenAsync();
         
         if (!isAuthenticated)
         {
-            // Show login window
-            var loginWindow = new LoginWindow(_authService);
+            var loginWindow = _host.Services.GetRequiredService<LoginWindow>();
+            var loginVm = _host.Services.GetRequiredService<LoginViewModel>();
+            
+            // Wire up VM to View manually since we don't have a robust VM-First navigation system yet
+            loginWindow.DataContext = loginVm;
+            
+            loginVm.LoginResultAction = (success) => 
+            {
+                if (success)
+                {
+                    loginWindow.LoginSuccessful = true;
+                    loginWindow.DialogResult = true;
+                    loginWindow.Close();
+                }
+            };
+            
             var result = loginWindow.ShowDialog();
             
-            if (result != true || !loginWindow.LoginSuccessful)
+            if (result != true)
             {
-                // User cancelled login, exit application
                 Shutdown();
                 return;
             }
@@ -73,60 +95,12 @@ public partial class App : Application
     private void SetupTrayIcon()
     {
         _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
+        _trayIconViewModel = _host!.Services.GetRequiredService<TrayIconViewModel>();
         
-        if (_trayIcon?.ContextMenu != null)
+        if (_trayIcon != null)
         {
-            var statusMenuItem = _trayIcon.ContextMenu.Items[0] as System.Windows.Controls.MenuItem;
-            var settingsMenuItem = _trayIcon.ContextMenu.Items[2] as System.Windows.Controls.MenuItem;
-            var dashboardMenuItem = _trayIcon.ContextMenu.Items[3] as System.Windows.Controls.MenuItem;
-            var exitMenuItem = _trayIcon.ContextMenu.Items[5] as System.Windows.Controls.MenuItem;
-            
-            if (settingsMenuItem != null)
-                settingsMenuItem.Click += (s, e) => OpenSettings();
-            
-            if (dashboardMenuItem != null)
-                dashboardMenuItem.Click += (s, e) => OpenDashboard();
-            
-            if (exitMenuItem != null)
-                exitMenuItem.Click += async (s, e) => await ExitApplication();
-            
-            var backgroundService = _host?.Services.GetService<IHostedService>() as TrayBackgroundService;
-            if (backgroundService != null)
-            {
-                backgroundService.StatusChanged += (s, status) =>
-                {
-                    Dispatcher.Invoke(() =>
-                    {
-                        if (statusMenuItem != null)
-                            statusMenuItem.Header = $"Status: {status}";
-                        
-                        if (_trayIcon != null)
-                            _trayIcon.ToolTipText = $"LoL Stats Tracker - {status}";
-                    });
-                };
-            }
-        }
-    }
-    
-    private void OpenSettings()
-    {
-        var settingsWindow = new SettingsWindow();
-        settingsWindow.Show();
-    }
-    
-    private void OpenDashboard()
-    {
-        try
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "http://localhost:5067",
-                UseShellExecute = true
-            });
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Could not open dashboard: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            // DataBind ViewModel to TrayIcon
+            _trayIcon.DataContext = _trayIconViewModel;
         }
     }
     
@@ -142,4 +116,12 @@ public partial class App : Application
         
         Shutdown();
     }
+    
+    // Override OnExit to ensure clean shutdown
+    protected override async void OnExit(ExitEventArgs e)
+    {
+        await ExitApplication();
+        base.OnExit(e);
+    }
 }
+

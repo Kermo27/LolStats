@@ -9,13 +9,10 @@ namespace LolStatsTracker.TrayApp.Services;
 public class TrayBackgroundService : BackgroundService
 {
     private readonly ILogger<TrayBackgroundService> _logger;
-    private readonly LcuConnectionManager _connectionManager;
-    private readonly LcuApiClient _lcuApiClient;
-    private readonly LcuEventListener _eventListener;
+    private readonly LcuService _lcuService;
     private readonly ApiSyncService _apiSyncService;
     private readonly AppConfiguration _config;
     
-    private bool _isLcuConnected = false;
     private LcuQueueStats? _cachedRankedStats;
     private readonly HashSet<long> _processedGameIds = new();
     private string? _currentSummonerName;
@@ -25,23 +22,18 @@ public class TrayBackgroundService : BackgroundService
     
     public TrayBackgroundService(
         ILogger<TrayBackgroundService> logger,
-        LcuConnectionManager connectionManager,
-        LcuApiClient lcuApiClient,
-        LcuEventListener eventListener,
+        LcuService lcuService,
         ApiSyncService apiSyncService,
         IOptions<AppConfiguration> config)
     {
         _logger = logger;
-        _connectionManager = connectionManager;
-        _lcuApiClient = lcuApiClient;
-        _eventListener = eventListener;
+        _lcuService = lcuService;
         _apiSyncService = apiSyncService;
         _config = config.Value;
         
         // Subscribe to events
-        _connectionManager.Connected += OnLcuConnected;
-        _connectionManager.Disconnected += OnLcuDisconnected;
-        _eventListener.GameEnded += OnGameEnded;
+        _lcuService.ConnectionChanged += OnLcuConnectionChanged;
+        _lcuService.GameEnded += OnGameEnded;
     }
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -49,27 +41,28 @@ public class TrayBackgroundService : BackgroundService
         _logger.LogInformation("Tray Background Service started");
         StatusChanged?.Invoke(this, "Service started - waiting for League Client");
         
+        // Initialize LCU Service (starts monitoring loop)
+        await _lcuService.InitializeAsync();
+        
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                // Check LCU connection every interval
-                await _connectionManager.TryConnectAsync();
+                // Logic mostly handled by LcuService events now.
+                // We keep this loop if we need periodic tasks like re-fetching stats or health checks.
                 
-                // If connected, cache ranked stats and check for account changes
-                if (_isLcuConnected)
+                if (_lcuService.IsConnected)
                 {
-                    _cachedRankedStats = await _lcuApiClient.GetRankedStatsAsync();
-                    
-                    // Check if summoner changed (account switch detection)
-                    await CheckForAccountChangeAsync();
+                    // Refresh stats periodically
+                     _cachedRankedStats = await _lcuService.GetRankedStatsAsync();
+                     
+                     await CheckForAccountChangeAsync();
                 }
                 
                 await Task.Delay(TimeSpan.FromSeconds(_config.CheckIntervalSeconds), stoppingToken);
             }
             catch (OperationCanceledException)
             {
-                // Expected on shutdown
                 break;
             }
             catch (Exception ex)
@@ -86,7 +79,7 @@ public class TrayBackgroundService : BackgroundService
     {
         try
         {
-            var summoner = await _lcuApiClient.GetCurrentSummonerAsync();
+            var summoner = await _lcuService.GetCurrentSummonerAsync();
             if (summoner != null)
             {
                 var displayName = $"{summoner.GameName}#{summoner.TagLine}";
@@ -95,6 +88,10 @@ public class TrayBackgroundService : BackgroundService
                 {
                     _currentSummonerName = displayName;
                     _logger.LogInformation("Account changed to: {DisplayName}", displayName);
+                    
+                    // Re-setup profile
+                    await SetupProfileForSummonerAsync(summoner);
+                    
                     StatusChanged?.Invoke(this, $"Connected - {displayName}");
                 }
             }
@@ -105,38 +102,32 @@ public class TrayBackgroundService : BackgroundService
         }
     }
     
-    private async void OnLcuConnected(object? sender, LcuConnectionInfo connectionInfo)
+    private async void OnLcuConnectionChanged(object? sender, bool isConnected)
     {
-        _isLcuConnected = true;
-        _logger.LogInformation("LCU Connected - initializing services");
-        StatusChanged?.Invoke(this, "Connected to League Client");
-        
-        try
+        if (isConnected)
         {
-            // Initialize API client
-            _lcuApiClient.Initialize(connectionInfo);
+            _logger.LogInformation("LCU Connected - initializing services");
+            StatusChanged?.Invoke(this, "Connected to League Client");
             
-            // Start WebSocket listener
-            await _eventListener.StartAsync(connectionInfo);
-            
-            // Get initial summoner info and auto-create/find profile
-            var summoner = await _lcuApiClient.GetCurrentSummonerAsync();
-            if (summoner != null)
+            try
             {
-                _currentSummonerName = $"{summoner.GameName}#{summoner.TagLine}";
-                _logger.LogInformation("Logged in as: {DisplayName}", _currentSummonerName);
-                StatusChanged?.Invoke(this, $"Connected - {_currentSummonerName}");
+                // Get initial summoner info
+                await CheckForAccountChangeAsync();
                 
-                // Auto-create or find profile for this summoner
-                await SetupProfileForSummonerAsync(summoner);
+                 // Cache ranked stats
+                _cachedRankedStats = await _lcuService.GetRankedStatsAsync();
             }
-            
-            // Cache ranked stats
-            _cachedRankedStats = await _lcuApiClient.GetRankedStatsAsync();
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error initializing LCU services after connection");
+            }
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogError(ex, "Error initializing LCU services");
+            _logger.LogInformation("LCU Disconnected");
+            StatusChanged?.Invoke(this, "Disconnected - waiting for League Client");
+            _currentSummonerName = null;
+            _activeProfileId = Guid.Empty;
         }
     }
     
@@ -168,27 +159,10 @@ public class TrayBackgroundService : BackgroundService
         }
     }
     
-    private async void OnLcuDisconnected(object? sender, EventArgs e)
-    {
-        _isLcuConnected = false;
-        _logger.LogInformation("LCU Disconnected");
-        StatusChanged?.Invoke(this, "Disconnected - waiting for League Client");
-        
-        try
-        {
-            await _eventListener.StopAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error stopping event listener");
-        }
-    }
-    
     private async void OnGameEnded(object? sender, LcuEndOfGameStats eogStats)
     {
         _logger.LogInformation("Game ended - processing match data for GameId: {GameId}", eogStats.GameId);
         
-        // Prevent duplicate processing - add to set BEFORE processing
         if (!_processedGameIds.Add(eogStats.GameId))
         {
             _logger.LogInformation("Match {GameId} already processed - skipping", eogStats.GameId);
@@ -199,16 +173,13 @@ public class TrayBackgroundService : BackgroundService
         
         try
         {
-            // Filter: Only Ranked Solo/Duo (queueId 420)
             const int RANKED_SOLO_DUO_QUEUE_ID = 420;
             
-            // Fetch game details from match history to get reliable lane/role info
-            _logger.LogInformation("Fetching game details for GameId: {GameId}", eogStats.GameId);
-            var gameDetails = await _lcuApiClient.GetGameDetailsAsync(eogStats.GameId);
+            // Fetch game details
+            var gameDetails = await _lcuService.GetGameDetailsAsync(eogStats.GameId);
             if (gameDetails != null)
             {
                 eogStats.QueueId = gameDetails.QueueId;
-                _logger.LogInformation("Retrieved detailed game info for GameId: {GameId}", eogStats.GameId);
             }
             
             if (eogStats.QueueId != RANKED_SOLO_DUO_QUEUE_ID)
@@ -225,15 +196,8 @@ public class TrayBackgroundService : BackgroundService
                 return;
             }
             
-            // Map LCU data to MatchEntry, passing gameDetails for better mapping
             var match = Helpers.DataMapper.MapToMatchEntry(eogStats, _cachedRankedStats, _activeProfileId, gameDetails);
             
-            _logger.LogInformation("Match mapped: {Champion} {Result} ({KDA})", 
-                match.Champion, 
-                match.Win ? "Win" : "Loss", 
-                match.KdaDisplay);
-            
-            // Sync to API
             var success = await _apiSyncService.SyncMatchAsync(match);
             
             if (success)
@@ -254,8 +218,9 @@ public class TrayBackgroundService : BackgroundService
     
     public override void Dispose()
     {
-        _eventListener.Dispose();
-        _lcuApiClient.Dispose();
+        _lcuService.ConnectionChanged -= OnLcuConnectionChanged;
+        _lcuService.GameEnded -= OnGameEnded;
         base.Dispose();
     }
 }
+
