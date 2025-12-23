@@ -9,6 +9,7 @@ using LolStatsTracker.API.Services.MetaService;
 using LolStatsTracker.API.Services.MilestoneService;
 using LolStatsTracker.API.Services.ProfileService;
 using LolStatsTracker.API.Services.StatsService;
+using LolStatsTracker.API.Services.DDragonService;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -71,6 +72,7 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IChampionPoolService, ChampionPoolService>();
 builder.Services.AddScoped<IMilestoneService, MilestoneService>();
 builder.Services.AddScoped<IMetaService, MetaService>();
+builder.Services.AddHttpClient<IDDragonService, DDragonService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
