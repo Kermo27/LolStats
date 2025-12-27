@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using System.Diagnostics;
 using System.Windows;
 using LolStatsTracker.TrayApp.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LolStatsTracker.TrayApp.ViewModels;
 
@@ -10,6 +11,7 @@ public partial class TrayIconViewModel : ObservableObject
 {
     private readonly LcuService _lcuService;
     private readonly TrayBackgroundService _backgroundService;
+    private readonly IServiceProvider _serviceProvider;
 
     [ObservableProperty]
     private string _statusText = "Starting...";
@@ -17,10 +19,14 @@ public partial class TrayIconViewModel : ObservableObject
     [ObservableProperty]
     private string _toolTipText = "LoL Stats Tracker";
 
-    public TrayIconViewModel(LcuService lcuService, TrayBackgroundService backgroundService)
+    public TrayIconViewModel(
+        LcuService lcuService, 
+        TrayBackgroundService backgroundService,
+        IServiceProvider serviceProvider)
     {
         _lcuService = lcuService;
         _backgroundService = backgroundService;
+        _serviceProvider = serviceProvider;
 
         _backgroundService.StatusChanged += OnStatusChanged;
     }
@@ -34,8 +40,12 @@ public partial class TrayIconViewModel : ObservableObject
     [RelayCommand]
     private void OpenSettings()
     {
-        // TODO: Use a proper Navigation/Window Service
-        var settingsWindow = new Views.SettingsWindow();
+        var settingsWindow = _serviceProvider.GetRequiredService<Views.SettingsWindow>();
+        var settingsViewModel = _serviceProvider.GetRequiredService<SettingsViewModel>();
+        
+        settingsWindow.DataContext = settingsViewModel;
+        settingsViewModel.CloseAction = settingsWindow.Close;
+        
         settingsWindow.Show();
     }
 

@@ -6,6 +6,7 @@ using LolStatsTracker.Services.SeasonState;
 using LolStatsTracker.Services.StatsService;
 using LolStatsTracker.Services.UserState;
 using LolStatsTracker.Shared.DTOs;
+using LolStatsTracker.Shared.Helpers;
 using LolStatsTracker.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
@@ -117,18 +118,18 @@ public partial class Dashboard : IDisposable
     private void PrepareLpChart(List<MatchEntry> matches)
     {
         var data = new List<double>();
-        double currentNet = 0;
         var labels = new List<string>();
 
         var i = 1;
         foreach (var m in matches)
         {
-            currentNet += m.LpChange;
-            data.Add(currentNet);
+            // Calculate total LP across all tiers/divisions for continuous chart
+            var totalLp = RankHelper.CalculateTotalLp(m.CurrentTier, m.CurrentDivision, m.CurrentLp);
+            data.Add(totalLp);
             labels.Add(i++.ToString());
         }
 
-        _lpSeries.Add(new ChartSeries { Name = "Net LP Change", Data = data.ToArray() });
+        _lpSeries.Add(new ChartSeries { Name = "Total LP", Data = data.ToArray() });
         _lpLabels = labels.ToArray();
     }
 

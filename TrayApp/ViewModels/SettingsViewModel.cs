@@ -2,36 +2,77 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LolStatsTracker.TrayApp.Models;
 using LolStatsTracker.TrayApp.Services;
-using Microsoft.Extensions.Options;
 
 namespace LolStatsTracker.TrayApp.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
-    private readonly AppConfiguration _config;
-    // In a real app we'd have a SettingsService to persist changes. 
-    // For now we just bind to current config (in-memory) or mock saving.
+    private readonly IUserSettingsService _settingsService;
 
     [ObservableProperty]
-    private string _serverUrl;
+    private string _serverUrl = string.Empty;
 
     [ObservableProperty]
     private int _checkInterval;
 
-    public SettingsViewModel(IOptions<AppConfiguration> config)
+    [ObservableProperty]
+    private bool _autoStartWithWindows;
+
+    [ObservableProperty]
+    private bool _isSaving;
+
+    public SettingsViewModel(IUserSettingsService settingsService)
     {
-        _config = config.Value;
-        _serverUrl = _config.ApiBaseUrl;
-        _checkInterval = _config.CheckIntervalSeconds;
+        _settingsService = settingsService;
+        LoadFromSettings();
+    }
+
+    private void LoadFromSettings()
+    {
+        var settings = _settingsService.Settings;
+        ServerUrl = settings.ApiBaseUrl;
+        CheckInterval = settings.CheckIntervalSeconds;
+        AutoStartWithWindows = settings.AutoStartWithWindows;
     }
 
     [RelayCommand]
-    private void Save()
+    private async Task SaveAsync()
     {
-        // Here we would save to appsettings.json or user settings
-        // For simplicity, we assume this is wired up
-        System.Windows.MessageBox.Show("Settings saved (simulation). Restart required for some changes.");
-        CloseAction?.Invoke();
+        if (IsSaving) return;
+        
+        try
+        {
+            IsSaving = true;
+            
+            var settings = new UserSettings
+            {
+                ApiBaseUrl = ServerUrl,
+                CheckIntervalSeconds = CheckInterval,
+                AutoStartWithWindows = AutoStartWithWindows
+            };
+            
+            await _settingsService.SaveAsync(settings);
+            
+            System.Windows.MessageBox.Show(
+                "Settings saved successfully!", 
+                "Settings", 
+                System.Windows.MessageBoxButton.OK, 
+                System.Windows.MessageBoxImage.Information);
+            
+            CloseAction?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"Failed to save settings: {ex.Message}", 
+                "Error", 
+                System.Windows.MessageBoxButton.OK, 
+                System.Windows.MessageBoxImage.Error);
+        }
+        finally
+        {
+            IsSaving = false;
+        }
     }
 
     [RelayCommand]

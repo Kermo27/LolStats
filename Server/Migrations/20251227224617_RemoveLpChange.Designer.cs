@@ -3,6 +3,7 @@ using System;
 using LolStatsTracker.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LolStatsTracker.API.Migrations
 {
     [DbContext(typeof(MatchDbContext))]
-    partial class MatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251227224617_RemoveLpChange")]
+    partial class RemoveLpChange
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
@@ -79,23 +82,19 @@ namespace LolStatsTracker.API.Migrations
                     b.Property<int>("Deaths")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("EnemyBot")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EnemySupport")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("GameLengthMinutes")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Kills")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("LaneAlly")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LaneEnemy")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LaneEnemyAlly")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
                         .HasColumnType("TEXT");
@@ -104,6 +103,10 @@ namespace LolStatsTracker.API.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Support")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

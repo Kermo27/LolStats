@@ -123,6 +123,9 @@ public class LcuPlayerStats
     [JsonProperty("NEUTRAL_MINIONS_KILLED")]
     public int NeutralMinionsKilled { get; set; }
     
+    [JsonProperty("VISION_SCORE")]
+    public int VisionScore { get; set; }
+    
     [JsonProperty("INDIVIDUAL_POSITION")]
     public string Position { get; set; } = string.Empty;
 

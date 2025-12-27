@@ -7,13 +7,14 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:SettingsViewModel}"
         Title="LoL Stats Tracker - Settings" 
-        Height="350" 
+        Height="400" 
         Width="500"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize">
     
     <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -23,22 +24,43 @@
         <!-- API Base URL -->
         <StackPanel Grid.Row="0" Margin="0,0,0,15">
             <Label Content="API Base URL:" FontWeight="Bold"/>
-            <TextBox Text="{Binding ServerUrl}" 
+            <TextBox Text="{Binding ServerUrl, UpdateSourceTrigger=PropertyChanged}" 
                      Height="30" 
                      VerticalContentAlignment="Center"
-                     ToolTip="URL of your LolStatsTracker API (e.g., http://localhost:5109)"/>
+                     ToolTip="URL of your LolStatsTracker API (e.g., http://localhost:5031)"/>
+        </StackPanel>
+        
+        <!-- Check Interval -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,15">
+            <Label Content="Check Interval (seconds):" FontWeight="Bold"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0"
+                         Text="{Binding CheckInterval, UpdateSourceTrigger=PropertyChanged}" 
+                         Height="30" 
+                         VerticalContentAlignment="Center"
+                         ToolTip="How often to check for status updates (in seconds)"/>
+                <TextBlock Grid.Column="1" 
+                           VerticalAlignment="Center" 
+                           Margin="10,0,0,0"
+                           Foreground="Gray"
+                           Text="Recommended: 10-30 seconds"/>
+            </Grid>
         </StackPanel>
         
         <!-- Auto Start -->
-        <StackPanel Grid.Row="1" Margin="0,0,0,15">
+        <StackPanel Grid.Row="2" Margin="0,0,0,15">
             <CheckBox Content="Start with Windows" 
+                      IsChecked="{Binding AutoStartWithWindows}"
                       VerticalContentAlignment="Center"
-                      IsEnabled="False"
-                      ToolTip="Automatically start the app when Windows starts (feature coming soon)"/>
+                      ToolTip="Automatically start the app when Windows starts"/>
         </StackPanel>
         
         <!-- Info Panel -->
-        <Border Grid.Row="2" 
+        <Border Grid.Row="3" 
                 Background="#F0F0F0" 
                 Padding="10" 
                 CornerRadius="5"
@@ -53,17 +75,17 @@
                     <LineBreak/>
                     • Ranked matches are synced automatically when you finish a game
                     <LineBreak/>
-                    • Check interval: <Run Text="{Binding CheckInterval}"/>s
+                    • Settings are saved to %APPDATA%\LolStatsTracker\
                 </TextBlock>
              </StackPanel>
         </Border>
         
         <!-- Buttons -->
-        <StackPanel Grid.Row="3" 
+        <StackPanel Grid.Row="4" 
                     Orientation="Horizontal" 
                     HorizontalAlignment="Right">
             <Button Content="Save" 
-                    Command="{Binding SaveCommand}"
+                    Command="{Binding SaveAsyncCommand}"
                     Width="100" 
                     Height="35" 
                     Margin="0,0,10,0"
@@ -76,4 +98,5 @@
         </StackPanel>
     </Grid>
 </Window>
+
 

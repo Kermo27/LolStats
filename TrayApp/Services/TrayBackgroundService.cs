@@ -2,7 +2,6 @@ using LolStatsTracker.TrayApp.Models;
 using LolStatsTracker.TrayApp.Models.Lcu;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace LolStatsTracker.TrayApp.Services;
 
@@ -11,12 +10,13 @@ public class TrayBackgroundService : BackgroundService
     private readonly ILogger<TrayBackgroundService> _logger;
     private readonly LcuService _lcuService;
     private readonly ApiSyncService _apiSyncService;
-    private readonly AppConfiguration _config;
+    private readonly IUserSettingsService _settingsService;
     
     private LcuQueueStats? _cachedRankedStats;
     private readonly HashSet<long> _processedGameIds = new();
     private string? _currentSummonerName;
     private Guid _activeProfileId = Guid.Empty;
+    private int _currentCheckIntervalSeconds;
     
     public event EventHandler<string>? StatusChanged;
     
@@ -24,16 +24,18 @@ public class TrayBackgroundService : BackgroundService
         ILogger<TrayBackgroundService> logger,
         LcuService lcuService,
         ApiSyncService apiSyncService,
-        IOptions<AppConfiguration> config)
+        IUserSettingsService settingsService)
     {
         _logger = logger;
         _lcuService = lcuService;
         _apiSyncService = apiSyncService;
-        _config = config.Value;
+        _settingsService = settingsService;
+        _currentCheckIntervalSeconds = _settingsService.Settings.CheckIntervalSeconds;
         
         // Subscribe to events
         _lcuService.ConnectionChanged += OnLcuConnectionChanged;
         _lcuService.GameEnded += OnGameEnded;
+        _settingsService.SettingsChanged += OnSettingsChanged;
     }
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -59,7 +61,7 @@ public class TrayBackgroundService : BackgroundService
                      await CheckForAccountChangeAsync();
                 }
                 
-                await Task.Delay(TimeSpan.FromSeconds(_config.CheckIntervalSeconds), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(_currentCheckIntervalSeconds), stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -216,10 +218,20 @@ public class TrayBackgroundService : BackgroundService
         }
     }
     
+    private void OnSettingsChanged(object? sender, UserSettings settings)
+    {
+        if (_currentCheckIntervalSeconds != settings.CheckIntervalSeconds)
+        {
+            _currentCheckIntervalSeconds = settings.CheckIntervalSeconds;
+            _logger.LogInformation("Check interval updated to {Interval} seconds (hot-reload)", _currentCheckIntervalSeconds);
+        }
+    }
+    
     public override void Dispose()
     {
         _lcuService.ConnectionChanged -= OnLcuConnectionChanged;
         _lcuService.GameEnded -= OnGameEnded;
+        _settingsService.SettingsChanged -= OnSettingsChanged;
         base.Dispose();
     }
 }

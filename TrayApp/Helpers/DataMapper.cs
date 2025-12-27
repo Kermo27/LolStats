@@ -123,15 +123,18 @@ public static class DataMapper
             position = "ADC";
         }
 
-        var totalCs = sourcePlayer.Stats.MinionsKilled + sourcePlayer.Stats.NeutralMinionsKilled;
+        // For Support: use VisionScore, for others: use CS
+        var csOrVisionScore = position == "Support" 
+            ? sourcePlayer.Stats.VisionScore 
+            : sourcePlayer.Stats.MinionsKilled + sourcePlayer.Stats.NeutralMinionsKilled;
         var gameLengthMinutes = eogStats.GameLength / 60;
         
         // Find team result
         var playerTeam = eogStats.Teams.FirstOrDefault(t => t.Players.Any(p => p.TeamId == sourcePlayer.TeamId));
         var isWin = playerTeam?.IsWinningTeam ?? sourcePlayer.Stats.Win;
         
-        // Detect botlane opponents
-        var (support, enemyBot, enemySupport) = DetectLaneOpponents(eogStats, sourcePlayer, position);
+        // Detect lane participants for all roles
+        var (laneAlly, laneEnemy, laneEnemyAlly) = DetectLaneParticipants(eogStats, sourcePlayer, position);
         
         var match = new MatchEntry
         {
@@ -139,20 +142,19 @@ public static class DataMapper
             ProfileId = profileId,
             Champion = championName,
             Role = position,
-            Support = support,
-            EnemyBot = enemyBot,
-            EnemySupport = enemySupport,
+            LaneAlly = laneAlly,
+            LaneEnemy = laneEnemy,
+            LaneEnemyAlly = laneEnemyAlly,
             Kills = sourcePlayer.Stats.Kills,
             Deaths = sourcePlayer.Stats.Deaths,
             Assists = sourcePlayer.Stats.Assists,
-            Cs = totalCs,
+            Cs = csOrVisionScore,
             GameLengthMinutes = gameLengthMinutes,
             Win = isWin,
             Date = DateTime.Now,
             CurrentTier = rankedStats?.Tier ?? "Unranked",
             CurrentDivision = ParseDivision(rankedStats?.Division),
-            CurrentLp = rankedStats?.LeaguePoints ?? 0,
-            LpChange = 0 // Calculated automatically by backend
+            CurrentLp = rankedStats?.LeaguePoints ?? 0
         };
         
         return match;
@@ -212,82 +214,108 @@ public static class DataMapper
         };
     }
     
-    private static (string support, string enemyBot, string enemySupport) DetectLaneOpponents(
+    /// <summary>
+    /// Detects lane participants based on role mapping:
+    /// Top: Ally=Jungler, Enemy=Top, EnemyAlly=Jungler
+    /// Jungle: Ally=Mid, Enemy=Jungle, EnemyAlly=Mid
+    /// Mid: Ally=Jungler, Enemy=Mid, EnemyAlly=Jungler
+    /// ADC: Ally=Support, Enemy=ADC, EnemyAlly=Support
+    /// Support: Ally=ADC, Enemy=Support, EnemyAlly=ADC
+    /// </summary>
+    private static (string laneAlly, string laneEnemy, string laneEnemyAlly) DetectLaneParticipants(
         LcuEndOfGameStats eogStats, LcuPlayer localPlayer, string position)
     {
-        var support = "";
-        var enemyBot = "";
-        var enemySupport = "";
+        var laneAlly = "";
+        var laneEnemy = "";
+        var laneEnemyAlly = "";
         
-        // Find the most complete local player data in the teams list
         var sourcePlayer = eogStats.Teams
             .SelectMany(t => t.Players)
-            .FirstOrDefault(p => p.Puuid == localPlayer.Puuid || (p.TeamId == localPlayer.TeamId && p.ChampionId == localPlayer.ChampionId)) ?? localPlayer;
+            .FirstOrDefault(p => p.Puuid == localPlayer.Puuid || 
+                (p.TeamId == localPlayer.TeamId && p.ChampionId == localPlayer.ChampionId)) ?? localPlayer;
 
-        // Log all players and their positions for debugging
-        Console.WriteLine($"[DataMapper] Local player: {sourcePlayer.DisplayName}, TeamId: {sourcePlayer.TeamId}, Mapped Position: {position}");
-        Console.WriteLine($"[DataMapper] Stats - Position: '{sourcePlayer.Stats.Position}', Lane: '{sourcePlayer.Stats.Lane}', Role: '{sourcePlayer.Stats.Role}'");
+        Console.WriteLine($"[DataMapper] Detecting lane participants for {position}");
         
-        foreach (var team in eogStats.Teams)
+        var allyTeam = eogStats.Teams.FirstOrDefault(t => t.Players.Any(p => p.TeamId == sourcePlayer.TeamId));
+        var enemyTeam = eogStats.Teams.FirstOrDefault(t => !t.Players.Any(p => p.TeamId == sourcePlayer.TeamId));
+        
+        if (allyTeam == null || enemyTeam == null || allyTeam.Players.Count != 5 || enemyTeam.Players.Count != 5)
         {
-            var isAlly = team.Players.Any(p => p.Puuid == sourcePlayer.Puuid);
-            Console.WriteLine($"[DataMapper] Team ({(isAlly ? "ALLY" : "ENEMY")}) - IsWinning: {team.IsWinningTeam}, TeamId: {team.Players.FirstOrDefault()?.TeamId}");
-            foreach (var player in team.Players)
-            {
-                var isLocal = player.Puuid == sourcePlayer.Puuid;
-                Console.WriteLine($"[DataMapper]   {(isLocal ? ">>> " : "    ")}Player: '{player.DisplayName}', ChampId: {player.ChampionId}, Pos: '{player.Stats.Position}', Lane: '{player.Stats.Lane}', Role: '{player.Stats.Role}'");
-            }
+            Console.WriteLine("[DataMapper] Could not find complete teams");
+            return (laneAlly, laneEnemy, laneEnemyAlly);
         }
         
-        if (position != "ADC")
+        // Role index mapping: 0=Top, 1=Jungle, 2=Mid, 3=ADC, 4=Support
+        var (allyRole, enemyRole, enemyAllyRole) = position switch
         {
-            Console.WriteLine($"[DataMapper] Skipping botlane detection - mapped position is {position}, not ADC");
-            return (support, enemyBot, enemySupport);
+            "Top" => (1, 0, 1),       // Ally: Jungler(1), Enemy: Top(0), EnemyAlly: Jungler(1)
+            "Jungle" => (2, 1, 2),    // Ally: Mid(2), Enemy: Jungle(1), EnemyAlly: Mid(2)
+            "Mid" => (1, 2, 1),       // Ally: Jungler(1), Enemy: Mid(2), EnemyAlly: Jungler(1)
+            "ADC" => (4, 3, 4),       // Ally: Support(4), Enemy: ADC(3), EnemyAlly: Support(4)
+            "Support" => (3, 4, 3),   // Ally: ADC(3), Enemy: Support(4), EnemyAlly: ADC(3)
+            _ => (-1, -1, -1)
+        };
+        
+        if (allyRole < 0)
+        {
+            Console.WriteLine($"[DataMapper] Unknown position: {position}");
+            return (laneAlly, laneEnemy, laneEnemyAlly);
         }
         
-        // Find allied support
-        var allyTeam = eogStats.Teams.FirstOrDefault(t => t.Players.Any(p => p.TeamId == localPlayer.TeamId));
-        if (allyTeam != null)
+        // Try to find by position fields first, fallback to index
+        var allyPlayer = FindPlayerByRole(allyTeam.Players, GetRoleStringForIndex(allyRole), localPlayer.ChampionId) 
+                         ?? (allyRole < allyTeam.Players.Count ? allyTeam.Players[allyRole] : null);
+        var enemyPlayer = FindPlayerByRole(enemyTeam.Players, GetRoleStringForIndex(enemyRole), -1) 
+                          ?? (enemyRole < enemyTeam.Players.Count ? enemyTeam.Players[enemyRole] : null);
+        var enemyAllyPlayer = FindPlayerByRole(enemyTeam.Players, GetRoleStringForIndex(enemyAllyRole), -1)
+                              ?? (enemyAllyRole < enemyTeam.Players.Count ? enemyTeam.Players[enemyAllyRole] : null);
+        
+        if (allyPlayer != null && allyPlayer.ChampionId != localPlayer.ChampionId)
+            laneAlly = GetChampionName(allyPlayer.ChampionId);
+        if (enemyPlayer != null)
+            laneEnemy = GetChampionName(enemyPlayer.ChampionId);
+        if (enemyAllyPlayer != null && enemyAllyPlayer.ChampionId != enemyPlayer?.ChampionId)
+            laneEnemyAlly = GetChampionName(enemyAllyPlayer.ChampionId);
+        
+        Console.WriteLine($"[DataMapper] Result - LaneAlly: '{laneAlly}', LaneEnemy: '{laneEnemy}', LaneEnemyAlly: '{laneEnemyAlly}'");
+        
+        return (laneAlly, laneEnemy, laneEnemyAlly);
+    }
+    
+    private static string GetRoleStringForIndex(int index) => index switch
+    {
+        0 => "TOP",
+        1 => "JUNGLE",
+        2 => "MIDDLE",
+        3 => "BOTTOM",
+        4 => "UTILITY",
+        _ => ""
+    };
+    
+    private static LcuPlayer? FindPlayerByRole(List<LcuPlayer> players, string targetRole, int excludeChampionId)
+    {
+        return players.FirstOrDefault(p => 
+            p.ChampionId != excludeChampionId &&
+            (MatchesRole(p.Stats.Position, targetRole) || 
+             MatchesRole(p.Stats.Lane, targetRole) || 
+             MatchesRole(p.Stats.Role, targetRole)));
+    }
+    
+    private static bool MatchesRole(string playerRole, string targetRole)
+    {
+        if (string.IsNullOrWhiteSpace(playerRole) || string.IsNullOrWhiteSpace(targetRole))
+            return false;
+        
+        var upper = playerRole.ToUpperInvariant();
+        return targetRole switch
         {
-            // Try by position field
-            var allySup = allyTeam.Players.FirstOrDefault(p => 
-                p.ChampionId != localPlayer.ChampionId && 
-                (IsSupport(p.Stats.Position) || IsSupport(p.Stats.Lane) || IsSupport(p.Stats.Role)));
-            
-            // Try by index fallback (index 4 is Support)
-            if (allySup == null && allyTeam.Players.Count == 5)
-            {
-                allySup = allyTeam.Players[4];
-            }
-            
-            if (allySup != null && allySup.ChampionId != localPlayer.ChampionId)
-                support = GetChampionName(allySup.ChampionId);
-        }
-        
-        // Find enemy team
-        var enemyTeam = eogStats.Teams.FirstOrDefault(t => t.Players.Any(p => p.TeamId != localPlayer.TeamId));
-        if (enemyTeam != null && enemyTeam.Players.Count == 5)
-        {
-            // Try by position field
-            var enemyAdc = enemyTeam.Players.FirstOrDefault(p => 
-                IsBottomLane(p.Stats.Position) || IsBottomLane(p.Stats.Lane) || IsBottomLane(p.Stats.Role));
-            
-            var enemySup = enemyTeam.Players.FirstOrDefault(p => 
-                IsSupport(p.Stats.Position) || IsSupport(p.Stats.Lane) || IsSupport(p.Stats.Role));
-            
-            // Try by index fallback (index 3 is Bot, 4 is Support)
-            enemyAdc ??= enemyTeam.Players[3];
-            enemySup ??= enemyTeam.Players[4];
-            
-            if (enemyAdc != null)
-                enemyBot = GetChampionName(enemyAdc.ChampionId);
-            if (enemySup != null)
-                enemySupport = GetChampionName(enemySup.ChampionId);
-        }
-        
-        Console.WriteLine($"[DataMapper] Final result - Support: '{support}', EnemyBot: '{enemyBot}', EnemySupport: '{enemySupport}'");
-        
-        return (support, enemyBot, enemySupport);
+            "TOP" => upper == "TOP",
+            "JUNGLE" => upper == "JUNGLE",
+            "MIDDLE" => upper == "MIDDLE" || upper == "MID",
+            "BOTTOM" => upper == "BOTTOM" || upper == "BOT" || upper == "ADC" || upper == "CARRY",
+            "UTILITY" => upper == "UTILITY" || upper == "SUPPORT",
+            _ => false
+        };
     }
     
     private static bool IsSupport(string position)

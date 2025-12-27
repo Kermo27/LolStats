@@ -31,6 +31,9 @@ public partial class App : Application
             {
                 services.Configure<AppConfiguration>(context.Configuration.GetSection("AppConfiguration"));
                 
+                // Settings Service (persistent user settings)
+                services.AddSingleton<IUserSettingsService, UserSettingsService>();
+                
                 // Services
                 services.AddSingleton<TrayAuthService>();
                 services.AddSingleton<LcuService>();
@@ -55,6 +58,10 @@ public partial class App : Application
                 });
             })
             .Build();
+        
+        // Load user settings
+        var settingsService = _host.Services.GetRequiredService<IUserSettingsService>();
+        await settingsService.LoadAsync();
         
         // Authenticate
         _authService = _host.Services.GetRequiredService<TrayAuthService>();

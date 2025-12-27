@@ -53,9 +53,9 @@ public class MatchService : IMatchService
         // Map properties
         existingMatch.Champion = updatedMatch.Champion;
         existingMatch.Role = updatedMatch.Role;
-        existingMatch.Support = updatedMatch.Support;
-        existingMatch.EnemyBot = updatedMatch.EnemyBot;
-        existingMatch.EnemySupport = updatedMatch.EnemySupport;
+        existingMatch.LaneAlly = updatedMatch.LaneAlly;
+        existingMatch.LaneEnemy = updatedMatch.LaneEnemy;
+        existingMatch.LaneEnemyAlly = updatedMatch.LaneEnemyAlly;
         existingMatch.Kills = updatedMatch.Kills;
         existingMatch.Deaths = updatedMatch.Deaths;
         existingMatch.Assists = updatedMatch.Assists;
@@ -63,7 +63,6 @@ public class MatchService : IMatchService
         existingMatch.GameLengthMinutes = updatedMatch.GameLengthMinutes;
         existingMatch.Win = updatedMatch.Win;
         existingMatch.Date = updatedMatch.Date;
-        existingMatch.LpChange = updatedMatch.LpChange;
         existingMatch.CurrentTier = updatedMatch.CurrentTier;
         existingMatch.CurrentDivision = updatedMatch.CurrentDivision;
         existingMatch.CurrentLp = updatedMatch.CurrentLp;
