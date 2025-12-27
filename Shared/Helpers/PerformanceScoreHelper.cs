@@ -2,10 +2,6 @@ namespace LolStatsTracker.Shared.Helpers;
 
 public static class PerformanceScoreHelper
 {
-    /// <summary>
-    /// Formula: KDA Score (40%) + CS/min or VisionScore Score (30%) + Win Bonus (30%)
-    /// For Support: Uses VisionScore instead of CS with different scaling.
-    /// </summary>
     public static int Calculate(int kills, int deaths, int assists, int csOrVisionScore, int gameLengthMinutes, bool win, string role = "ADC")
     {
         if (gameLengthMinutes <= 0) gameLengthMinutes = 1;
