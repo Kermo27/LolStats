@@ -24,6 +24,7 @@ public partial class Matches : IDisposable
     private List<MatchEntry> _allMatches = new();
     private List<MatchEntry> matches = new();
     private bool isEditing;
+    private string _selectedGameMode = "Ranked Solo";
 
     private static readonly string[] Tiers =
     {
@@ -73,8 +74,15 @@ public partial class Matches : IDisposable
     {
         matches = _allMatches
             .Where(m => SeasonState.IsDateInCurrentSeason(m.Date))
+            .Where(m => _selectedGameMode == "All" || m.GameMode == _selectedGameMode)
             .OrderByDescending(m => m.Date)
             .ToList();
+    }
+
+    private void OnGameModeChanged(string mode)
+    {
+        _selectedGameMode = mode;
+        ApplySeasonFilter();
     }
 
     private void PrepareNewMatch()

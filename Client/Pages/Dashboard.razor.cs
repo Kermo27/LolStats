@@ -13,6 +13,15 @@ using MudBlazor;
 
 namespace LolStatsTracker.Pages;
 
+public class LpDataPoint
+{
+    public int GameNumber { get; set; }
+    public int TotalLp { get; set; }
+    public string RankDisplay { get; set; } = "";
+    public string Champion { get; set; } = "";
+    public bool Win { get; set; }
+}
+
 public partial class Dashboard : IDisposable
 {
     [Inject] private IStatsService StatsService { get; set; } = null!;
@@ -25,9 +34,16 @@ public partial class Dashboard : IDisposable
     private StatsSummaryDto? _stats;
     private List<List<(DateTime Date, int Count)>> _matrix = new();
     private int _maxGamesPerDay;
+    private List<RankMilestoneDto> _milestones = new();
+    private (string Start, string End, int Gained)? _lpRangeInfo;
+    
+    // Game mode filter
+    private string _selectedGameMode = "Ranked Solo";
+    
+    // MudChart data
+    private List<LpDataPoint> _lpChartData = new();
     private List<ChartSeries> _lpSeries = new();
     private string[] _lpLabels = Array.Empty<string>();
-    private List<RankMilestoneDto> _milestones = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -58,6 +74,12 @@ public partial class Dashboard : IDisposable
         await InvokeAsync(StateHasChanged);
     }
 
+    private async Task OnGameModeChanged(string mode)
+    {
+        _selectedGameMode = mode;
+        await LoadDashboardDataAsync();
+    }
+
     private async Task LoadDashboardDataAsync()
     {
         if (UserState.CurrentProfile == null)
@@ -68,17 +90,20 @@ public partial class Dashboard : IDisposable
         }
         
         // Reset chart data
+        _lpChartData = new List<LpDataPoint>();
         _lpSeries = new List<ChartSeries>();
         _lpLabels = Array.Empty<string>();
         
-        // Get season filtered stats from server
+        // Get season and game mode filtered stats from server
         var seasonId = SeasonState.CurrentSeason?.Id;
-        _stats = await StatsService.GetSummaryAsync(6, seasonId);
+        var gameModeFilter = _selectedGameMode == "All" ? null : _selectedGameMode;
+        _stats = await StatsService.GetSummaryAsync(6, seasonId, gameModeFilter);
         
-        // Get matches and filter by season
+        // Get matches and filter by season and game mode
         var allMatches = await MatchService.GetAllAsync();
         var matches = allMatches
             .Where(m => SeasonState.IsDateInCurrentSeason(m.Date))
+            .Where(m => _selectedGameMode == "All" || m.GameMode == _selectedGameMode)
             .OrderBy(m => m.Date)
             .TakeLast(20)
             .ToList();
@@ -101,36 +126,51 @@ public partial class Dashboard : IDisposable
         _maxGamesPerDay = activity.Any() ? activity.Max(x => x.GamesPlayed) : 1; 
     }
     
-    private string GetHeatmapColor(int gameCount)
-    {
-        if (gameCount == 0) return "#282830"; 
-
-        var normalized = (double)gameCount / _maxGamesPerDay;
-
-        return normalized switch
-        {
-            >= 0.75 => "#594ae2",
-            >= 0.40 => "#4840b0",
-            _ => "#3f3c6e"
-        };
-    }
-    
     private void PrepareLpChart(List<MatchEntry> matches)
     {
+        _lpChartData = new List<LpDataPoint>();
         var data = new List<double>();
         var labels = new List<string>();
 
         var i = 1;
         foreach (var m in matches)
         {
-            // Calculate total LP across all tiers/divisions for continuous chart
             var totalLp = RankHelper.CalculateTotalLp(m.CurrentTier, m.CurrentDivision, m.CurrentLp);
+            
+            _lpChartData.Add(new LpDataPoint
+            {
+                GameNumber = i,
+                TotalLp = totalLp,
+                RankDisplay = RankHelper.FormatRank(m.CurrentTier, m.CurrentDivision, m.CurrentLp),
+                Champion = m.Champion,
+                Win = m.Win
+            });
+            
             data.Add(totalLp);
             labels.Add(i++.ToString());
         }
-
-        _lpSeries.Add(new ChartSeries { Name = "Total LP", Data = data.ToArray() });
+        
+        _lpSeries.Add(new ChartSeries { Name = "LP", Data = data.ToArray() });
         _lpLabels = labels.ToArray();
+
+        // Calculate LP range info for display
+        if (matches.Count >= 2)
+        {
+            var first = matches.First();
+            var last = matches.Last();
+            var startLp = RankHelper.CalculateTotalLp(first.CurrentTier, first.CurrentDivision, first.CurrentLp);
+            var endLp = RankHelper.CalculateTotalLp(last.CurrentTier, last.CurrentDivision, last.CurrentLp);
+            
+            _lpRangeInfo = (
+                Start: RankHelper.FormatRank(first.CurrentTier, first.CurrentDivision, first.CurrentLp),
+                End: RankHelper.FormatRank(last.CurrentTier, last.CurrentDivision, last.CurrentLp),
+                Gained: endLp - startLp
+            );
+        }
+        else
+        {
+            _lpRangeInfo = null;
+        }
     }
 
     private Severity GetTiltSeverity(TiltLevel level) => level switch
@@ -141,18 +181,11 @@ public partial class Dashboard : IDisposable
         _ => Severity.Normal
     };
 
-    private static string GetDivisionRoman(int division) => division switch
-    {
-        1 => "I",
-        2 => "II",
-        3 => "III",
-        4 => "IV",
-        _ => ""
-    };
-
     public void Dispose()
     {
         UserState.OnProfileChanged -= OnProfileChangedAsync;
         SeasonState.OnSeasonChanged -= OnSeasonChangedAsync;
     }
 }
+
+

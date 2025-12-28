@@ -32,38 +32,38 @@ public class StatsController : BaseApiController
     }
 
     [HttpGet("overview")]
-    public async Task<ActionResult<OverviewDto>> GetOverview([FromQuery] int? seasonId = null)
+    public async Task<ActionResult<OverviewDto>> GetOverview([FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
     {
         var profileId = GetProfileId();
         if (profileId == Guid.Empty) return BadRequest("Profile ID is missing");
         
         var (startDate, endDate) = await GetSeasonDatesAsync(seasonId);
-        return Ok(await _statsService.GetOverviewAsync(profileId, startDate, endDate));
+        return Ok(await _statsService.GetOverviewAsync(profileId, startDate, endDate, gameMode));
     }
 
     [HttpGet("champions")]
-    public async Task<ActionResult<List<ChampionStatsDto>>> GetChampions([FromQuery] int? seasonId = null)
+    public async Task<ActionResult<List<ChampionStatsDto>>> GetChampions([FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
     {
         var profileId = GetProfileId();
         if (profileId == Guid.Empty) return BadRequest("Profile ID is missing");
         
         var (startDate, endDate) = await GetSeasonDatesAsync(seasonId);
-        return Ok(await _statsService.GetChampionStatsAsync(profileId, startDate, endDate));
+        return Ok(await _statsService.GetChampionStatsAsync(profileId, startDate, endDate, gameMode));
     }
 
     [HttpGet("enemies")]
-    public async Task<ActionResult<List<EnemyStatsDto>>> GetEnemies([FromQuery] string role, [FromQuery] int? seasonId = null)
+    public async Task<ActionResult<List<EnemyStatsDto>>> GetEnemies([FromQuery] string role, [FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
     {
         var profileId = GetProfileId();
         if (profileId == Guid.Empty) return BadRequest("Profile ID is missing");
         if (string.IsNullOrWhiteSpace(role)) return BadRequest("Role required");
 
         var (startDate, endDate) = await GetSeasonDatesAsync(seasonId);
-        return Ok(await _statsService.GetEnemyStatsAsync(profileId, role, startDate, endDate));
+        return Ok(await _statsService.GetEnemyStatsAsync(profileId, role, startDate, endDate, gameMode));
     }
 
     [HttpGet("activity")]
-    public async Task<ActionResult<List<ActivityDayDto>>> GetActivity([FromQuery] int months = 6, [FromQuery] int? seasonId = null)
+    public async Task<ActionResult<List<ActivityDayDto>>> GetActivity([FromQuery] int months = 6, [FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
     {
         var profileId = GetProfileId();
         if (profileId == Guid.Empty) return BadRequest("Profile ID is missing");
@@ -71,51 +71,51 @@ public class StatsController : BaseApiController
             return BadRequest("Months parameter must be greater than 0.");
 
         var (startDate, endDate) = await GetSeasonDatesAsync(seasonId);
-        var activity = await _statsService.GetActivityAsync(profileId, months, startDate, endDate);
+        var activity = await _statsService.GetActivityAsync(profileId, months, startDate, endDate, gameMode);
         return Ok(activity);
     }
 
     [HttpGet("enchanter-usage")]
-    public async Task<ActionResult<EnchanterUsageSummary>> GetEnchanterUsage([FromQuery] int? seasonId = null)
+    public async Task<ActionResult<EnchanterUsageSummary>> GetEnchanterUsage([FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
     {
         var profileId = GetProfileId();
         if (profileId == Guid.Empty) return BadRequest("Profile ID is missing");
         
         var (startDate, endDate) = await GetSeasonDatesAsync(seasonId);
-        var usage = await _statsService.GetEnchanterUsageAsync(profileId, startDate, endDate);
+        var usage = await _statsService.GetEnchanterUsageAsync(profileId, startDate, endDate, gameMode);
         return Ok(usage);
     }
 
     [HttpGet("best-duos")]
-    public async Task<ActionResult<DuoSummary>> GetBestDuos([FromQuery] int? seasonId = null)
+    public async Task<ActionResult<DuoSummary>> GetBestDuos([FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
     {
         var profileId = GetProfileId();
         if (profileId == Guid.Empty) return BadRequest("Profile ID is missing");
         
         var (startDate, endDate) = await GetSeasonDatesAsync(seasonId);
-        var duos = await _statsService.GetBestDuosAsync(profileId, startDate, endDate);
+        var duos = await _statsService.GetBestDuosAsync(profileId, startDate, endDate, gameMode);
         return Ok(duos);
     }
 
     [HttpGet("worst-enemy-duos")]
-    public async Task<ActionResult<DuoSummary>> GetWorstDuos([FromQuery] int? seasonId = null)
+    public async Task<ActionResult<DuoSummary>> GetWorstDuos([FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
     {
         var profileId = GetProfileId();
         if (profileId == Guid.Empty) return BadRequest("Profile ID is missing");
         
         var (startDate, endDate) = await GetSeasonDatesAsync(seasonId);
-        var duos = await _statsService.GetWorstEnemyDuosAsync(profileId, startDate, endDate);
+        var duos = await _statsService.GetWorstEnemyDuosAsync(profileId, startDate, endDate, gameMode);
         return Ok(duos);
     }
 
     [HttpGet("summary")]
-    public async Task<ActionResult<StatsSummaryDto>> GetStatsSummary([FromQuery] int months = 6, [FromQuery] int? seasonId = null)
+    public async Task<ActionResult<StatsSummaryDto>> GetStatsSummary([FromQuery] int months = 6, [FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
     {
         var profileId = GetProfileId();
         if (profileId == Guid.Empty) return BadRequest("Profile ID is missing");
         
         var (startDate, endDate) = await GetSeasonDatesAsync(seasonId);
-        var summary = await _statsService.GetStatsSummaryAsync(profileId, months, startDate, endDate);
+        var summary = await _statsService.GetStatsSummaryAsync(profileId, months, startDate, endDate, gameMode);
         return Ok(summary);
     }
 }

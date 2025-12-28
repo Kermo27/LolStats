@@ -2,14 +2,24 @@
 @using LolStatsTracker.Components.Matches
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-8">
-    <div class="page-header d-flex align-center gap-4">
-        <div class="icon-badge">
-            <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Medium" Color="Color.Surface" />
+    <div class="page-header d-flex align-center justify-space-between gap-4">
+        <div class="d-flex align-center gap-4">
+            <div class="icon-badge">
+                <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Medium" Color="Color.Surface" />
+            </div>
+            <div>
+                <MudText Typo="Typo.h4" Class="font-weight-bold">Match History</MudText>
+                <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Add, edit, and manage your matches</MudText>
+            </div>
         </div>
-        <div>
-            <MudText Typo="Typo.h4" Class="font-weight-bold">Match History</MudText>
-            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Add, edit, and manage your matches</MudText>
-        </div>
+        
+        <MudSelect T="string" Value="_selectedGameMode" ValueChanged="OnGameModeChanged" Label="Game Mode" Variant="Variant.Outlined" Dense="true" Style="min-width: 180px;">
+            <MudSelectItem Value="@("All")">All Modes</MudSelectItem>
+            <MudSelectItem Value="@("Ranked Solo")">Ranked Solo</MudSelectItem>
+            <MudSelectItem Value="@("Ranked Flex")">Ranked Flex</MudSelectItem>
+            <MudSelectItem Value="@("Normal")">Normal</MudSelectItem>
+            <MudSelectItem Value="@("ARAM")">ARAM</MudSelectItem>
+        </MudSelect>
     </div>
     
     <MatchForm Model="@currentMatch"

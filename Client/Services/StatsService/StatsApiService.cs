@@ -15,23 +15,32 @@ public class StatsApiService : IStatsService
         _userState = userState;
     }
     
-    private string BuildUrl(string baseUrl, int? seasonId)
+    private string BuildUrl(string baseUrl, int? seasonId, string? gameMode = null)
     {
+        var url = baseUrl;
+        var hasQuery = baseUrl.Contains('?');
+        
         if (seasonId.HasValue)
         {
-            var separator = baseUrl.Contains('?') ? "&" : "?";
-            return $"{baseUrl}{separator}seasonId={seasonId}";
+            url += (hasQuery ? "&" : "?") + $"seasonId={seasonId}";
+            hasQuery = true;
         }
-        return baseUrl;
+        
+        if (!string.IsNullOrEmpty(gameMode) && gameMode != "All")
+        {
+            url += (hasQuery ? "&" : "?") + $"gameMode={Uri.EscapeDataString(gameMode)}";
+        }
+        
+        return url;
     }
     
-    public async Task<StatsSummaryDto?> GetSummaryAsync(int months = 6, int? seasonId = null)
+    public async Task<StatsSummaryDto?> GetSummaryAsync(int months = 6, int? seasonId = null, string? gameMode = null)
     {
         if (_userState.CurrentProfile == null) return null;
         
         try
         {
-            var url = BuildUrl($"api/Stats/summary?months={months}", seasonId);
+            var url = BuildUrl($"api/Stats/summary?months={months}", seasonId, gameMode);
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             AddProfileHeader(request);
             var response = await _http.SendAsync(request);
@@ -49,13 +58,13 @@ public class StatsApiService : IStatsService
         }
     }
 
-    public async Task<List<ChampionStatsDto>> GetChampionsAsync(int? seasonId = null)
+    public async Task<List<ChampionStatsDto>> GetChampionsAsync(int? seasonId = null, string? gameMode = null)
     {
         if (_userState.CurrentProfile == null) return new();
         
         try
         {
-            var url = BuildUrl("api/Stats/champions", seasonId);
+            var url = BuildUrl("api/Stats/champions", seasonId, gameMode);
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             AddProfileHeader(request);
             var response = await _http.SendAsync(request);
@@ -72,13 +81,13 @@ public class StatsApiService : IStatsService
         }
     }
 
-    public async Task<List<DuoSummary>> GetWorstEnemyDuosAsync(int? seasonId = null)
+    public async Task<List<DuoSummary>> GetWorstEnemyDuosAsync(int? seasonId = null, string? gameMode = null)
     {
         if (_userState.CurrentProfile == null) return new();
         
         try
         {
-            var url = BuildUrl("api/Stats/worst-enemy-duos", seasonId);
+            var url = BuildUrl("api/Stats/worst-enemy-duos", seasonId, gameMode);
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             AddProfileHeader(request);
             var response = await _http.SendAsync(request);
@@ -95,13 +104,13 @@ public class StatsApiService : IStatsService
         }
     }
 
-    public async Task<List<EnemyStatsDto>> GetEnemyStatsAsync(string role, int? seasonId = null)
+    public async Task<List<EnemyStatsDto>> GetEnemyStatsAsync(string role, int? seasonId = null, string? gameMode = null)
     {
         if (_userState.CurrentProfile == null) return new();
         
         try
         {
-            var url = BuildUrl($"api/Stats/enemies?role={role}", seasonId);
+            var url = BuildUrl($"api/Stats/enemies?role={role}", seasonId, gameMode);
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             AddProfileHeader(request);
             var response = await _http.SendAsync(request);
@@ -118,13 +127,13 @@ public class StatsApiService : IStatsService
         }
     }
 
-    public async Task<List<DuoSummary>> GetBestDuosAsync(int? seasonId = null)
+    public async Task<List<DuoSummary>> GetBestDuosAsync(int? seasonId = null, string? gameMode = null)
     {
         if (_userState.CurrentProfile == null) return new();
         
         try
         {
-            var url = BuildUrl("api/Stats/best-duos", seasonId);
+            var url = BuildUrl("api/Stats/best-duos", seasonId, gameMode);
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             AddProfileHeader(request);
             var response = await _http.SendAsync(request);

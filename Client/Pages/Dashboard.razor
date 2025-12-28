@@ -1,15 +1,26 @@
 ﻿@page "/"
+@using LolStatsTracker.Components.Dashboard
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-8">
     
-    <div class="page-header d-flex align-center gap-4">
-        <div class="icon-badge">
-            <MudIcon Icon="@Icons.Material.Filled.Dashboard" Size="Size.Medium" Color="Color.Surface" />
+    <div class="page-header d-flex align-center justify-space-between gap-4">
+        <div class="d-flex align-center gap-4">
+            <div class="icon-badge">
+                <MudIcon Icon="@Icons.Material.Filled.Dashboard" Size="Size.Medium" Color="Color.Surface" />
+            </div>
+            <div>
+                <MudText Typo="Typo.h4" Class="font-weight-bold">Dashboard</MudText>
+                <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Summary for: @(UserState.CurrentProfile?.Name ?? "...")</MudText>
+            </div>
         </div>
-        <div>
-            <MudText Typo="Typo.h4" Class="font-weight-bold">Dashboard</MudText>
-            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Summary for: @(UserState.CurrentProfile?.Name ?? "...")</MudText>
-        </div>
+        
+        <MudSelect T="string" Value="_selectedGameMode" ValueChanged="OnGameModeChanged" Label="Game Mode" Variant="Variant.Outlined" Dense="true" Style="min-width: 180px;">
+            <MudSelectItem Value="@("All")">All Modes</MudSelectItem>
+            <MudSelectItem Value="@("Ranked Solo")">Ranked Solo</MudSelectItem>
+            <MudSelectItem Value="@("Ranked Flex")">Ranked Flex</MudSelectItem>
+            <MudSelectItem Value="@("Normal")">Normal</MudSelectItem>
+            <MudSelectItem Value="@("ARAM")">ARAM</MudSelectItem>
+        </MudSelect>
     </div>
 
     @if (_stats == null)
@@ -35,296 +46,43 @@
         <MudGrid Spacing="3">
             
             <MudItem xs="12" sm="6" md="4">
-            <MudPaper Class="rounded-xl stat-card d-flex flex-column gap-2 align-center justify-center text-center" Elevation="0" Height="100%">
-                    <span class="card-title">Overall WinRate</span>
-                    <div class="d-flex align-end gap-2 justify-center">
-                        <MudText Typo="Typo.h3" Color="@(_stats.Overview.Winrate * 100 >= 50 ? Color.Success : Color.Error)" Class="font-weight-bold">
-                            @((_stats.Overview.Winrate * 100).ToString("F1"))%
-                        </MudText>
-                        <MudText Typo="Typo.body1" Class="mb-1">WR</MudText>
-                    </div>
-                    <MudDivider Class="my-3 w-100" Style="opacity: 0.3" />
-                    <span class="card-title">Most Played</span>
-                    <div class="d-flex flex-column align-center gap-3">
-                        <img src="@LeagueAssetsService.GetChampionIconUrl(_stats.Overview.MostPlayedChampion)" 
-                             height="48" width="48" 
-                             style="border-radius: 50%; object-fit: cover;" />
-                        
-                        <div>
-                            <MudText Typo="Typo.h6">@_stats.Overview.MostPlayedChampion</MudText>
-                            <MudText Typo="Typo.caption">@_stats.Overview.MostPlayedChampionGames games</MudText>
-                        </div>
-                    </div>
-                </MudPaper>
+                <StatsOverviewCard Stats="_stats.Overview" />
             </MudItem>
             
             <MudItem xs="12" sm="6" md="4">
-                <MudPaper Class="rounded-xl glass-card d-flex flex-column align-center justify-center text-center" Elevation="0" Height="100%">
-                    <span class="card-title">Current Streak</span>
-                    
-                    @if (_stats.Streak.Count > 0)
-                    {
-                        <div class="d-flex align-center gap-3">
-                            <MudIcon Icon="@(_stats.Streak.IsWinStreak ? Icons.Material.Filled.LocalFireDepartment : Icons.Material.Filled.HeartBroken)" 
-                                     Size="Size.Large"
-                                     Color="@(_stats.Streak.IsWinStreak ? Color.Success : Color.Error)"
-                                     Class="@(_stats.Streak.Count >= 3 ? "animate-glow" : "")" />
-                            <div>
-                                <MudText Typo="Typo.h3" Color="@(_stats.Streak.IsWinStreak ? Color.Success : Color.Error)" Class="font-weight-bold">
-                                    @_stats.Streak.Count
-                                </MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                    @(_stats.Streak.IsWinStreak ? "Wins" : "Losses")
-                                </MudText>
-                            </div>
-                        </div>
-                        
-                        <MudDivider Class="my-3 w-100" Style="opacity: 0.3" />
-                        
-                        <div class="d-flex gap-4">
-                            <MudTooltip Text="Best win streak this season">
-                                <div class="d-flex flex-column align-center">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Best</MudText>
-                                    <MudText Typo="Typo.h6" Color="Color.Success" Class="font-weight-bold">@_stats.Streak.BestWinStreak 🔥</MudText>
-                                </div>
-                            </MudTooltip>
-                            <MudTooltip Text="Worst loss streak this season">
-                                <div class="d-flex flex-column align-center">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Worst</MudText>
-                                    <MudText Typo="Typo.h6" Color="Color.Error" Class="font-weight-bold">@_stats.Streak.WorstLossStreak 💀</MudText>
-                                </div>
-                            </MudTooltip>
-                        </div>
-                    }
-                    else
-                    {
-                        <MudText Color="Color.Secondary">No matches yet</MudText>
-                    }
-                </MudPaper>
+                <StreakCard Streak="_stats.Streak" />
             </MudItem>
 
             <MudItem xs="12" sm="6" md="4">
-            <MudPaper Class="rounded-xl glass-card" Elevation="0" Height="100%">
-                    <span class="card-title">Best Duo</span>
-                    @if (_stats.BestDuos.Any())
-                    {
-                        var best = _stats.BestDuos.First();
-                        <div class="d-flex justify-center align-center gap-4 my-2">
-                            <div class="d-flex flex-column align-center">
-                                <img src="@LeagueAssetsService.GetChampionIconUrl(best.Champion)" 
-                                     height="64" width="64" 
-                                     style="border-radius: 50%; border: 3px solid var(--mud-palette-primary); object-fit: cover;" />
-                                <MudText Typo="Typo.caption" Class="mt-1">@best.Champion</MudText>
-                            </div>
-                            
-                            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
-                            
-                            <div class="d-flex flex-column align-center">
-                                <img src="@LeagueAssetsService.GetChampionIconUrl(best.Support)" 
-                                     height="64" width="64" 
-                                     style="border-radius: 50%; border: 3px solid var(--mud-palette-info); object-fit: cover;" />
-                                <MudText Typo="Typo.caption" Class="mt-1">@best.Support</MudText>
-                            </div>
-                        </div>
-                        <div class="d-flex justify-center mt-2 gap-2">
-                            <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small">@best.WinRate.ToString("F0")% WR</MudChip>
-                            <MudChip T="string" Color="Color.Surface" Variant="Variant.Outlined" Size="Size.Small">@best.Count games</MudChip>
-                        </div>
-                    }
-                    else
-                    {
-                        <MudAlert Severity="Severity.Info">Not enough data.</MudAlert>
-                    }
-                </MudPaper>
+                <BestDuoCard Duos="_stats.BestDuos" />
             </MudItem>
 
             <MudItem xs="12" md="4">
-                <MudPaper Class="rounded-xl glass-card" Elevation="0" Height="100%">
-                    <span class="card-title">Enchanters</span>
-                    
-                    <div class="mb-4">
-                        <div class="d-flex justify-space-between mb-1">
-                            <MudText Typo="Typo.body2">My Team</MudText>
-                            <MudText Typo="Typo.body2" Class="font-weight-bold">@_stats.EnchanterUsage.MyPercentage.ToString("F0")%</MudText>
-                        </div>
-                        <MudProgressLinear Color="Color.Primary" Value="@_stats.EnchanterUsage.MyPercentage" Size="Size.Large" Rounded="true" />
-                    </div>
-
-                    <div>
-                        <div class="d-flex justify-space-between mb-1">
-                            <MudText Typo="Typo.body2">Enemy Team</MudText>
-                            <MudText Typo="Typo.body2" Class="font-weight-bold">@_stats.EnchanterUsage.EnemyPercentage.ToString("F0")%</MudText>
-                        </div>
-                        <MudProgressLinear Color="Color.Error" Value="@_stats.EnchanterUsage.EnemyPercentage" Size="Size.Large" Rounded="true" />
-                    </div>
-                </MudPaper>
+                <EnchantersCard Stats="_stats.EnchanterUsage" />
             </MudItem>
         
             <MudItem xs="12" sm="6" md="4">
-                <MudPaper Class="rounded-xl glass-card d-flex flex-column" Elevation="0" Height="100%">
-                    <span class="card-title">Best Time to Play</span>
-                    
-                    @if (_stats.TimeAnalysis.BestHourRange != "N/A")
-                    {
-                        <div class="d-flex gap-4 justify-center flex-grow-1 align-center">
-                            <MudTooltip Text="Best performing hour">
-                                <div class="d-flex flex-column align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Large" Color="Color.Primary" />
-                                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">@_stats.TimeAnalysis.BestHourRange</MudText>
-                                    <MudText Typo="Typo.caption" Color="Color.Success">@((_stats.TimeAnalysis.BestHourWinrate * 100).ToString("F0"))% WR</MudText>
-                                </div>
-                            </MudTooltip>
-                            
-                            <MudDivider Vertical="true" FlexItem="true" />
-                            
-                            <MudTooltip Text="Best performing day">
-                                <div class="d-flex flex-column align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Large" Color="Color.Secondary" />
-                                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">@_stats.TimeAnalysis.BestDay</MudText>
-                                    <MudText Typo="Typo.caption" Color="Color.Success">@((_stats.TimeAnalysis.BestDayWinrate * 100).ToString("F0"))% WR</MudText>
-                                </div>
-                            </MudTooltip>
-                        </div>
-                    }
-                    else
-                    {
-                        <MudText Color="Color.Secondary" Class="text-center">Not enough data (min 3 games)</MudText>
-                    }
-                </MudPaper>
+                <BestTimeCard Stats="_stats.TimeAnalysis" />
             </MudItem>
 
             <MudItem xs="12" md="7">
-                <MudPaper Class="rounded-xl glass-card" Elevation="0">
-                    <MudText Typo="Typo.h6" Class="mb-4 gradient-text">Top 5 Most Played</MudText>
-                    <MudTable Items="_stats.ChampionStats.Take(5)" Hover="true" Dense="true" Elevation="0">
-                        <HeaderContent>
-                            <MudTh>Champion</MudTh>
-                            <MudTh>Games</MudTh>
-                            <MudTh>Winrate</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd>
-                                <div class="d-flex align-center gap-2">
-                                    <img src="@LeagueAssetsService.GetChampionIconUrl(context.ChampionName)" 
-                                         height="32" width="32" 
-                                         style="border-radius: 50%; object-fit: cover;" />
-                                    <MudText>@context.ChampionName</MudText>
-                                </div>
-                            </MudTd>
-                            <MudTd>@context.Games</MudTd>
-                            <MudTd>
-                                <MudText Color="@(context.Winrate * 100 >= 50 ? Color.Success : Color.Error)" Class="font-weight-bold">
-                                    @((context.Winrate * 100).ToString("F0"))%
-                                </MudText>
-                            </MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                </MudPaper>
+                <TopChampionsCard Champions="_stats.ChampionStats" />
             </MudItem>
 
             <MudItem xs="12" md="5">
-                <MudPaper Class="rounded-xl glass-card" Elevation="0">
-                    <MudText Typo="Typo.h6" Class="mb-4" Color="Color.Error">Hard Enemy (Bot)</MudText>
-                    <MudList T="string" Dense="true" Padding="false">
-                        @foreach (var enemy in _stats.EnemyBotStats.Take(5))
-                        {
-                            <MudListItem>
-                                <div class="d-flex align-center justify-space-between w-100">
-                                    <div class="d-flex align-center gap-2">
-                                        <img src="@LeagueAssetsService.GetChampionIconUrl(enemy.ChampionName)" 
-                                             height="36" width="36" 
-                                             style="border-radius: 50%; border: 2px solid var(--mud-palette-error); object-fit: cover;" />
-                                        <MudText>@enemy.ChampionName</MudText>
-                                    </div>
-                                    <div class="text-right">
-                                        <MudText Typo="Typo.caption">Losses</MudText>
-                                        <MudText Color="Color.Error" Class="font-weight-bold">
-                                            @((100 - (enemy.WinrateAgainst * 100)).ToString("F0"))%
-                                        </MudText>
-                                    </div>
-                                </div>
-                            </MudListItem>
-                            <MudDivider Class="my-1"/>
-                        }
-                    </MudList>
-                </MudPaper>
+                <HardEnemiesCard Enemies="_stats.EnemyBotStats" />
             </MudItem>
             
             <MudItem xs="12">
-                <MudPaper Class="rounded-xl glass-card" Elevation="0">
-                    <MudText Typo="Typo.h6" Class="mb-4">Activity Matrix</MudText>
-                    
-                    <div class="d-flex align-center gap-2 mb-3">
-                        <MudText Typo="Typo.caption" Class="text-muted">Less</MudText>
-                        <div style="width: 10px; height: 10px; background-color: #282830; border-radius: 2px;"></div>
-                        <div style="width: 10px; height: 10px; background-color: #3f3c6e; border-radius: 2px;"></div>
-                        <div style="width: 10px; height: 10px; background-color: #594ae2; border-radius: 2px;"></div>
-                        <MudText Typo="Typo.caption" Class="text-muted">More</MudText>
-                    </div>
-
-                    <div class="d-flex" style="overflow-x: auto; padding-bottom: 10px;">
-                        
-                        <div class="d-flex flex-column gap-1 mr-2 pt-0" style="min-width: 30px; margin-top: 2px;">
-                            <MudText Typo="Typo.caption" Style="height: 12px; font-size: 10px; line-height: 12px;">Mon</MudText>
-                            <div style="height: 12px;"></div>
-                            <MudText Typo="Typo.caption" Style="height: 12px; font-size: 10px; line-height: 12px;">Tue</MudText>
-                            <div style="height: 12px;"></div>
-                            <MudText Typo="Typo.caption" Style="height: 12px; font-size: 10px; line-height: 12px;">Fri</MudText>
-                            <div style="height: 12px;"></div>
-                            <MudText Typo="Typo.caption" Style="height: 12px; font-size: 10px; line-height: 12px;">Sun</MudText>
-                        </div>
-                        
-                        @foreach (var week in _matrix)
-                        {
-                            <div class="d-flex flex-column gap-1" style="margin-right: 3px;">
-                                @foreach (var day in week)
-                                {
-                                    <MudTooltip Text="@($"{day.Date:dd.MM.yyyy}\n{day.Count} games")" 
-                                                Style="white-space: pre-wrap; text-align: center;" 
-                                                Arrow="true" 
-                                                Placement="Placement.Top"
-                                                Delay="0">
-                                        
-                                        <div style="@($"width: 12px; height: 12px; border-radius: 2px; background-color: {GetHeatmapColor(day.Count)}; transition: opacity 0.2s;")"
-                                             class="heatmap-square">
-                                        </div>
-                                    </MudTooltip>
-                                }
-                            </div>
-                        }
-                    </div>
-                </MudPaper>
+                <ActivityHeatmap Matrix="_matrix" MaxGamesPerDay="_maxGamesPerDay" />
             </MudItem>
 
             <MudItem xs="12" md="4">
-                <MudPaper Class="rounded-xl glass-card" Elevation="0" Style="max-height: 300px; overflow-y: auto;">
-                    <MudText Typo="Typo.h6" Class="mb-3 gradient-text">Rank History</MudText>
-                    @if (_milestones.Any())
-                    {
-                        <MudTimeline TimelinePosition="TimelinePosition.Start">
-                            @foreach (var m in _milestones.Take(5))
-                            {
-                                <MudTimelineItem Color="@(m.Type == "Promotion" ? Color.Success : Color.Error)" Size="Size.Small">
-                                    <ItemContent>
-                                        <MudText Typo="Typo.body2" Class="font-weight-bold">@m.Tier @GetDivisionRoman(m.Division)</MudText>
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@m.AchievedAt.ToString("MMM dd, yyyy")</MudText>
-                                    </ItemContent>
-                                </MudTimelineItem>
-                            }
-                        </MudTimeline>
-                    }
-                    else
-                    {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">No rank milestones yet.</MudText>
-                    }
-                </MudPaper>
+                <RankHistoryCard Milestones="_milestones" />
             </MudItem>
 
             <MudItem xs="12" md="8">
-                <MudPaper Class="rounded-xl glass-card" Elevation="0">
-                    <MudText Typo="Typo.h6" Class="mb-4 gradient-text">LP Trend (20 last games)</MudText>
-                    <MudChart ChartType="ChartType.Line" ChartSeries="@_lpSeries" XAxisLabels="@_lpLabels" Width="100%" Height="300px" ChartOptions="@(new ChartOptions { InterpolationOption = InterpolationOption.Straight })" />
-                </MudPaper>
+                <LpTrendChart ChartData="_lpChartData" Series="_lpSeries" Labels="_lpLabels" RangeInfo="_lpRangeInfo" />
             </MudItem>
         </MudGrid>
     }
