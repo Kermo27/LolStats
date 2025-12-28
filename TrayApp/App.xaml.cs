@@ -37,6 +37,7 @@ public partial class App : Application
                 // Services
                 services.AddSingleton<TrayAuthService>();
                 services.AddSingleton<LcuService>();
+                services.AddSingleton<ChampionDataService>();
                 services.AddHttpClient<ApiSyncService>();
                 
                 services.AddSingleton<TrayBackgroundService>();

@@ -1,3 +1,4 @@
+using LolStatsTracker.TrayApp.Helpers;
 using LolStatsTracker.TrayApp.Models;
 using LolStatsTracker.TrayApp.Models.Lcu;
 using Microsoft.Extensions.Hosting;
@@ -11,6 +12,7 @@ public class TrayBackgroundService : BackgroundService
     private readonly LcuService _lcuService;
     private readonly ApiSyncService _apiSyncService;
     private readonly IUserSettingsService _settingsService;
+    private readonly ChampionDataService _championDataService;
     
     private LcuQueueStats? _cachedRankedStats;
     private readonly HashSet<long> _processedGameIds = new();
@@ -24,12 +26,14 @@ public class TrayBackgroundService : BackgroundService
         ILogger<TrayBackgroundService> logger,
         LcuService lcuService,
         ApiSyncService apiSyncService,
-        IUserSettingsService settingsService)
+        IUserSettingsService settingsService,
+        ChampionDataService championDataService)
     {
         _logger = logger;
         _lcuService = lcuService;
         _apiSyncService = apiSyncService;
         _settingsService = settingsService;
+        _championDataService = championDataService;
         _currentCheckIntervalSeconds = _settingsService.Settings.CheckIntervalSeconds;
         
         // Subscribe to events
@@ -41,7 +45,13 @@ public class TrayBackgroundService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Tray Background Service started");
-        StatusChanged?.Invoke(this, "Service started - waiting for League Client");
+        StatusChanged?.Invoke(this, "Service started - loading champion data...");
+        
+        // Initialize champion data from DDragon
+        await _championDataService.InitializeAsync();
+        DataMapper.Initialize(_championDataService);
+        
+        StatusChanged?.Invoke(this, "Waiting for League Client");
         
         // Initialize LCU Service (starts monitoring loop)
         await _lcuService.InitializeAsync();
