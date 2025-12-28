@@ -129,14 +129,31 @@ public class AuthService : IAuthService
             if (user.RefreshTokenExpiry < DateTime.UtcNow)
             {
                 _logger.LogWarning("Refresh failed: Token expired for user {Username}", user.Username);
+                // Clear expired refresh token
+                user.RefreshToken = null;
+                user.RefreshTokenExpiry = null;
+                await _context.SaveChangesAsync();
                 return (false, "Refresh token expired", null);
             }
 
-            // Generate new tokens (rotate refresh token)
-            var tokenResponse = await GenerateTokensAsync(user);
+            // Generate NEW access token but KEEP the same refresh token (no rotation)
+            var accessToken = GenerateAccessToken(user);
+            var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpiryMinutes);
 
             _logger.LogInformation("Token refreshed for user: {Username}", user.Username);
-            return (true, null, tokenResponse);
+            
+            return (true, null, new TokenResponseDto
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken, // Return the same refresh token
+                ExpiresAt = expiresAt,
+                User = new UserInfoDto
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Email = user.Email
+                }
+            });
         }
         catch (Exception ex)
         {

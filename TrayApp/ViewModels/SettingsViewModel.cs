@@ -19,6 +19,12 @@ public partial class SettingsViewModel : ObservableObject
     private bool _autoStartWithWindows;
 
     [ObservableProperty]
+    private string _riotApiKey = string.Empty;
+
+    [ObservableProperty]
+    private string _riotRegion = "euw1";
+
+    [ObservableProperty]
     private bool _isSaving;
 
     public SettingsViewModel(IUserSettingsService settingsService)
@@ -33,6 +39,8 @@ public partial class SettingsViewModel : ObservableObject
         ServerUrl = settings.ApiBaseUrl;
         CheckInterval = settings.CheckIntervalSeconds;
         AutoStartWithWindows = settings.AutoStartWithWindows;
+        RiotApiKey = settings.RiotApiKey ?? string.Empty;
+        RiotRegion = settings.RiotRegion;
     }
 
     [RelayCommand]
@@ -48,7 +56,9 @@ public partial class SettingsViewModel : ObservableObject
             {
                 ApiBaseUrl = ServerUrl,
                 CheckIntervalSeconds = CheckInterval,
-                AutoStartWithWindows = AutoStartWithWindows
+                AutoStartWithWindows = AutoStartWithWindows,
+                RiotApiKey = string.IsNullOrWhiteSpace(RiotApiKey) ? null : RiotApiKey,
+                RiotRegion = RiotRegion
             };
             
             await _settingsService.SaveAsync(settings);
