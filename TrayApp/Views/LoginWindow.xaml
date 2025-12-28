@@ -72,7 +72,8 @@
                      Background="#313244"
                      Foreground="#CDD6F4"
                      BorderBrush="#45475A"
-                     FontSize="14"/>
+                     FontSize="14"
+                     KeyDown="OnKeyDown"/>
 
             <!-- Email (only for register mode - omitted for now in MVVM refactor as it wasn't fully impl) -->
             
@@ -86,7 +87,8 @@
                          Foreground="#CDD6F4"
                          BorderBrush="#45475A"
                          FontSize="14"
-                         PasswordChanged="PasswordBox_PasswordChanged"/>
+                         PasswordChanged="PasswordBox_PasswordChanged"
+                         KeyDown="OnKeyDown"/>
 
             <!-- Submit Button -->
             <Button Content="Login"

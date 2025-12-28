@@ -21,4 +21,15 @@ public partial class LoginWindow : Window
             vm.Password = ((PasswordBox)sender).Password;
         }
     }
+
+    private void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.Enter && DataContext is LoginViewModel vm)
+        {
+            if (vm.LoginCommand.CanExecute(null))
+            {
+                vm.LoginCommand.Execute(null);
+            }
+        }
+    }
 }

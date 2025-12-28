@@ -25,7 +25,8 @@
                           Adornment="Adornment.Start"
                           AdornmentIcon="@Icons.Material.Filled.Person"
                           Required="true"
-                          Disabled="@_isLoading" />
+                          Disabled="@_isLoading"
+                          @onkeydown="HandleKeyDown" />
 
             <MudTextField @bind-Value="_password"
                           Label="Password"
@@ -35,7 +36,8 @@
                           AdornmentIcon="@_passwordIcon"
                           OnAdornmentClick="TogglePasswordVisibility"
                           Required="true"
-                          Disabled="@_isLoading" />
+                          Disabled="@_isLoading"
+                          @onkeydown="HandleKeyDown" />
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
@@ -75,6 +77,14 @@
     private string _passwordIcon => _passwordVisible ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
 
     private void TogglePasswordVisibility() => _passwordVisible = !_passwordVisible;
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await HandleLogin();
+        }
+    }
 
     private async Task HandleLogin()
     {
