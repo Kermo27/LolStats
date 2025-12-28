@@ -9,9 +9,6 @@ public static class DataMapper
 {
     private static ChampionDataService? _championDataService;
     
-    /// <summary>
-    /// Initializes the DataMapper with required services.
-    /// </summary>
     public static void Initialize(ChampionDataService championDataService)
     {
         _championDataService = championDataService;
@@ -54,38 +51,15 @@ public static class DataMapper
         var sourcePlayer = playerInTeam ?? localPlayer;
         
         var championName = GetChampionName(sourcePlayer.ChampionId);
-        var position = MapPosition(sourcePlayer.Stats.Position, sourcePlayer.Stats.Lane, sourcePlayer.Stats.Role, sourcePlayer.Stats.PlayerPosition);
         
-        // Fallback for position if all fields were still empty or "NONE" after augmentation
-        if (IsNoneOrEmpty(sourcePlayer.Stats.Position) && 
-            IsNoneOrEmpty(sourcePlayer.Stats.Lane) && 
-            IsNoneOrEmpty(sourcePlayer.Stats.Role))
-        {
-            // Guess position based on team index (Top, Jungle, Mid, Bot, Support)
-            var team = eogStats.Teams.FirstOrDefault(t => t.Players.Any(p => p.TeamId == sourcePlayer.TeamId));
-            if (team != null)
-            {
-                var index = team.Players.FindIndex(p => p.ChampionId == sourcePlayer.ChampionId);
-                position = index switch
-                {
-                    0 => "Top",
-                    1 => "Jungle",
-                    2 => "Mid",
-                    3 => "ADC",
-                    4 => "Support",
-                    _ => position
-                };
-                Console.WriteLine($"[DataMapper] Guessing position by index {index}: {position}");
-            }
-        }
+        // Priority for position detection:
+        // 1. DetectedTeamPosition (most reliable - detected by Riot)
+        // 2. SelectedPosition (what player queued for)
+        // 3. Stats.Position / Stats.Lane / Stats.Role
+        var position = MapPositionFromPlayer(sourcePlayer);
         
-        // Special case: If mapped as Support but champion is a known ADC (like Vayne), and we have "NONE" signals
-        if (position == "Support" && IsCommonAdc(sourcePlayer.ChampionId) && 
-            (IsNoneOrEmpty(sourcePlayer.Stats.Position) || IsNoneOrEmpty(sourcePlayer.Stats.Lane)))
-        {
-            Console.WriteLine($"[DataMapper] Correcting position for {championName}: Support -> ADC based on champion type");
-            position = "ADC";
-        }
+        Console.WriteLine($"[DataMapper] Position detected for {championName}: {position} (DetectedTeamPosition={sourcePlayer.DetectedTeamPosition}, SelectedPosition={sourcePlayer.SelectedPosition})");
+
 
         // For Support: use VisionScore, for others: use CS
         var csOrVisionScore = position == "Support" 
@@ -105,30 +79,140 @@ public static class DataMapper
             ? DetectLaneParticipants(eogStats, sourcePlayer, position)
             : ("", "", "");
         
+        var stats = sourcePlayer.Stats;
+        
         var match = new MatchEntry
         {
             Id = Guid.NewGuid(),
+            GameId = eogStats.GameId,
             ProfileId = profileId,
             Champion = championName,
             Role = isSummonersRift ? position : "N/A",
             LaneAlly = laneAlly,
             LaneEnemy = laneEnemy,
             LaneEnemyAlly = laneEnemyAlly,
-            Kills = sourcePlayer.Stats.Kills,
-            Deaths = sourcePlayer.Stats.Deaths,
-            Assists = sourcePlayer.Stats.Assists,
+            
+            // Basic Combat Stats
+            Kills = stats.Kills,
+            Deaths = stats.Deaths,
+            Assists = stats.Assists,
             Cs = csOrVisionScore,
             GameLengthMinutes = gameLengthMinutes,
             Win = isWin,
             Date = DateTime.Now,
+            
+            // Rank Info
             CurrentTier = rankedStats?.Tier ?? "Unranked",
             CurrentDivision = ParseDivision(rankedStats?.Division),
             CurrentLp = rankedStats?.LeaguePoints ?? 0,
             GameMode = gameMode,
-            QueueId = eogStats.QueueId
+            QueueId = eogStats.QueueId,
+            
+            // Damage Dealt
+            TotalDamageDealt = stats.TotalDamageDealt,
+            DamageDealtToChampions = stats.DamageDealtToChampions,
+            PhysicalDamageDealt = stats.PhysicalDamageDealt,
+            PhysicalDamageToChampions = stats.PhysicalDamageToChampions,
+            MagicDamageDealt = stats.MagicDamageDealt,
+            MagicDamageToChampions = stats.MagicDamageToChampions,
+            TrueDamageDealt = stats.TrueDamageDealt,
+            TrueDamageToChampions = stats.TrueDamageToChampions,
+            DamageToBuildings = stats.DamageToBuildings,
+            DamageToObjectives = stats.DamageToObjectives,
+            DamageToTurrets = stats.DamageToTurrets,
+            
+            // Damage Taken
+            TotalDamageTaken = stats.TotalDamageTaken,
+            PhysicalDamageTaken = stats.PhysicalDamageTaken,
+            MagicDamageTaken = stats.MagicDamageTaken,
+            TrueDamageTaken = stats.TrueDamageTaken,
+            DamageSelfMitigated = stats.DamageSelfMitigated,
+            
+            // Gold
+            GoldEarned = stats.GoldEarned,
+            GoldSpent = stats.GoldSpent,
+            
+            // Multi-Kills
+            DoubleKills = stats.DoubleKills,
+            TripleKills = stats.TripleKills,
+            QuadraKills = stats.QuadraKills,
+            PentaKills = stats.PentaKills,
+            LargestKillingSpree = stats.LargestKillingSpree,
+            LargestMultiKill = stats.LargestMultiKill,
+            KillingSprees = stats.KillingSprees,
+            
+            // Objectives
+            TurretsKilled = stats.TurretsKilled,
+            InhibitorsKilled = stats.InhibitorsKilled,
+            
+            // First Blood
+            FirstBloodKill = stats.FirstBloodKill,
+            FirstBloodAssist = stats.FirstBloodAssist,
+            
+            // Vision
+            VisionScore = stats.VisionScore,
+            WardsPlaced = stats.WardsPlaced,
+            WardsKilled = stats.WardsKilled,
+            VisionWardsBought = stats.VisionWardsBought,
+            
+            // Healing & Shielding
+            TotalHeal = stats.TotalHeal,
+            HealOnTeammates = stats.HealOnTeammates,
+            UnitsHealed = stats.UnitsHealed,
+            DamageShieldedOnTeammates = stats.DamageShieldedOnTeammates,
+            
+            // Crowd Control
+            TotalTimeCCDealt = stats.TotalTimeCCDealt,
+            TimeCCingOthers = stats.TimeCCingOthers,
+            
+            // Time Stats
+            TimeSpentDead = stats.TimeSpentDead,
+            LongestTimeSpentLiving = stats.LongestTimeSpentLiving,
+            
+            // Combat Score
+            LargestCriticalStrike = stats.LargestCriticalStrike,
+            CombatPlayerScore = stats.CombatPlayerScore,
+            TotalPlayerScore = stats.TotalPlayerScore,
+            
+            // Level
+            ChampionLevel = stats.Level > 0 ? stats.Level : null,
+            
+            // Summoner Spells
+            Spell1Id = sourcePlayer.Spell1Id,
+            Spell2Id = sourcePlayer.Spell2Id,
+            Spell1Casts = stats.Spell1Cast,
+            Spell2Casts = stats.Spell2Cast,
+            
+            // Items (comma-separated IDs)
+            ItemsBuild = sourcePlayer.Items.Any() 
+                ? string.Join(",", sourcePlayer.Items.Where(i => i > 0)) 
+                : null,
+            
+            // Perks (Runes)
+            PerkPrimaryStyle = stats.PerkPrimaryStyle,
+            PerkSubStyle = stats.PerkSubStyle,
+            Perks = FormatPerks(stats),
+            
+            // Arena Augments
+            Augment1 = sourcePlayer.PlayerAugment1 > 0 ? sourcePlayer.PlayerAugment1 : null,
+            Augment2 = sourcePlayer.PlayerAugment2 > 0 ? sourcePlayer.PlayerAugment2 : null,
+            Augment3 = sourcePlayer.PlayerAugment3 > 0 ? sourcePlayer.PlayerAugment3 : null,
+            Augment4 = sourcePlayer.PlayerAugment4 > 0 ? sourcePlayer.PlayerAugment4 : null,
+            
+            // Surrender
+            GameEndedInSurrender = stats.GameEndedInSurrender,
+            GameEndedInEarlySurrender = stats.GameEndedInEarlySurrender
         };
         
         return match;
+    }
+    
+    private static string? FormatPerks(LcuPlayerStats stats)
+    {
+        var perks = new[] { stats.Perk0, stats.Perk1, stats.Perk2, stats.Perk3, stats.Perk4, stats.Perk5 }
+            .Where(p => p > 0)
+            .ToList();
+        return perks.Any() ? string.Join(",", perks) : null;
     }
 
     public static string MapQueueIdToGameMode(int queueId) => queueId switch
@@ -136,8 +220,9 @@ public static class DataMapper
         420 => "Ranked Solo",
         440 => "Ranked Flex",
         400 or 430 => "Normal",
+        480 => "Swift Play",
         450 => "ARAM",
-        4200 => "ARAM Mayhem",
+        2400 => "ARAM Mayhem",
         900 => "ARURF",
         1900 => "URF",
         1700 => "Arena",
@@ -149,22 +234,41 @@ public static class DataMapper
         return _championDataService?.GetChampionName(championId) ?? $"Champion_{championId}";
     }
     
-    private static string MapPosition(string pos, string lane, string role, string playerPos)
+    private static string MapPositionFromPlayer(LcuPlayer player)
     {
-        string[] candidates = { pos, lane, role, playerPos };
-        foreach (var c in candidates)
-        {
-            if (string.IsNullOrWhiteSpace(c) || IsNone(c)) continue;
-            
-            var upper = c.ToUpperInvariant();
-            if (upper == "TOP") return "Top";
-            if (upper == "JUNGLE") return "Jungle";
-            if (upper == "MIDDLE" || upper == "MID") return "Mid";
-            if (upper == "BOTTOM" || upper == "BOT" || upper == "ADC" || upper == "CARRY") return "ADC";
-            if (upper == "UTILITY" || upper == "SUPPORT") return "Support";
-        }
+        // Priority 1: DetectedTeamPosition (most reliable - auto-detected by Riot)
+        var detected = NormalizePosition(player.DetectedTeamPosition);
+        if (!string.IsNullOrEmpty(detected)) return detected;
         
-        return "ADC"; // Default fallback
+        // Priority 2: SelectedPosition (what player queued for)
+        var selected = NormalizePosition(player.SelectedPosition);
+        if (!string.IsNullOrEmpty(selected)) return selected;
+        
+        // Priority 3: Stats fields
+        var fromStats = NormalizePosition(player.Stats.Position) 
+                     ?? NormalizePosition(player.Stats.Lane) 
+                     ?? NormalizePosition(player.Stats.Role)
+                     ?? NormalizePosition(player.Stats.PlayerPosition);
+        if (!string.IsNullOrEmpty(fromStats)) return fromStats;
+        
+        // No fallback - return empty to indicate unknown (will show in logs)
+        return "Unknown";
+    }
+    
+    private static string? NormalizePosition(string? pos)
+    {
+        if (string.IsNullOrWhiteSpace(pos)) return null;
+        
+        var upper = pos.ToUpperInvariant();
+        if (upper == "NONE" || upper == "NULL" || upper == "UNKNOWN" || upper == "") return null;
+        
+        if (upper == "TOP") return "Top";
+        if (upper == "JUNGLE") return "Jungle";
+        if (upper == "MIDDLE" || upper == "MID") return "Mid";
+        if (upper == "BOTTOM" || upper == "BOT" || upper == "ADC" || upper == "CARRY") return "ADC";
+        if (upper == "UTILITY" || upper == "SUPPORT") return "Support";
+        
+        return null;
     }
 
     private static bool IsNoneOrEmpty(string? s) => string.IsNullOrEmpty(s) || IsNone(s);
@@ -215,36 +319,33 @@ public static class DataMapper
         var allyTeam = eogStats.Teams.FirstOrDefault(t => t.Players.Any(p => p.TeamId == sourcePlayer.TeamId));
         var enemyTeam = eogStats.Teams.FirstOrDefault(t => !t.Players.Any(p => p.TeamId == sourcePlayer.TeamId));
         
-        if (allyTeam == null || enemyTeam == null || allyTeam.Players.Count != 5 || enemyTeam.Players.Count != 5)
+        if (allyTeam == null || enemyTeam == null)
         {
-            Console.WriteLine("[DataMapper] Could not find complete teams");
+            Console.WriteLine("[DataMapper] Could not find teams");
             return (laneAlly, laneEnemy, laneEnemyAlly);
         }
         
-        // Role index mapping: 0=Top, 1=Jungle, 2=Mid, 3=ADC, 4=Support
-        var (allyRole, enemyRole, enemyAllyRole) = position switch
+        // Define what role we're looking for based on our position
+        var (targetAllyRole, targetEnemyRole, targetEnemyAllyRole) = position switch
         {
-            "Top" => (1, 0, 1),       // Ally: Jungler(1), Enemy: Top(0), EnemyAlly: Jungler(1)
-            "Jungle" => (2, 1, 2),    // Ally: Mid(2), Enemy: Jungle(1), EnemyAlly: Mid(2)
-            "Mid" => (1, 2, 1),       // Ally: Jungler(1), Enemy: Mid(2), EnemyAlly: Jungler(1)
-            "ADC" => (4, 3, 4),       // Ally: Support(4), Enemy: ADC(3), EnemyAlly: Support(4)
-            "Support" => (3, 4, 3),   // Ally: ADC(3), Enemy: Support(4), EnemyAlly: ADC(3)
-            _ => (-1, -1, -1)
+            "Top" => ("JUNGLE", "TOP", "JUNGLE"),           // Ally: Jungler, Enemy: Top, EnemyAlly: Jungler
+            "Jungle" => ("MIDDLE", "JUNGLE", "MIDDLE"),      // Ally: Mid, Enemy: Jungle, EnemyAlly: Mid
+            "Mid" => ("JUNGLE", "MIDDLE", "JUNGLE"),         // Ally: Jungler, Enemy: Mid, EnemyAlly: Jungler
+            "ADC" => ("UTILITY", "BOTTOM", "UTILITY"),       // Ally: Support, Enemy: ADC, EnemyAlly: Support
+            "Support" => ("BOTTOM", "UTILITY", "BOTTOM"),    // Ally: ADC, Enemy: Support, EnemyAlly: ADC
+            _ => ("", "", "")
         };
         
-        if (allyRole < 0)
+        if (string.IsNullOrEmpty(targetAllyRole))
         {
             Console.WriteLine($"[DataMapper] Unknown position: {position}");
             return (laneAlly, laneEnemy, laneEnemyAlly);
         }
         
-        // Try to find by position fields first, fallback to index
-        var allyPlayer = FindPlayerByRole(allyTeam.Players, GetRoleStringForIndex(allyRole), localPlayer.ChampionId) 
-                         ?? (allyRole < allyTeam.Players.Count ? allyTeam.Players[allyRole] : null);
-        var enemyPlayer = FindPlayerByRole(enemyTeam.Players, GetRoleStringForIndex(enemyRole), -1) 
-                          ?? (enemyRole < enemyTeam.Players.Count ? enemyTeam.Players[enemyRole] : null);
-        var enemyAllyPlayer = FindPlayerByRole(enemyTeam.Players, GetRoleStringForIndex(enemyAllyRole), -1)
-                              ?? (enemyAllyRole < enemyTeam.Players.Count ? enemyTeam.Players[enemyAllyRole] : null);
+        // Find players by their detected position - prioritize DetectedTeamPosition, then Stats fields
+        var allyPlayer = FindPlayerByDetectedPosition(allyTeam.Players, targetAllyRole, localPlayer.ChampionId);
+        var enemyPlayer = FindPlayerByDetectedPosition(enemyTeam.Players, targetEnemyRole, -1);
+        var enemyAllyPlayer = FindPlayerByDetectedPosition(enemyTeam.Players, targetEnemyAllyRole, -1);
         
         if (allyPlayer != null && allyPlayer.ChampionId != localPlayer.ChampionId)
             laneAlly = GetChampionName(allyPlayer.ChampionId);
@@ -258,26 +359,33 @@ public static class DataMapper
         return (laneAlly, laneEnemy, laneEnemyAlly);
     }
     
-    private static string GetRoleStringForIndex(int index) => index switch
+    private static LcuPlayer? FindPlayerByDetectedPosition(List<LcuPlayer> players, string targetRole, int excludeChampionId)
     {
-        0 => "TOP",
-        1 => "JUNGLE",
-        2 => "MIDDLE",
-        3 => "BOTTOM",
-        4 => "UTILITY",
-        _ => ""
-    };
-    
-    private static LcuPlayer? FindPlayerByRole(List<LcuPlayer> players, string targetRole, int excludeChampionId)
-    {
-        return players.FirstOrDefault(p => 
+        // Priority 1: DetectedTeamPosition field (most reliable)
+        var found = players.FirstOrDefault(p => 
+            p.ChampionId != excludeChampionId &&
+            MatchesRole(p.DetectedTeamPosition, targetRole));
+        
+        if (found != null) return found;
+        
+        // Priority 2: SelectedPosition field  
+        found = players.FirstOrDefault(p => 
+            p.ChampionId != excludeChampionId &&
+            MatchesRole(p.SelectedPosition, targetRole));
+        
+        if (found != null) return found;
+        
+        // Priority 3: Stats position fields
+        found = players.FirstOrDefault(p => 
             p.ChampionId != excludeChampionId &&
             (MatchesRole(p.Stats.Position, targetRole) || 
              MatchesRole(p.Stats.Lane, targetRole) || 
              MatchesRole(p.Stats.Role, targetRole)));
+        
+        return found; // May be null - no fallback to random index
     }
     
-    private static bool MatchesRole(string playerRole, string targetRole)
+    private static bool MatchesRole(string? playerRole, string targetRole)
     {
         if (string.IsNullOrWhiteSpace(playerRole) || string.IsNullOrWhiteSpace(targetRole))
             return false;

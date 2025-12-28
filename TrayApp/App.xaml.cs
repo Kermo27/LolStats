@@ -38,6 +38,7 @@ public partial class App : Application
                 services.AddSingleton<TrayAuthService>();
                 services.AddSingleton<LcuService>();
                 services.AddSingleton<ChampionDataService>();
+                services.AddSingleton<RiotApiService>();
                 services.AddHttpClient<ApiSyncService>();
                 
                 services.AddSingleton<TrayBackgroundService>();

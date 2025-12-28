@@ -202,6 +202,14 @@ public class TrayBackgroundService : BackgroundService
                 return;
             }
             
+            // Wait for LP to update on Riot's side (takes a few seconds after game ends)
+            _logger.LogInformation("Waiting for LP update...");
+            await Task.Delay(3000);
+            
+            // Fetch fresh ranked stats AFTER the delay to get updated LP
+            var freshRankedStats = await _lcuService.GetRankedStatsAsync();
+            _cachedRankedStats = freshRankedStats ?? _cachedRankedStats;
+            
             var match = Helpers.DataMapper.MapToMatchEntry(eogStats, _cachedRankedStats, _activeProfileId, gameDetails);
             
             var success = await _apiSyncService.SyncMatchAsync(match);
