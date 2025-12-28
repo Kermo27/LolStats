@@ -175,21 +175,15 @@ public class TrayBackgroundService : BackgroundService
         
         try
         {
-            const int RANKED_SOLO_DUO_QUEUE_ID = 420;
-            
-            // Fetch game details
+            // Fetch game details for accurate queue info
             var gameDetails = await _lcuService.GetGameDetailsAsync(eogStats.GameId);
             if (gameDetails != null)
             {
                 eogStats.QueueId = gameDetails.QueueId;
             }
             
-            if (eogStats.QueueId != RANKED_SOLO_DUO_QUEUE_ID)
-            {
-                _logger.LogInformation("Skipping non-ranked match (queueId: {QueueId})", eogStats.QueueId);
-                StatusChanged?.Invoke(this, "Skipped: Not Ranked Solo/Duo");
-                return;
-            }
+            var gameMode = Helpers.DataMapper.MapQueueIdToGameMode(eogStats.QueueId);
+            _logger.LogInformation("Processing {GameMode} match (queueId: {QueueId})", gameMode, eogStats.QueueId);
             
             if (_activeProfileId == Guid.Empty)
             {
@@ -204,7 +198,7 @@ public class TrayBackgroundService : BackgroundService
             
             if (success)
             {
-                StatusChanged?.Invoke(this, $"Synced: {match.Champion} ({(match.Win ? "Win" : "Loss")})");
+                StatusChanged?.Invoke(this, $"Synced: {match.Champion} ({gameMode} - {(match.Win ? "Win" : "Loss")})");
             }
             else
             {

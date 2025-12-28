@@ -2,7 +2,6 @@
 using LolStatsTracker.API.Services.MilestoneService;
 using LolStatsTracker.Shared.Models;
 using Microsoft.EntityFrameworkCore;
-using LolStatsTracker.Shared.Constants;
 
 namespace LolStatsTracker.API.Services.MatchService;
 
@@ -66,6 +65,8 @@ public class MatchService : IMatchService
         existingMatch.CurrentTier = updatedMatch.CurrentTier;
         existingMatch.CurrentDivision = updatedMatch.CurrentDivision;
         existingMatch.CurrentLp = updatedMatch.CurrentLp;
+        existingMatch.GameMode = updatedMatch.GameMode;
+        existingMatch.QueueId = updatedMatch.QueueId;
         
         existingMatch.ProfileId = profileId;
 

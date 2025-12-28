@@ -7,6 +7,7 @@
 <MudTable Items="Matches" Hover="true" Bordered="false" Striped="true" Virtualize="true" Class="rounded-xl glass-card" Dense="true">
     <HeaderContent>
         <MudTh>Date</MudTh>
+        <MudTh>Mode</MudTh>
         <MudTh>Role</MudTh> 
         <MudTh>Champion</MudTh>
         <MudTh>Info (Lane)</MudTh> 
@@ -24,13 +25,29 @@
             <MudText Typo="Typo.body2">@context.Date.ToString("dd-MM-yyyy")</MudText>
         </MudTd>
 
+        <MudTd DataLabel="Mode">
+            <MudChip T="string" Size="Size.Small" 
+                     Color="@(context.GameMode.Contains("Ranked") ? Color.Primary : 
+                              context.GameMode == "ARAM" ? Color.Secondary : 
+                              context.GameMode.Contains("URF") ? Color.Warning : Color.Default)">
+                @context.GameMode
+            </MudChip>
+        </MudTd>
+
         <MudTd DataLabel="Role">
-            <MudTooltip Text="@context.Role">
-                <img src="@LeagueAssetsService.GetRoleIconUrl(context.Role)" 
-                     alt="@context.Role" 
-                     width="28" 
-                     height="28" 
-                     style="filter: grayscale(0.2);" /> </MudTooltip>
+            @if (context.IsSummonersRift)
+            {
+                <MudTooltip Text="@context.Role">
+                    <img src="@LeagueAssetsService.GetRoleIconUrl(context.Role)" 
+                         alt="@context.Role" 
+                         width="28" 
+                         height="28" 
+                         style="filter: grayscale(0.2);" /> </MudTooltip>
+            }
+            else
+            {
+                <MudText Typo="Typo.caption" Class="text-muted">-</MudText>
+            }
         </MudTd>
 
         <MudTd DataLabel="Champion">

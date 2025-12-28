@@ -133,15 +133,20 @@ public static class DataMapper
         var playerTeam = eogStats.Teams.FirstOrDefault(t => t.Players.Any(p => p.TeamId == sourcePlayer.TeamId));
         var isWin = playerTeam?.IsWinningTeam ?? sourcePlayer.Stats.Win;
         
-        // Detect lane participants for all roles
-        var (laneAlly, laneEnemy, laneEnemyAlly) = DetectLaneParticipants(eogStats, sourcePlayer, position);
+        // Detect lane participants for Summoner's Rift modes
+        var gameMode = MapQueueIdToGameMode(eogStats.QueueId);
+        var isSummonersRift = gameMode is "Ranked Solo" or "Ranked Flex" or "Normal";
+        
+        var (laneAlly, laneEnemy, laneEnemyAlly) = isSummonersRift 
+            ? DetectLaneParticipants(eogStats, sourcePlayer, position)
+            : ("", "", "");
         
         var match = new MatchEntry
         {
             Id = Guid.NewGuid(),
             ProfileId = profileId,
             Champion = championName,
-            Role = position,
+            Role = isSummonersRift ? position : "N/A",
             LaneAlly = laneAlly,
             LaneEnemy = laneEnemy,
             LaneEnemyAlly = laneEnemyAlly,
@@ -154,11 +159,26 @@ public static class DataMapper
             Date = DateTime.Now,
             CurrentTier = rankedStats?.Tier ?? "Unranked",
             CurrentDivision = ParseDivision(rankedStats?.Division),
-            CurrentLp = rankedStats?.LeaguePoints ?? 0
+            CurrentLp = rankedStats?.LeaguePoints ?? 0,
+            GameMode = gameMode,
+            QueueId = eogStats.QueueId
         };
         
         return match;
     }
+
+    public static string MapQueueIdToGameMode(int queueId) => queueId switch
+    {
+        420 => "Ranked Solo",
+        440 => "Ranked Flex",
+        400 or 430 => "Normal",
+        450 => "ARAM",
+        4200 => "ARAM Mayhem",
+        900 => "ARURF",
+        1900 => "URF",
+        1700 => "Arena",
+        _ => "Other"
+    };
     
     private static string GetChampionName(int championId)
     {
@@ -213,15 +233,7 @@ public static class DataMapper
             _ => 4
         };
     }
-    
-    /// <summary>
-    /// Detects lane participants based on role mapping:
-    /// Top: Ally=Jungler, Enemy=Top, EnemyAlly=Jungler
-    /// Jungle: Ally=Mid, Enemy=Jungle, EnemyAlly=Mid
-    /// Mid: Ally=Jungler, Enemy=Mid, EnemyAlly=Jungler
-    /// ADC: Ally=Support, Enemy=ADC, EnemyAlly=Support
-    /// Support: Ally=ADC, Enemy=Support, EnemyAlly=ADC
-    /// </summary>
+
     private static (string laneAlly, string laneEnemy, string laneEnemyAlly) DetectLaneParticipants(
         LcuEndOfGameStats eogStats, LcuPlayer localPlayer, string position)
     {

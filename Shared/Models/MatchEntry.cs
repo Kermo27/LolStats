@@ -25,8 +25,13 @@ public class MatchEntry
     public string CurrentTier { get; set; } = "Unranked";
     public int CurrentDivision { get; set; } = 4;
     public int CurrentLp { get; set; }
+    public string GameMode { get; set; } = "Ranked Solo";
+    public int QueueId { get; set; } = 420;
     public string? Notes { get; set; }
     public Guid? ProfileId { get; set; }
+
+    [NotMapped]
+    public bool IsSummonersRift => GameMode is "Ranked Solo" or "Ranked Flex" or "Normal";
     
     [NotMapped]
     public string KdaDisplay => $"{Kills}/{Deaths}/{Assists}";
