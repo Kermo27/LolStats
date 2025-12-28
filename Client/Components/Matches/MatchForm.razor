@@ -17,15 +17,32 @@
             
             <MudGrid Spacing="3">
                 
-                <MudItem xs="12">
-                    <MudSelect T="string" Label="Rola" @bind-Value="Model.Role" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
-                        <MudSelectItem Value="@("Top")">Top Lane</MudSelectItem>
-                        <MudSelectItem Value="@("Jungle")">Jungle</MudSelectItem>
-                        <MudSelectItem Value="@("Mid")">Mid Lane</MudSelectItem>
-                        <MudSelectItem Value="@("ADC")">ADC (Bot)</MudSelectItem>
-                        <MudSelectItem Value="@("Support")">Support</MudSelectItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" Label="Game Mode" @bind-Value="Model.GameMode" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem Value="@("Ranked Solo")">Ranked Solo/Duo</MudSelectItem>
+                        <MudSelectItem Value="@("Ranked Flex")">Ranked Flex</MudSelectItem>
+                        <MudSelectItem Value="@("Normal")">Normal</MudSelectItem>
+                        <MudSelectItem Value="@("ARAM")">ARAM</MudSelectItem>
+                        <MudSelectItem Value="@("ARAM Mayhem")">ARAM Mayhem</MudSelectItem>
+                        <MudSelectItem Value="@("ARURF")">ARURF</MudSelectItem>
+                        <MudSelectItem Value="@("URF")">URF</MudSelectItem>
+                        <MudSelectItem Value="@("Arena")">Arena</MudSelectItem>
+                        <MudSelectItem Value="@("Other")">Other</MudSelectItem>
                     </MudSelect>
                 </MudItem>
+                
+                @if (Model.IsSummonersRift)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="string" Label="Rola" @bind-Value="Model.Role" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                            <MudSelectItem Value="@("Top")">Top Lane</MudSelectItem>
+                            <MudSelectItem Value="@("Jungle")">Jungle</MudSelectItem>
+                            <MudSelectItem Value="@("Mid")">Mid Lane</MudSelectItem>
+                            <MudSelectItem Value="@("ADC")">ADC (Bot)</MudSelectItem>
+                            <MudSelectItem Value="@("Support")">Support</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                }
 
                 <MudItem xs="12" sm="6">
                      <div class="d-flex gap-3 align-center">
@@ -43,29 +60,33 @@
                      </div>
                 </MudItem>
 
-                @if (Model.Role == "ADC")
+                <!-- Lane Partners - only for Summoner's Rift modes -->
+                @if (Model.IsSummonersRift)
                 {
-                    <MudItem xs="12" sm="6">
-                        <MudAutocomplete T="string" @bind-Value="Model.Support" Label="Support" SearchFunc="SearchChampions" Variant="Variant.Outlined" />
+                    <MudItem xs="12" sm="4">
+                        <MudAutocomplete T="string" @bind-Value="Model.LaneAlly" 
+                                         Label="@GetLaneAllyLabel()" 
+                                         SearchFunc="SearchChampions" 
+                                         Variant="Variant.Outlined" />
                     </MudItem>
-                    <MudItem xs="12" sm="6">
-                        <MudAutocomplete T="string" @bind-Value="Model.EnemyBot" Label="Enemy Bot (Carry)" SearchFunc="SearchChampions" Variant="Variant.Outlined" />
+                    <MudItem xs="12" sm="4">
+                        <MudAutocomplete T="string" @bind-Value="Model.LaneEnemy" 
+                                         Label="@GetLaneEnemyLabel()" 
+                                         SearchFunc="SearchChampions" 
+                                         Variant="Variant.Outlined" />
                     </MudItem>
-                    <MudItem xs="12" sm="6">
-                        <MudAutocomplete T="string" @bind-Value="Model.EnemySupport" Label="Enemy Support" SearchFunc="SearchChampions" Variant="Variant.Outlined" />
-                    </MudItem>
-                }
-                else
-                {
-                    <MudItem xs="12" sm="6" Class="d-flex align-center">
-                        <MudAlert Severity="Severity.Info" NoIcon="true">Stats for DUO are disabled for @Model.Role.</MudAlert>
+                    <MudItem xs="12" sm="4">
+                        <MudAutocomplete T="string" @bind-Value="Model.LaneEnemyAlly" 
+                                         Label="@GetLaneEnemyAllyLabel()" 
+                                         SearchFunc="SearchChampions" 
+                                         Variant="Variant.Outlined" />
                     </MudItem>
                 }
 
                 <MudItem xs="4" sm="2"><MudNumericField @bind-Value="Model.Kills" Label="Kills" Variant="Variant.Outlined" HideSpinButtons="true" /></MudItem>
                 <MudItem xs="4" sm="2"><MudNumericField @bind-Value="Model.Deaths" Label="Deaths" Variant="Variant.Outlined" HideSpinButtons="true" /></MudItem>
                 <MudItem xs="4" sm="2"><MudNumericField @bind-Value="Model.Assists" Label="Assists" Variant="Variant.Outlined" HideSpinButtons="true" /></MudItem>
-                <MudItem xs="6" sm="3"><MudNumericField @bind-Value="Model.Cs" Label="CS" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="6" sm="3"><MudNumericField @bind-Value="Model.Cs" Label="@(Model.Role == "Support" ? "Vision Score" : "CS")" Variant="Variant.Outlined" /></MudItem>
                 <MudItem xs="6" sm="3"><MudNumericField @bind-Value="Model.GameLengthMinutes" Label="Minutes" Variant="Variant.Outlined" /></MudItem>
 
                 <MudItem xs="12"><MudDivider Class="my-2"/><MudText Color="Color.Primary">RANKED DATA</MudText></MudItem>
@@ -91,14 +112,9 @@
                         <MudSelectItem Value="4">IV</MudSelectItem>
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="6" sm="3">
-                    <MudNumericField @bind-Value="Model.CurrentLp" Label="Current LP" Variant="Variant.Outlined" Min="0" Max="100" />
-                </MudItem>
-                <MudItem xs="6" sm="3">
-                    <MudNumericField @bind-Value="Model.LpChange" Label="LP +/-" Variant="Variant.Outlined" 
-                                     Adornment="Adornment.Start" 
-                                     AdornmentIcon="@(Model.LpChange >= 0 ? Icons.Material.Filled.TrendingUp : Icons.Material.Filled.TrendingDown)"
-                                     AdornmentColor="@(Model.LpChange >= 0 ? Color.Success : Color.Error)" />
+                <MudItem xs="6" sm="6">
+                    <MudNumericField @bind-Value="Model.CurrentLp" Label="LP After Match" Variant="Variant.Outlined" Min="0" Max="100" 
+                                     HelperText="Your LP after this game" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -148,12 +164,35 @@
     private async Task HandleSubmit() => await OnSave.InvokeAsync(Model);
     private async Task CancelEdit() => await OnCancel.InvokeAsync();
     
-    private void OnWinChanged(bool won)
+    private string GetLaneAllyLabel() => Model.Role switch
     {
-        Model.Win = won;
-        if (won && Model.LpChange < 0) Model.LpChange = Math.Abs(Model.LpChange);
-        if (!won && Model.LpChange > 0) Model.LpChange = -Math.Abs(Model.LpChange);
-    }
+        "Top" => "Allied Jungler",
+        "Jungle" => "Allied Mid",
+        "Mid" => "Allied Jungler",
+        "ADC" => "Support",
+        "Support" => "ADC",
+        _ => "Lane Ally"
+    };
+    
+    private string GetLaneEnemyLabel() => Model.Role switch
+    {
+        "Top" => "Enemy Top",
+        "Jungle" => "Enemy Jungler",
+        "Mid" => "Enemy Mid",
+        "ADC" => "Enemy ADC",
+        "Support" => "Enemy Support",
+        _ => "Lane Enemy"
+    };
+    
+    private string GetLaneEnemyAllyLabel() => Model.Role switch
+    {
+        "Top" => "Enemy Jungler",
+        "Jungle" => "Enemy Mid",
+        "Mid" => "Enemy Jungler",
+        "ADC" => "Enemy Support",
+        "Support" => "Enemy ADC",
+        _ => "Lane Enemy Ally"
+    };
     
     private Task<IEnumerable<string>> SearchChampions(string value, CancellationToken token)
     {

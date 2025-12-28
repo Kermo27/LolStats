@@ -34,7 +34,7 @@ public static class RankConstants
         
         return tierValue * 10 + (4 - division);
     }
-
+    
     public static string GetDivisionRoman(int division) => division switch
     {
         1 => "I",

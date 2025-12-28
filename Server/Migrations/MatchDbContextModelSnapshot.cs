@@ -79,22 +79,27 @@ namespace LolStatsTracker.API.Migrations
                     b.Property<int>("Deaths")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("EnemyBot")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("EnemySupport")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("GameLengthMinutes")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("GameMode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Kills")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("LpChange")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("LaneAlly")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LaneEnemy")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LaneEnemyAlly")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
                         .HasColumnType("TEXT");
@@ -102,11 +107,10 @@ namespace LolStatsTracker.API.Migrations
                     b.Property<Guid?>("ProfileId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<int>("QueueId")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<string>("Support")
+                    b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -189,6 +193,46 @@ namespace LolStatsTracker.API.Migrations
                         });
                 });
 
+            modelBuilder.Entity("LolStatsTracker.Shared.Models.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("RefreshTokenExpiry")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .HasDatabaseName("IX_Users_Email");
+
+                    b.HasIndex("Username")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Users_Username");
+
+                    b.ToTable("Users");
+                });
+
             modelBuilder.Entity("LolStatsTracker.Shared.Models.UserProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -202,11 +246,19 @@ namespace LolStatsTracker.API.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("RiotPuuid")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Tag")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("UserProfiles");
                 });
@@ -235,6 +287,14 @@ namespace LolStatsTracker.API.Migrations
                         .HasForeignKey("ProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("LolStatsTracker.Shared.Models.UserProfile", b =>
+                {
+                    b.HasOne("LolStatsTracker.Shared.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 #pragma warning restore 612, 618
         }

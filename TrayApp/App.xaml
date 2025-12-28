@@ -1,0 +1,27 @@
+<Application x:Class="LolStatsTracker.TrayApp.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tb="http://www.hardcodet.net/taskbar"
+             ShutdownMode="OnExplicitShutdown">
+    
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- Tray Icon -->
+            <tb:TaskbarIcon x:Key="TrayIcon"
+                           IconSource="/Assets/icon.ico"
+                           ToolTipText="{Binding ToolTipText}">
+                <tb:TaskbarIcon.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{Binding StatusText}" IsEnabled="False" FontWeight="Bold"/>
+                        <Separator/>
+                        <MenuItem Header="Settings..." Command="{Binding OpenSettingsCommand}"/>
+                        <MenuItem Header="Open Dashboard" Command="{Binding OpenDashboardCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="Exit" Command="{Binding ExitApplicationCommand}"/>
+                    </ContextMenu>
+                </tb:TaskbarIcon.ContextMenu>
+            </tb:TaskbarIcon>
+        </ResourceDictionary>
+    </Application.Resources>
+    
+</Application>

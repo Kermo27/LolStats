@@ -41,8 +41,8 @@ public class StatsService : IStatsService
             .First();
 
         var favSupport = matches
-            .Where(m => !string.IsNullOrEmpty(m.Support))
-            .GroupBy(m => m.Support)
+            .Where(m => m.Role == "ADC" && !string.IsNullOrEmpty(m.LaneAlly))
+            .GroupBy(m => m.LaneAlly)
             .OrderByDescending(g => g.Count())
             .FirstOrDefault();
 
@@ -83,8 +83,8 @@ public class StatsService : IStatsService
             .ToListAsync();
 
         return matches
-            .Where(m => role.ToLower() == "bot" ? !string.IsNullOrEmpty(m.EnemyBot) : !string.IsNullOrEmpty(m.EnemySupport))
-            .GroupBy(m => role.ToLower() == "bot" ? m.EnemyBot : m.EnemySupport)
+            .Where(m => role.ToLower() == "bot" ? !string.IsNullOrEmpty(m.LaneEnemy) : !string.IsNullOrEmpty(m.LaneEnemyAlly))
+            .GroupBy(m => role.ToLower() == "bot" ? m.LaneEnemy : m.LaneEnemyAlly)
             .Select(g => new EnemyStatsDto(
                 ChampionName: g.Key,
                 Games: g.Count(),
@@ -122,14 +122,16 @@ public class StatsService : IStatsService
 
     public async Task<EnchanterUsageSummary> GetEnchanterUsageAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null)
     {
-        var matches = await GetFilteredMatches(profileId, startDate, endDate).ToListAsync();
+        var matches = await GetFilteredMatches(profileId, startDate, endDate)
+            .Where(m => m.Role == "ADC")
+            .ToListAsync();
         var enchanters = ChampionList.Enchanters;
 
-        var mySupportGames = matches.Count(m => !string.IsNullOrWhiteSpace(m.Support));
-        var enemySupportGames = matches.Count(m => !string.IsNullOrWhiteSpace(m.EnemySupport));
+        var mySupportGames = matches.Count(m => !string.IsNullOrWhiteSpace(m.LaneAlly));
+        var enemySupportGames = matches.Count(m => !string.IsNullOrWhiteSpace(m.LaneEnemyAlly));
 
-        var myEnchanterGames = matches.Count(m => enchanters.Contains(m.Support));
-        var enemyEnchanterGames = matches.Count(m => enchanters.Contains(m.EnemySupport));
+        var myEnchanterGames = matches.Count(m => enchanters.Contains(m.LaneAlly));
+        var enemyEnchanterGames = matches.Count(m => enchanters.Contains(m.LaneEnemyAlly));
 
         return new EnchanterUsageSummary(
             MyEnchanterGames: myEnchanterGames,
@@ -146,7 +148,7 @@ public class StatsService : IStatsService
             .ToListAsync();
 
         return matches
-            .GroupBy(m => (m.Champion, m.Support))
+            .GroupBy(m => (m.Champion, m.LaneAlly))
             .Select(g => new DuoSummary
             {
                 Champion = g.Key.Item1,
@@ -168,7 +170,7 @@ public class StatsService : IStatsService
             .ToListAsync();
 
         return matches
-            .GroupBy(m => (m.EnemyBot, m.EnemySupport))
+            .GroupBy(m => (m.LaneEnemy, m.LaneEnemyAlly))
             .Select(g => new DuoSummary
             {
                 Champion = g.Key.Item1,

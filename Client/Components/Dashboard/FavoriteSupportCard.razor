@@ -1,10 +1,10 @@
 ﻿@using LolStatsTracker.Shared.Models
 <MudPaper Class="p-4 rounded-2xl bg-surface shadow-md">
-    <MudText Typo="Typo.h6" Class="font-semibold mb-2">Favorite Support</MudText>
+    <MudText Typo="Typo.h6" Class="font-semibold mb-2">Favorite Lane Ally</MudText>
 
     @if (Favorite != null)
     {
-        <MudText Typo="Typo.subtitle1" Class="font-medium">@Favorite.Support</MudText>
+        <MudText Typo="Typo.subtitle1" Class="font-medium">@Favorite.LaneAlly</MudText>
         <MudText Typo="Typo.body2" Class="text-gray-400">
             Games: <span class="text-gray-200">@Favorite.Games</span> |
             WR: <span class="@UiHelpers.GetWrColor(Favorite.WinRate)">@Favorite.WinRate.ToString("F1")%</span>
@@ -15,19 +15,19 @@
     }
     else
     {
-        <MudText Typo="Typo.body2" Class="text-gray-500 italic">No support data available.</MudText>
+        <MudText Typo="Typo.body2" Class="text-gray-500 italic">No lane ally data available.</MudText>
     }
 </MudPaper>
 
 @code {
     [Parameter] public List<MatchEntry> Matches { get; set; } = new();
 
-    private SupportStats? Favorite => Matches
-        .Where(m => !string.IsNullOrEmpty(m.Support))
-        .GroupBy(m => m.Support)
-        .Select(g => new SupportStats
+    private LaneAllyStats? Favorite => Matches
+        .Where(m => !string.IsNullOrEmpty(m.LaneAlly))
+        .GroupBy(m => m.LaneAlly)
+        .Select(g => new LaneAllyStats
         {
-            Support = g.Key!,
+            LaneAlly = g.Key!,
             Games = g.Count(),
             Wins = g.Count(m => m.Win),
             WinRate = Math.Round(100.0 * g.Count(m => m.Win) / g.Count(), 1),
@@ -36,4 +36,13 @@
         .OrderByDescending(s => s.Games)
         .ThenByDescending(s => s.WinRate)
         .FirstOrDefault();
+    
+    private record LaneAllyStats
+    {
+        public string LaneAlly { get; init; } = "";
+        public int Games { get; init; }
+        public int Wins { get; init; }
+        public double WinRate { get; init; }
+        public double AvgKda { get; init; }
+    }
 }

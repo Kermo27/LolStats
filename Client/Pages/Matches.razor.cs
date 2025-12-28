@@ -88,34 +88,10 @@ public partial class Matches : IDisposable
         var lastMatch = matches.First();
         currentMatch.Role = lastMatch.Role;
 
-        var predictedLp = lastMatch.CurrentLp + lastMatch.LpChange;
-        var predictedDiv = lastMatch.CurrentDivision;
-        var predictedTier = lastMatch.CurrentTier;
-
-        while (predictedLp >= 100)
-        {
-            predictedLp -= 100;
-            predictedDiv -= 1;
-
-            if (predictedDiv < 1)
-            {
-                predictedDiv = 4;
-                var currentTierIndex = Array.IndexOf(Tiers, predictedTier);
-                if (currentTierIndex != -1 && currentTierIndex < Tiers.Length - 1)
-                {
-                    predictedTier = Tiers[currentTierIndex + 1];
-                }
-            }
-        }
-
-        if (predictedLp < 0)
-        {
-            predictedLp = 0;
-        }
-
-        currentMatch.CurrentTier = predictedTier;
-        currentMatch.CurrentDivision = predictedDiv;
-        currentMatch.CurrentLp = predictedLp;
+        // Pre-fill with last match's rank (user will update LP after the new game)
+        currentMatch.CurrentTier = lastMatch.CurrentTier;
+        currentMatch.CurrentDivision = lastMatch.CurrentDivision;
+        currentMatch.CurrentLp = lastMatch.CurrentLp;
         currentMatch.Date = DateTime.Now;
     }
 
@@ -153,9 +129,9 @@ public partial class Matches : IDisposable
             ProfileId = match.ProfileId,
             Champion = match.Champion,
             Role = match.Role,
-            Support = match.Support,
-            EnemyBot = match.EnemyBot,
-            EnemySupport = match.EnemySupport,
+            LaneAlly = match.LaneAlly,
+            LaneEnemy = match.LaneEnemy,
+            LaneEnemyAlly = match.LaneEnemyAlly,
             Kills = match.Kills,
             Deaths = match.Deaths,
             Assists = match.Assists,
@@ -163,7 +139,6 @@ public partial class Matches : IDisposable
             GameLengthMinutes = match.GameLengthMinutes,
             Date = match.Date,
             Win = match.Win,
-            LpChange = match.LpChange,
             CurrentTier = match.CurrentTier,
             CurrentDivision = match.CurrentDivision,
             CurrentLp = match.CurrentLp

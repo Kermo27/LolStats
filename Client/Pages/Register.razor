@@ -1,0 +1,147 @@
+@page "/register"
+@using LolStatsTracker.Services.AuthService
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject JwtAuthenticationStateProvider AuthStateProvider
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center" Style="min-height: 80vh;">
+    <MudPaper Elevation="4" Class="pa-8 rounded-lg" Style="width: 100%;">
+        <MudStack Spacing="4">
+            <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Class="mr-2" />
+                Create Account
+            </MudText>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Class="mb-2">
+                    @_errorMessage
+                </MudAlert>
+            }
+
+            <MudTextField @bind-Value="_username"
+                          Label="Username"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Person"
+                          Required="true"
+                          HelperText="Choose a unique username"
+                          Disabled="@_isLoading" />
+
+            <MudTextField @bind-Value="_email"
+                          Label="Email (optional)"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Email"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Email"
+                          Disabled="@_isLoading" />
+
+            <MudTextField @bind-Value="_password"
+                          Label="Password"
+                          Variant="Variant.Outlined"
+                          InputType="@_passwordInputType"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@_passwordIcon"
+                          OnAdornmentClick="TogglePasswordVisibility"
+                          Required="true"
+                          HelperText="Minimum 6 characters"
+                          Disabled="@_isLoading" />
+
+            <MudTextField @bind-Value="_confirmPassword"
+                          Label="Confirm Password"
+                          Variant="Variant.Outlined"
+                          InputType="@_passwordInputType"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@_passwordIcon"
+                          OnAdornmentClick="TogglePasswordVisibility"
+                          Required="true"
+                          Disabled="@_isLoading" />
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       Size="Size.Large"
+                       OnClick="HandleRegister"
+                       Disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Creating account...</span>
+                }
+                else
+                {
+                    <span>Create Account</span>
+                }
+            </MudButton>
+
+            <MudDivider Class="my-4" />
+
+            <MudText Align="Align.Center">
+                Already have an account?
+                <MudLink Href="/login" Color="Color.Primary">Login here</MudLink>
+            </MudText>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string _username = string.Empty;
+    private string _password = string.Empty;
+    private string _confirmPassword = string.Empty;
+    private string? _email;
+    private string? _errorMessage;
+    private bool _isLoading;
+    private bool _passwordVisible;
+
+    private InputType _passwordInputType => _passwordVisible ? InputType.Text : InputType.Password;
+    private string _passwordIcon => _passwordVisible ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
+
+    private void TogglePasswordVisibility() => _passwordVisible = !_passwordVisible;
+
+    private async Task HandleRegister()
+    {
+        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password))
+        {
+            _errorMessage = "Username and password are required";
+            return;
+        }
+
+        if (_password.Length < 6)
+        {
+            _errorMessage = "Password must be at least 6 characters";
+            return;
+        }
+
+        if (_password != _confirmPassword)
+        {
+            _errorMessage = "Passwords do not match";
+            return;
+        }
+
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var (success, error, token) = await AuthService.RegisterAsync(_username, _password, _email);
+
+            if (success)
+            {
+                AuthStateProvider.NotifyAuthenticationStateChanged();
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                _errorMessage = error ?? "Registration failed";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

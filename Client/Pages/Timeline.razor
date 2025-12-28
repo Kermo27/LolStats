@@ -85,9 +85,7 @@
                                             <span class="kda-kills">@match.Kills</span>/<span class="kda-deaths">@match.Deaths</span>/<span class="kda-assists">@match.Assists</span>
                                         </MudText>
                                         <MudText Typo="Typo.body2" Color="Color.Secondary">@match.Cs CS • @match.GameLengthMinutes min</MudText>
-                                        <MudText Typo="Typo.body2" Color="@(match.LpChange >= 0 ? Color.Success : Color.Error)">
-                                            @(match.LpChange > 0 ? "+" : "")@match.LpChange LP
-                                        </MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@match.CurrentTier @match.CurrentDivision • @match.CurrentLp LP</MudText>
                                     </div>
                                     @if (!string.IsNullOrEmpty(match.Notes))
                                     {

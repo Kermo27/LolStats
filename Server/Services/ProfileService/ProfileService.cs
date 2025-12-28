@@ -13,22 +13,28 @@ public class ProfileService : IProfileService
         _context = context;
     }
     
-    public async Task<List<UserProfile>> GetAllAsync()
+    public async Task<List<UserProfile>> GetAllAsync(Guid userId)
     {
         return await _context.UserProfiles
-            .OrderByDescending(p => p.IsDefault) // Domyślny na górze
+            .Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.IsDefault)
             .ThenBy(p => p.Name)
             .ToListAsync();
     }
 
-    public async Task<UserProfile?> GetByIdAsync(Guid id)
+    public async Task<UserProfile?> GetByIdAsync(Guid id, Guid userId)
     {
-        return await _context.UserProfiles.FindAsync(id);
+        return await _context.UserProfiles
+            .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
     }
 
-    public async Task<UserProfile> CreateAsync(UserProfile profile)
+    public async Task<UserProfile> CreateAsync(UserProfile profile, Guid userId)
     {
-        if (!await _context.UserProfiles.AnyAsync())
+        profile.UserId = userId;
+        
+        // Check if this is the first profile for this user
+        var hasProfiles = await _context.UserProfiles.AnyAsync(p => p.UserId == userId);
+        if (!hasProfiles)
         {
             profile.IsDefault = true;
         }
@@ -38,21 +44,29 @@ public class ProfileService : IProfileService
         return profile;
     }
 
-    public Task<UserProfile> UpdateAsync(UserProfile profile)
+    public async Task<UserProfile> UpdateAsync(UserProfile profile, Guid userId)
     {
-        _context.Entry(profile).CurrentValues.SetValues(profile);
-        return _context.SaveChangesAsync().ContinueWith(_ => profile);
+        var existing = await _context.UserProfiles
+            .FirstOrDefaultAsync(p => p.Id == profile.Id && p.UserId == userId);
+            
+        if (existing == null)
+            throw new InvalidOperationException("Profile not found or access denied");
+
+        existing.Name = profile.Name;
+        existing.Tag = profile.Tag;
+        existing.RiotPuuid = profile.RiotPuuid;
+        
+        await _context.SaveChangesAsync();
+        return existing;
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id, Guid userId)
     {
-        var profile = await _context.UserProfiles.FindAsync(id);
+        var profile = await _context.UserProfiles
+            .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+            
         if (profile == null) return false;
 
-        // If we delete the default profile, it would be a good idea to assign the flag to another one,
-        // but for now, let's just allow it to be deleted.
-        // Remember: Cascade Delete in DbContext will also delete all matches for that profile!
-        
         _context.UserProfiles.Remove(profile);
         await _context.SaveChangesAsync();
         return true;
