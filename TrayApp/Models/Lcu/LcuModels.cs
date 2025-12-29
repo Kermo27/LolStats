@@ -330,12 +330,18 @@ public class LcuPlayerStats
     [JsonProperty("LEVEL")]
     public int Level { get; set; }
     
-    // Spell Casts
+    // Spell Casts (Q, W, E, R)
     [JsonProperty("SPELL1_CAST")]
     public int Spell1Cast { get; set; }
     
     [JsonProperty("SPELL2_CAST")]
     public int Spell2Cast { get; set; }
+    
+    [JsonProperty("SPELL3_CAST")]
+    public int Spell3Cast { get; set; }
+    
+    [JsonProperty("SPELL4_CAST")]
+    public int Spell4Cast { get; set; }
     
     // Surrender / Early
     [JsonProperty("GAME_ENDED_IN_SURRENDER")]

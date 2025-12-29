@@ -110,10 +110,14 @@ public class MatchEntry
     public int? ChampionLevel { get; set; }
     
     // Summoner Spells
-    public int? Spell1Id { get; set; }
-    public int? Spell2Id { get; set; }
-    public int? Spell1Casts { get; set; }
-    public int? Spell2Casts { get; set; }
+    public int? Spell1Id { get; set; }  // e.g. Flash
+    public int? Spell2Id { get; set; }  // e.g. Heal
+    
+    // Champion Ability Casts (Q, W, E, R)
+    public int? Spell1Casts { get; set; }  // Q
+    public int? Spell2Casts { get; set; }  // W
+    public int? Spell3Casts { get; set; }  // E
+    public int? Spell4Casts { get; set; }  // R
     
     // Items (stored as comma-separated IDs)
     public string? ItemsBuild { get; set; }
