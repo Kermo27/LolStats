@@ -179,10 +179,7 @@ public class LcuService : IDisposable
         // 3. Try Registry
         try
         {
-            // Check HKCU/HKLM for LoL install path
             // Note: Registry paths vary, typical is HKEY_CURRENT_USER\Software\Riot Games\RADS or similar
-            // But usually just searching drives is reliable enough if WMI fails.
-            // Let's rely on standard "Riot Games" folder scan for now as registry is often messy.
         }
         catch {}
 
