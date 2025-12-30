@@ -1,0 +1,39 @@
+@using LolStatsTracker.Services.LeagueAssetsService
+
+<MudPaper Class="rounded-xl glass-card" Elevation="0" Height="100%">
+    <span class="card-title">Best Duo</span>
+    @if (Duos.Any())
+    {
+        var best = Duos.First();
+        <div class="d-flex justify-center align-center gap-4 my-2">
+            <div class="d-flex flex-column align-center">
+                <img src="@LeagueAssets.GetChampionIconUrl(best.Champion)" 
+                     height="64" width="64" 
+                     style="border-radius: 50%; border: 3px solid var(--mud-palette-primary); object-fit: cover;" />
+                <MudText Typo="Typo.caption" Class="mt-1">@best.Champion</MudText>
+            </div>
+            
+            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+            
+            <div class="d-flex flex-column align-center">
+                <img src="@LeagueAssets.GetChampionIconUrl(best.Support)" 
+                     height="64" width="64" 
+                     style="border-radius: 50%; border: 3px solid var(--mud-palette-info); object-fit: cover;" />
+                <MudText Typo="Typo.caption" Class="mt-1">@best.Support</MudText>
+            </div>
+        </div>
+        <div class="d-flex justify-center mt-2 gap-2">
+            <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small">@best.WinRate.ToString("F0")% WR</MudChip>
+            <MudChip T="string" Color="Color.Surface" Variant="Variant.Outlined" Size="Size.Small">@best.Count games</MudChip>
+        </div>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info">Not enough data.</MudAlert>
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public List<Shared.DTOs.DuoSummary> Duos { get; set; } = new();
+    [Inject] private ILeagueAssetsService LeagueAssets { get; set; } = null!;
+}

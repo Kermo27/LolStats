@@ -1,0 +1,113 @@
+:root {
+    --primary-gradient: linear-gradient(135deg, #594ae2 0%, #8b5cf6 100%);
+    --glass-bg: rgba(30, 30, 45, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Glass Card Effect */
+.glass-card {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border) !important;
+    padding: 1.25rem;
+}
+
+/* Gradient Text */
+.gradient-text {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+/* Icon Badge */
+.icon-badge {
+    background: var(--primary-gradient);
+    padding: 12px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Card Title */
+.card-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+/* Victory/Defeat Badges */
+.victory-badge {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: white !important;
+}
+
+.defeat-badge {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    color: white !important;
+}
+
+/* KDA Colors */
+.kda-kills {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.kda-deaths {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.kda-assists {
+    color: #6b7280;
+    font-weight: 600;
+}
+
+/* Text Colors */
+.text-success {
+    color: #10b981 !important;
+}
+
+.text-error {
+    color: #ef4444 !important;
+}
+
+/* Gradient Backgrounds */
+.gradient-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: white !important;
+}
+
+.gradient-primary {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+}
+
+/* Page Header Styling */
+.page-header {
+    margin-bottom: 1.5rem;
+}
+
+/* Stat Card */
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Font Weight */
+.font-weight-bold {
+    font-weight: 700;
+}
+
+/* Heatmap Hover */
+.heatmap-square:hover {
+    opacity: 0.7;
+    border: 1px solid white;
+}

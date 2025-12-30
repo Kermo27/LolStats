@@ -24,15 +24,10 @@ public partial class Matches : IDisposable
     private List<MatchEntry> _allMatches = new();
     private List<MatchEntry> matches = new();
     private bool isEditing;
-
-    private static readonly string[] Tiers =
-    {
-        "Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"
-    };
+    private string _selectedGameMode = "Ranked Solo";
 
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to profile and season changes
         UserState.OnProfileChanged += OnProfileChangedAsync;
         SeasonState.OnSeasonChanged += OnSeasonChangedAsync;
         
@@ -73,8 +68,15 @@ public partial class Matches : IDisposable
     {
         matches = _allMatches
             .Where(m => SeasonState.IsDateInCurrentSeason(m.Date))
+            .Where(m => _selectedGameMode == "All" || m.GameMode == _selectedGameMode)
             .OrderByDescending(m => m.Date)
             .ToList();
+    }
+
+    private void OnGameModeChanged(string mode)
+    {
+        _selectedGameMode = mode;
+        ApplySeasonFilter();
     }
 
     private void PrepareNewMatch()
@@ -87,8 +89,7 @@ public partial class Matches : IDisposable
 
         var lastMatch = matches.First();
         currentMatch.Role = lastMatch.Role;
-
-        // Pre-fill with last match's rank (user will update LP after the new game)
+        
         currentMatch.CurrentTier = lastMatch.CurrentTier;
         currentMatch.CurrentDivision = lastMatch.CurrentDivision;
         currentMatch.CurrentLp = lastMatch.CurrentLp;

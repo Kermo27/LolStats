@@ -1,0 +1,36 @@
+@using LolStatsTracker.Shared.DTOs
+
+<MudPaper Class="rounded-xl glass-card d-flex flex-column" Elevation="0" Height="100%">
+    <span class="card-title">Best Time to Play</span>
+    
+    @if (Stats.BestHourRange != "N/A")
+    {
+        <div class="d-flex gap-4 justify-center flex-grow-1 align-center">
+            <MudTooltip Text="Best performing hour">
+                <div class="d-flex flex-column align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Large" Color="Color.Primary" />
+                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">@Stats.BestHourRange</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Success">@((Stats.BestHourWinrate * 100).ToString("F0"))% WR</MudText>
+                </div>
+            </MudTooltip>
+            
+            <MudDivider Vertical="true" FlexItem="true" />
+            
+            <MudTooltip Text="Best performing day">
+                <div class="d-flex flex-column align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Large" Color="Color.Secondary" />
+                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">@Stats.BestDay</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Success">@((Stats.BestDayWinrate * 100).ToString("F0"))% WR</MudText>
+                </div>
+            </MudTooltip>
+        </div>
+    }
+    else
+    {
+        <MudText Color="Color.Secondary" Class="text-center">Not enough data (min 3 games)</MudText>
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public TimeAnalysisDto Stats { get; set; } = null!;
+}

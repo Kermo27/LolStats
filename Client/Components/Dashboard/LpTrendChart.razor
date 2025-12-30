@@ -1,0 +1,31 @@
+@using LolStatsTracker.Pages
+
+<MudPaper Class="rounded-xl glass-card" Elevation="0">
+    <MudText Typo="Typo.h6" Class="mb-4 gradient-text">LP Trend (20 last games)</MudText>
+    @if (ChartData.Any())
+    {
+        <MudChart ChartType="ChartType.Line" 
+                  ChartSeries="@Series" 
+                  XAxisLabels="@Labels" 
+                  Width="100%" 
+                  Height="300px" 
+                  ChartOptions="@(new ChartOptions { InterpolationOption = InterpolationOption.Straight })" />
+    }
+    @if (RangeInfo != null)
+    {
+        <div class="d-flex justify-space-between mt-3">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Start: <span class="font-weight-bold">@RangeInfo.Value.Start</span></MudText>
+            <MudText Typo="Typo.caption" Color="@(RangeInfo.Value.Gained >= 0 ? Color.Success : Color.Error)">
+                @(RangeInfo.Value.Gained >= 0 ? "+" : "")@RangeInfo.Value.Gained LP
+            </MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Now: <span class="font-weight-bold">@RangeInfo.Value.End</span></MudText>
+        </div>
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public List<LpDataPoint> ChartData { get; set; } = new();
+    [Parameter, EditorRequired] public List<ChartSeries> Series { get; set; } = new();
+    [Parameter, EditorRequired] public string[] Labels { get; set; } = Array.Empty<string>();
+    [Parameter] public (string Start, string End, int Gained)? RangeInfo { get; set; }
+}

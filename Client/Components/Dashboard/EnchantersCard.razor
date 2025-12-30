@@ -1,0 +1,47 @@
+@using LolStatsTracker.Shared.DTOs
+@using LolStatsTracker.Services.LeagueAssetsService
+
+<MudPaper Class="rounded-xl glass-card" Elevation="0" Height="100%">
+    <span class="card-title">Enchanters</span>
+    
+    <div class="mb-4">
+        <div class="d-flex justify-space-between align-center mb-1">
+            <div class="d-flex align-center gap-2">
+                <MudText Typo="Typo.body2">My Team</MudText>
+                @if (!string.IsNullOrEmpty(Stats.MyTopEnchanter))
+                {
+                    <img src="@LeagueAssets.GetChampionIconUrl(Stats.MyTopEnchanter)" 
+                         height="24" width="24" 
+                         style="border-radius: 50%; object-fit: cover;" 
+                         title="@Stats.MyTopEnchanter" />
+                }
+            </div>
+            <MudText Typo="Typo.body2" Class="font-weight-bold">@Stats.MyPercentage.ToString("F1")%</MudText>
+        </div>
+        <MudProgressLinear Color="Color.Primary" Value="@Stats.MyPercentage" Size="Size.Large" Rounded="true" />
+        <MudText Typo="Typo.caption" Color="Color.Secondary">@Stats.MyEnchanterGames enchanter games</MudText>
+    </div>
+
+    <div>
+        <div class="d-flex justify-space-between align-center mb-1">
+            <div class="d-flex align-center gap-2">
+                <MudText Typo="Typo.body2">Enemy Team</MudText>
+                @if (!string.IsNullOrEmpty(Stats.EnemyTopEnchanter))
+                {
+                    <img src="@LeagueAssets.GetChampionIconUrl(Stats.EnemyTopEnchanter)" 
+                         height="24" width="24" 
+                         style="border-radius: 50%; object-fit: cover;" 
+                         title="@Stats.EnemyTopEnchanter" />
+                }
+            </div>
+            <MudText Typo="Typo.body2" Class="font-weight-bold">@Stats.EnemyPercentage.ToString("F1")%</MudText>
+        </div>
+        <MudProgressLinear Color="Color.Error" Value="@Stats.EnemyPercentage" Size="Size.Large" Rounded="true" />
+        <MudText Typo="Typo.caption" Color="Color.Secondary">@Stats.EnemyEnchanterGames enchanter games</MudText>
+    </div>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public EnchanterUsageSummary Stats { get; set; } = null!;
+    [Inject] private ILeagueAssetsService LeagueAssets { get; set; } = null!;
+}

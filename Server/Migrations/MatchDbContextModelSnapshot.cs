@@ -243,6 +243,12 @@ namespace LolStatsTracker.API.Migrations
                     b.Property<int?>("Spell2Id")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("Spell3Casts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("Spell4Casts")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("TimeCCingOthers")
                         .HasColumnType("INTEGER");
 

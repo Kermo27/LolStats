@@ -53,7 +53,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to auth state changes
         AuthStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
         await LoadUserAsync();
     }

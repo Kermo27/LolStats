@@ -6,9 +6,9 @@ namespace LolStatsTracker.Services.Common;
 public abstract class BaseApiService
 {
     protected readonly HttpClient Http;
-    protected readonly UserProfileState UserState;
+    protected readonly IUserProfileState UserState;
 
-    protected BaseApiService(HttpClient http, UserProfileState userState)
+    protected BaseApiService(HttpClient http, IUserProfileState userState)
     {
         Http = http;
         UserState = userState;
@@ -81,5 +81,24 @@ public abstract class BaseApiService
         var request = CreateRequest(HttpMethod.Delete, url);
         var response = await Http.SendAsync(request);
         return response.IsSuccessStatusCode;
+    }
+
+    protected static string BuildUrl(string baseUrl, int? seasonId = null, string? gameMode = null)
+    {
+        var url = baseUrl;
+        var hasQuery = baseUrl.Contains('?');
+        
+        if (seasonId.HasValue)
+        {
+            url += (hasQuery ? "&" : "?") + $"seasonId={seasonId}";
+            hasQuery = true;
+        }
+        
+        if (!string.IsNullOrEmpty(gameMode) && gameMode != "All")
+        {
+            url += (hasQuery ? "&" : "?") + $"gameMode={Uri.EscapeDataString(gameMode)}";
+        }
+        
+        return url;
     }
 }

@@ -18,7 +18,7 @@ public record OverviewDto(double Winrate, string MostPlayedChampion, int MostPla
 public record ChampionStatsDto(string ChampionName, int Games, int Wins, int Losses, double Winrate);
 public record EnemyStatsDto(string ChampionName, int Games, double WinrateAgainst);
 public record ActivityDayDto(DateOnly Date, int GamesPlayed);
-public record EnchanterUsageSummary(int MyEnchanterGames, double MyPercentage, int EnemyEnchanterGames, double EnemyPercentage);
+public record EnchanterUsageSummary(int MyEnchanterGames, double MyPercentage, int EnemyEnchanterGames, double EnemyPercentage, string MyTopEnchanter = "", string EnemyTopEnchanter = "");
 public record DuoSummary {
     public string Champion { get; set; } = "";
     public string Support { get; set; } = "";

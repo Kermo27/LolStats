@@ -1,0 +1,46 @@
+@using LolStatsTracker.Shared.DTOs
+
+<MudPaper Class="rounded-xl glass-card d-flex flex-column align-center justify-center text-center" Elevation="0" Height="100%">
+    <span class="card-title">Current Streak</span>
+    
+    @if (Streak.Count > 0)
+    {
+        <div class="d-flex align-center gap-3">
+            <MudIcon Icon="@(Streak.IsWinStreak ? Icons.Material.Filled.LocalFireDepartment : Icons.Material.Filled.HeartBroken)" 
+                     Size="Size.Large"
+                     Color="@(Streak.IsWinStreak ? Color.Warning : Color.Error)" />
+            <MudText Typo="Typo.h2" Color="@(Streak.IsWinStreak ? Color.Warning : Color.Error)" Class="font-weight-bold">
+                @Streak.Count
+            </MudText>
+        </div>
+        
+        <MudText Typo="Typo.subtitle1" Class="mt-2" Color="@(Streak.IsWinStreak ? Color.Warning : Color.Error)">
+            @(Streak.IsWinStreak ? "Win Streak 🔥" : "Loss Streak 💀")
+        </MudText>
+        
+        <MudDivider Class="my-3 w-100" Style="opacity: 0.3" />
+        
+        <div class="d-flex gap-4">
+            <MudTooltip Text="Best win streak this season">
+                <div class="d-flex flex-column align-center">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Best</MudText>
+                    <MudText Typo="Typo.h6" Color="Color.Success" Class="font-weight-bold">@Streak.BestWinStreak 🔥</MudText>
+                </div>
+            </MudTooltip>
+            <MudTooltip Text="Worst loss streak this season">
+                <div class="d-flex flex-column align-center">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Worst</MudText>
+                    <MudText Typo="Typo.h6" Color="Color.Error" Class="font-weight-bold">@Streak.WorstLossStreak 💀</MudText>
+                </div>
+            </MudTooltip>
+        </div>
+    }
+    else
+    {
+        <MudText Color="Color.Secondary">No matches yet</MudText>
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public StreakDto Streak { get; set; } = null!;
+}

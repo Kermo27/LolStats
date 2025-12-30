@@ -15,7 +15,7 @@ public class StatsService : IStatsService
         _db = db;
     }
 
-    private IQueryable<MatchEntry> GetFilteredMatches(Guid profileId, DateTime? startDate, DateTime? endDate)
+    private IQueryable<MatchEntry> GetFilteredMatches(Guid profileId, DateTime? startDate, DateTime? endDate, string? gameMode = null)
     {
         var query = _db.Matches.Where(m => m.ProfileId == profileId);
         
@@ -25,12 +25,15 @@ public class StatsService : IStatsService
         if (endDate.HasValue)
             query = query.Where(m => m.Date <= endDate.Value);
         
+        if (!string.IsNullOrEmpty(gameMode) && gameMode != "All")
+            query = query.Where(m => m.GameMode == gameMode);
+        
         return query;
     }
     
-    public async Task<OverviewDto> GetOverviewAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<OverviewDto> GetOverviewAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
     {
-        var matches = await GetFilteredMatches(profileId, startDate, endDate).ToListAsync();
+        var matches = await GetFilteredMatches(profileId, startDate, endDate, gameMode).ToListAsync();
         if (!matches.Any()) return new OverviewDto(0, "", 0, "", 0);
         
         var winrate = matches.Count(m => m.Win) / (double)matches.Count;
@@ -55,9 +58,9 @@ public class StatsService : IStatsService
         );
     }
 
-    public async Task<List<ChampionStatsDto>> GetChampionStatsAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<List<ChampionStatsDto>> GetChampionStatsAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
     {
-        var matches = await GetFilteredMatches(profileId, startDate, endDate).ToListAsync();
+        var matches = await GetFilteredMatches(profileId, startDate, endDate, gameMode).ToListAsync();
 
         return matches
             .GroupBy(m => m.Champion)
@@ -76,9 +79,9 @@ public class StatsService : IStatsService
             .ToList();
     }
 
-    public async Task<List<EnemyStatsDto>> GetEnemyStatsAsync(Guid profileId, string role, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<List<EnemyStatsDto>> GetEnemyStatsAsync(Guid profileId, string role, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
     {
-        var matches = await GetFilteredMatches(profileId, startDate, endDate)
+        var matches = await GetFilteredMatches(profileId, startDate, endDate, gameMode)
             .Where(m => m.Role == "ADC")
             .ToListAsync();
 
@@ -94,7 +97,7 @@ public class StatsService : IStatsService
             .ToList();
     }
 
-    public async Task<List<ActivityDayDto>> GetActivityAsync(Guid profileId, int months, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<List<ActivityDayDto>> GetActivityAsync(Guid profileId, int months, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
     {
         var defaultStart = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-months));
         
@@ -108,6 +111,9 @@ public class StatsService : IStatsService
         if (endDate.HasValue)
             query = query.Where(m => m.Date <= endDate.Value);
         
+        if (!string.IsNullOrEmpty(gameMode) && gameMode != "All")
+            query = query.Where(m => m.GameMode == gameMode);
+        
         var matches = await query.ToListAsync();
 
         return matches
@@ -120,9 +126,9 @@ public class StatsService : IStatsService
             .ToList();
     }
 
-    public async Task<EnchanterUsageSummary> GetEnchanterUsageAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<EnchanterUsageSummary> GetEnchanterUsageAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
     {
-        var matches = await GetFilteredMatches(profileId, startDate, endDate)
+        var matches = await GetFilteredMatches(profileId, startDate, endDate, gameMode)
             .Where(m => m.Role == "ADC")
             .ToListAsync();
         var enchanters = ChampionList.Enchanters;
@@ -132,18 +138,33 @@ public class StatsService : IStatsService
 
         var myEnchanterGames = matches.Count(m => enchanters.Contains(m.LaneAlly));
         var enemyEnchanterGames = matches.Count(m => enchanters.Contains(m.LaneEnemyAlly));
+        
+        // Find most common enchanter for my team and enemy team
+        var myTopEnchanter = matches
+            .Where(m => enchanters.Contains(m.LaneAlly))
+            .GroupBy(m => m.LaneAlly)
+            .OrderByDescending(g => g.Count())
+            .FirstOrDefault()?.Key;
+            
+        var enemyTopEnchanter = matches
+            .Where(m => enchanters.Contains(m.LaneEnemyAlly))
+            .GroupBy(m => m.LaneEnemyAlly)
+            .OrderByDescending(g => g.Count())
+            .FirstOrDefault()?.Key;
 
         return new EnchanterUsageSummary(
             MyEnchanterGames: myEnchanterGames,
             MyPercentage: mySupportGames == 0 ? 0 : (double)myEnchanterGames / mySupportGames * 100,
             EnemyEnchanterGames: enemyEnchanterGames,
-            EnemyPercentage: enemySupportGames == 0 ? 0 : (double)enemyEnchanterGames / enemySupportGames * 100
+            EnemyPercentage: enemySupportGames == 0 ? 0 : (double)enemyEnchanterGames / enemySupportGames * 100,
+            MyTopEnchanter: myTopEnchanter ?? "",
+            EnemyTopEnchanter: enemyTopEnchanter ?? ""
         );
     }
 
-    public async Task<List<DuoSummary>> GetBestDuosAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<List<DuoSummary>> GetBestDuosAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
     {
-        var matches = await GetFilteredMatches(profileId, startDate, endDate)
+        var matches = await GetFilteredMatches(profileId, startDate, endDate, gameMode)
             .Where(m => m.Role == "ADC")
             .ToListAsync();
 
@@ -163,9 +184,9 @@ public class StatsService : IStatsService
             .ToList();
     }
 
-    public async Task<List<DuoSummary>> GetWorstEnemyDuosAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<List<DuoSummary>> GetWorstEnemyDuosAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
     {
-        var matches = await GetFilteredMatches(profileId, startDate, endDate)
+        var matches = await GetFilteredMatches(profileId, startDate, endDate, gameMode)
             .Where(m => m.Role == "ADC")
             .ToListAsync();
 
@@ -185,9 +206,9 @@ public class StatsService : IStatsService
             .ToList();
     }
 
-    public async Task<StreakDto> GetStreakAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<StreakDto> GetStreakAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
     {
-        var matches = await GetFilteredMatches(profileId, startDate, endDate)
+        var matches = await GetFilteredMatches(profileId, startDate, endDate, gameMode)
             .OrderByDescending(m => m.Date)
             .ToListAsync();
 
@@ -253,9 +274,9 @@ public class StatsService : IStatsService
         };
     }
 
-    public async Task<TimeAnalysisDto> GetTimeAnalysisAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<TimeAnalysisDto> GetTimeAnalysisAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
     {
-        var matches = await GetFilteredMatches(profileId, startDate, endDate).ToListAsync();
+        var matches = await GetFilteredMatches(profileId, startDate, endDate, gameMode).ToListAsync();
         
         if (!matches.Any())
         {
@@ -298,11 +319,15 @@ public class StatsService : IStatsService
         };
     }
 
-    public async Task<TiltStatusDto> GetTiltStatusAsync(Guid profileId)
+    public async Task<TiltStatusDto> GetTiltStatusAsync(Guid profileId, string? gameMode = null)
     {
         var today = DateTime.Today;
-        var recentMatches = await _db.Matches
-            .Where(m => m.ProfileId == profileId)
+        var query = _db.Matches.Where(m => m.ProfileId == profileId);
+        
+        if (!string.IsNullOrEmpty(gameMode) && gameMode != "All")
+            query = query.Where(m => m.GameMode == gameMode);
+            
+        var recentMatches = await query
             .OrderByDescending(m => m.Date)
             .Take(10)
             .ToListAsync();
@@ -360,19 +385,19 @@ public class StatsService : IStatsService
         };
     }
 
-    public async Task<StatsSummaryDto> GetStatsSummaryAsync(Guid profileId, int activityMonths = 6, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<StatsSummaryDto> GetStatsSummaryAsync(Guid profileId, int activityMonths = 6, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
     {
-        var overviewTask = GetOverviewAsync(profileId, startDate, endDate);
-        var championStatsTask = GetChampionStatsAsync(profileId, startDate, endDate);
-        var enemyBotTask = GetEnemyStatsAsync(profileId, "bot", startDate, endDate);
-        var enemySupportTask = GetEnemyStatsAsync(profileId, "support", startDate, endDate);
-        var activityTask = GetActivityAsync(profileId, activityMonths, startDate, endDate);
-        var enchanterTask = GetEnchanterUsageAsync(profileId, startDate, endDate);
-        var bestDuosTask = GetBestDuosAsync(profileId, startDate, endDate);
-        var worstEnemyDuosTask = GetWorstEnemyDuosAsync(profileId, startDate, endDate);
-        var streakTask = GetStreakAsync(profileId, startDate, endDate);
-        var timeAnalysisTask = GetTimeAnalysisAsync(profileId, startDate, endDate);
-        var tiltStatusTask = GetTiltStatusAsync(profileId);
+        var overviewTask = GetOverviewAsync(profileId, startDate, endDate, gameMode);
+        var championStatsTask = GetChampionStatsAsync(profileId, startDate, endDate, gameMode);
+        var enemyBotTask = GetEnemyStatsAsync(profileId, "bot", startDate, endDate, gameMode);
+        var enemySupportTask = GetEnemyStatsAsync(profileId, "support", startDate, endDate, gameMode);
+        var activityTask = GetActivityAsync(profileId, activityMonths, startDate, endDate, gameMode);
+        var enchanterTask = GetEnchanterUsageAsync(profileId, startDate, endDate, gameMode);
+        var bestDuosTask = GetBestDuosAsync(profileId, startDate, endDate, gameMode);
+        var worstEnemyDuosTask = GetWorstEnemyDuosAsync(profileId, startDate, endDate, gameMode);
+        var streakTask = GetStreakAsync(profileId, startDate, endDate, gameMode);
+        var timeAnalysisTask = GetTimeAnalysisAsync(profileId, startDate, endDate, gameMode);
+        var tiltStatusTask = GetTiltStatusAsync(profileId, gameMode);
 
         await Task.WhenAll(overviewTask, championStatsTask, enemyBotTask, enemySupportTask,
             activityTask, enchanterTask, bestDuosTask, worstEnemyDuosTask, streakTask, timeAnalysisTask, tiltStatusTask);

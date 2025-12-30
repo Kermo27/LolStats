@@ -6,8 +6,6 @@ namespace LolStatsTracker.Services.LeagueAssetsService;
 public class LeagueAssetsService : ILeagueAssetsService
 {
     private const string CDragonRoleUrl = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/honor/roleicon_";
-    // We still need this base URL for constructing image paths unless we proxy images too.
-    // Given the task is about logic/data, we keep image loading from CDN for now but fetch data from Server.
     private const string DDragonBaseUrl = "https://ddragon.leagueoflegends.com/cdn"; 
     
     private readonly HttpClient _http;
@@ -35,11 +33,9 @@ public class LeagueAssetsService : ILeagueAssetsService
         {
             if (IsInitialized) return; // Double-check after acquiring lock
             
-            // 1. Get Version from Server
             var version = await GetLatestVersionAsync();
             _currentVersion = version;
             
-            // 2. Get Champions from Server
             var response = await _http.GetFromJsonAsync<DataDragonResponse>("/api/assets/champions");
 
             if (response?.Data != null)
@@ -104,10 +100,6 @@ public class LeagueAssetsService : ILeagueAssetsService
     {
         try
         {
-             // Call Server API instead of DDragon directly
-             // The API returns the version string directly (e.g. "14.23.1")
-             // Note: Controller returns ActionResult<string>, so checks are needed or just ReadAsString
-             // But GetFromJsonAsync<string> expects a JSON JSON string "14.23.1" which Ok("val") produces.
              var version = await _http.GetStringAsync("/api/assets/version");
              return version.Trim('"'); // Remove quotes if JSON serialization added them
         }

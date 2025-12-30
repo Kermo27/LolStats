@@ -1,4 +1,3 @@
-using System.Linq;
 using LolStatsTracker.Shared.Models;
 using LolStatsTracker.TrayApp.Models.Lcu;
 using LolStatsTracker.TrayApp.Services;
@@ -180,8 +179,12 @@ public static class DataMapper
             // Summoner Spells
             Spell1Id = sourcePlayer.Spell1Id,
             Spell2Id = sourcePlayer.Spell2Id,
+            
+            // Champion Ability Casts (Q, W, E, R)
             Spell1Casts = stats.Spell1Cast,
             Spell2Casts = stats.Spell2Cast,
+            Spell3Casts = stats.Spell3Cast,
+            Spell4Casts = stats.Spell4Cast,
             
             // Items (comma-separated IDs)
             ItemsBuild = sourcePlayer.Items.Any() 

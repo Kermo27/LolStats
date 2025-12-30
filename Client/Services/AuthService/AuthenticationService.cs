@@ -1,43 +1,33 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Blazored.LocalStorage;
 using LolStatsTracker.Shared.DTOs;
 
 namespace LolStatsTracker.Services.AuthService;
 
-public interface IAuthService
+public class AuthenticationService : IAuthService
 {
-    Task<(bool Success, string? Error, TokenResponseDto? Token)> LoginAsync(string username, string password);
-    Task<(bool Success, string? Error, TokenResponseDto? Token)> RegisterAsync(string username, string password, string? email = null);
-    Task<(bool Success, TokenResponseDto? Token)> RefreshTokenAsync();
-    Task LogoutAsync();
-    Task<string?> GetAccessTokenAsync();
-    Task<bool> IsAuthenticatedAsync();
-    Task<UserInfoDto?> GetCurrentUserAsync();
-}
+    private const string AccessTokenKey = "accessToken";
+    private const string RefreshTokenKey = "refreshToken";
+    private const string TokenExpiryKey = "tokenExpiry";
+    private const string UserInfoKey = "userInfo";
+    private readonly HttpClient _http;
+    private readonly ILocalStorageService _localStorage;
+    private readonly SemaphoreSlim _refreshSemaphore = new(1, 1);
 
-    public class AuthenticationService : IAuthService
+    public AuthenticationService(HttpClient http, ILocalStorageService localStorage)
     {
-        private readonly HttpClient _http;
-        private readonly ILocalStorageService _localStorage;
-        private readonly SemaphoreSlim _refreshSemaphore = new(1, 1);
-        private const string AccessTokenKey = "accessToken";
-        private const string RefreshTokenKey = "refreshToken";
-        private const string TokenExpiryKey = "tokenExpiry";
-        private const string UserInfoKey = "userInfo";
+        _http = http;
+        _localStorage = localStorage;
+    }
 
-        public AuthenticationService(HttpClient http, ILocalStorageService localStorage)
-        {
-            _http = http;
-            _localStorage = localStorage;
-        }
-
-    public async Task<(bool Success, string? Error, TokenResponseDto? Token)> LoginAsync(string username, string password)
+    public async Task<(bool Success, string? Error, TokenResponseDto? Token)> LoginAsync(string username,
+        string password)
     {
         try
         {
-            // Clear any existing tokens first
             await ClearTokensAsync();
-            
+
             var response = await _http.PostAsJsonAsync("api/auth/login", new LoginDto
             {
                 Username = username,
@@ -99,34 +89,26 @@ public interface IAuthService
         await _refreshSemaphore.WaitAsync();
         try
         {
-            // Re-check if token was already refreshed by another concurrent call
             var expiry = await _localStorage.GetItemAsync<DateTime?>(TokenExpiryKey);
             if (expiry.HasValue && expiry.Value.AddMinutes(-5) > DateTime.UtcNow)
             {
-                // Token is now valid, another thread refreshed it
                 var accessToken = await _localStorage.GetItemAsync<string>(AccessTokenKey);
                 var refreshTokenVal = await _localStorage.GetItemAsync<string>(RefreshTokenKey);
                 var userInfo = await _localStorage.GetItemAsync<UserInfoDto>(UserInfoKey);
-                
+
                 if (!string.IsNullOrEmpty(accessToken))
-                {
-                    return (true, new TokenResponseDto 
-                    { 
-                        AccessToken = accessToken, 
-                        RefreshToken = refreshTokenVal ?? "", 
+                    return (true, new TokenResponseDto
+                    {
+                        AccessToken = accessToken,
+                        RefreshToken = refreshTokenVal ?? "",
                         ExpiresAt = expiry.Value,
                         User = userInfo ?? new UserInfoDto()
                     });
-                }
             }
 
             var refreshToken = await _localStorage.GetItemAsync<string>(RefreshTokenKey);
-            if (string.IsNullOrEmpty(refreshToken))
-            {
-                return (false, null);
-            }
-
-            // We use the regular _http here because it handles the /api/auth/refresh skip logic
+            if (string.IsNullOrEmpty(refreshToken)) return (false, null);
+            
             var response = await _http.PostAsJsonAsync("api/auth/refresh", new RefreshTokenDto
             {
                 RefreshToken = refreshToken
@@ -164,8 +146,8 @@ public interface IAuthService
             var token = await GetAccessTokenAsync();
             if (!string.IsNullOrEmpty(token))
             {
-                _http.DefaultRequestHeaders.Authorization = 
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                _http.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
                 await _http.PostAsync("api/auth/logout", null);
             }
         }
@@ -182,16 +164,12 @@ public interface IAuthService
     public async Task<string?> GetAccessTokenAsync()
     {
         var expiry = await _localStorage.GetItemAsync<DateTime?>(TokenExpiryKey);
-        
+
         // Check if token is expired (with 5 minute buffer)
         if (expiry.HasValue && expiry.Value.AddMinutes(-5) <= DateTime.UtcNow)
         {
-            // Try to refresh
             var (success, token) = await RefreshTokenAsync();
-            if (!success)
-            {
-                return null;
-            }
+            if (!success) return null;
         }
 
         return await _localStorage.GetItemAsync<string>(AccessTokenKey);
