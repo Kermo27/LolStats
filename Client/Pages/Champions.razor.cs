@@ -12,8 +12,8 @@ public partial class Champions : IDisposable
 {
     [Inject] private IStatsService StatsService { get; set; } = null!;
     [Inject] private ILeagueAssetsService LeagueAssetsService { get; set; } = null!;
-    [Inject] private UserProfileState UserState { get; set; } = null!;
-    [Inject] private SeasonState SeasonState { get; set; } = null!;
+    [Inject] private IUserProfileState UserState { get; set; } = null!;
+    [Inject] private ISeasonState SeasonState { get; set; } = null!;
 
     private List<ChampionStatsDto> _championStats = new();
     private bool _isLoading = true;

@@ -28,8 +28,8 @@ public partial class Dashboard : IDisposable
     [Inject] private ILeagueAssetsService LeagueAssetsService { get; set; } = null!;
     [Inject] private IMatchService MatchService { get; set; } = null!;
     [Inject] private IMilestoneService MilestoneService { get; set; } = null!;
-    [Inject] private UserProfileState UserState { get; set; } = null!;
-    [Inject] private SeasonState SeasonState { get; set; } = null!;
+    [Inject] private IUserProfileState UserState { get; set; } = null!;
+    [Inject] private ISeasonState SeasonState { get; set; } = null!;
 
     private StatsSummaryDto? _stats;
     private List<List<(DateTime Date, int Count)>> _matrix = new();

@@ -17,8 +17,8 @@ public partial class Matches : IDisposable
     [Inject] private ISnackbar Snackbar { get; set; } = null!;
     [Inject] private IDialogService DialogService { get; set; } = null!;
     [Inject] private IMatchService MatchService { get; set; } = null!;
-    [Inject] private UserProfileState UserState { get; set; } = null!;
-    [Inject] private SeasonState SeasonState { get; set; } = null!;
+    [Inject] private IUserProfileState UserState { get; set; } = null!;
+    [Inject] private ISeasonState SeasonState { get; set; } = null!;
 
     private MatchEntry currentMatch = new();
     private List<MatchEntry> _allMatches = new();
