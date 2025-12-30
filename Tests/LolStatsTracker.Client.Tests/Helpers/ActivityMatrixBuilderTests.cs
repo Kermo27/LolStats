@@ -1,5 +1,6 @@
 ﻿using LolStatsTracker.Helpers;
 using LolStatsTracker.Shared.DTOs;
+using Xunit;
 
 namespace LolStatsTracker.Client.Tests.Helpers;
 
@@ -12,26 +13,71 @@ public class ActivityMatrixBuilderTests
         var today = DateOnly.FromDateTime(DateTime.Today);
         var inputData = new List<ActivityDayDto>
         {
-            new ActivityDayDto { Date = today, GamesPlayed = 5 },
+            new ActivityDayDto(today, 5),
         };
 
         var builder = new ActivityMatrixBuilder(inputData);
         
         // Act
-        new matrix = builder.Build();
+        var matrix = builder.Build();
         
         // Assert
-        matrix.Should().NotBeNull();
-        matrix.Should().NotBeEmpty();
+        Assert.NotNull(matrix);
+        Assert.NotEmpty(matrix);
 
         foreach (var week in matrix)
         {
-            week.Should().HaveCount(7);
+            Assert.Equal(7, week.Count);
         }
 
         var flatList = matrix.SelectMany(x => x).ToList();
         var todayEntry = flatList.FirstOrDefault(x => DateOnly.FromDateTime(x.Date) == today);
 
-        todayEntry.Count.Should().Be(5);
+        Assert.Equal(5, todayEntry.Count);
+    }
+
+    [Fact]
+    public void Build_EmptyInput_ReturnsMatrixWithZeroCounts()
+    {
+        // Arrange
+        var inputData = new List<ActivityDayDto>();
+        var builder = new ActivityMatrixBuilder(inputData);
+        
+        // Act
+        var matrix = builder.Build();
+        
+        // Assert
+        Assert.NotNull(matrix);
+        Assert.NotEmpty(matrix);
+        
+        var flatList = matrix.SelectMany(x => x).ToList();
+        Assert.All(flatList, cell => Assert.Equal(0, cell.Count));
+    }
+
+    [Fact]
+    public void Build_MultipleDays_SumsGamesCorrectly()
+    {
+        // Arrange
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var yesterday = today.AddDays(-1);
+        var inputData = new List<ActivityDayDto>
+        {
+            new ActivityDayDto(today, 3),
+            new ActivityDayDto(yesterday, 2),
+        };
+
+        var builder = new ActivityMatrixBuilder(inputData);
+        
+        // Act
+        var matrix = builder.Build();
+        
+        // Assert
+        var flatList = matrix.SelectMany(x => x).ToList();
+        
+        var todayEntry = flatList.FirstOrDefault(x => DateOnly.FromDateTime(x.Date) == today);
+        var yesterdayEntry = flatList.FirstOrDefault(x => DateOnly.FromDateTime(x.Date) == yesterday);
+
+        Assert.Equal(3, todayEntry.Count);
+        Assert.Equal(2, yesterdayEntry.Count);
     }
 }

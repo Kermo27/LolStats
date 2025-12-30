@@ -4,7 +4,7 @@ using LolStatsTracker.Shared.Models;
 
 namespace LolStatsTracker.Services.SeasonState;
 
-public class SeasonState : IDisposable
+public class SeasonState : ISeasonState, IDisposable
 {
     private readonly HttpClient _http;
     private readonly ILocalStorageService _localStorage;

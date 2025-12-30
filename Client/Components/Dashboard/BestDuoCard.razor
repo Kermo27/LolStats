@@ -1,4 +1,3 @@
-@using LolStatsTracker.Shared.DTOs
 @using LolStatsTracker.Services.LeagueAssetsService
 
 <MudPaper Class="rounded-xl glass-card" Elevation="0" Height="100%">
@@ -35,6 +34,6 @@
 </MudPaper>
 
 @code {
-    [Parameter, EditorRequired] public List<LolStatsTracker.Shared.DTOs.DuoSummary> Duos { get; set; } = new();
+    [Parameter, EditorRequired] public List<Shared.DTOs.DuoSummary> Duos { get; set; } = new();
     [Inject] private ILeagueAssetsService LeagueAssets { get; set; } = null!;
 }

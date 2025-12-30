@@ -26,14 +26,8 @@ public partial class Matches : IDisposable
     private bool isEditing;
     private string _selectedGameMode = "Ranked Solo";
 
-    private static readonly string[] Tiers =
-    {
-        "Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"
-    };
-
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to profile and season changes
         UserState.OnProfileChanged += OnProfileChangedAsync;
         SeasonState.OnSeasonChanged += OnSeasonChangedAsync;
         
@@ -95,8 +89,7 @@ public partial class Matches : IDisposable
 
         var lastMatch = matches.First();
         currentMatch.Role = lastMatch.Role;
-
-        // Pre-fill with last match's rank (user will update LP after the new game)
+        
         currentMatch.CurrentTier = lastMatch.CurrentTier;
         currentMatch.CurrentDivision = lastMatch.CurrentDivision;
         currentMatch.CurrentLp = lastMatch.CurrentLp;

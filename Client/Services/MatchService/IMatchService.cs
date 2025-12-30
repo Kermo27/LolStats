@@ -1,5 +1,4 @@
-﻿using LolStatsTracker.Models;
-using LolStatsTracker.Shared.Models;
+﻿using LolStatsTracker.Shared.Models;
 
 namespace LolStatsTracker.Services.MatchService;
 

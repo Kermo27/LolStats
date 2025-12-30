@@ -1,4 +1,5 @@
 @using Variant = MudBlazor.Variant
+
 <MudDialog>
     <DialogContent>
         <MudText Typo="Typo.subtitle1">@ContentText</MudText>
@@ -12,8 +13,8 @@
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
 
-    [Parameter] public string ContentText { get; set; } = "Czy na pewno?";
-    [Parameter] public string ButtonText { get; set; } = "Potwierdź";
+    [Parameter] public string ContentText { get; set; } = "Are you sure?";
+    [Parameter] public string ButtonText { get; set; } = "Confirm";
     [Parameter] public Color Color { get; set; } = Color.Error;
 
     void Confirm() => MudDialog.Close(DialogResult.Ok(true));

@@ -42,6 +42,6 @@
 </MudPaper>
 
 @code {
-    [Parameter, EditorRequired] public LolStatsTracker.Shared.DTOs.EnchanterUsageSummary Stats { get; set; } = null!;
+    [Parameter, EditorRequired] public EnchanterUsageSummary Stats { get; set; } = null!;
     [Inject] private ILeagueAssetsService LeagueAssets { get; set; } = null!;
 }

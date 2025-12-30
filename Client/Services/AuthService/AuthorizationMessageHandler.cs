@@ -1,6 +1,4 @@
 using System.Net.Http.Headers;
-using Blazored.LocalStorage;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace LolStatsTracker.Services.AuthService;
 
@@ -16,7 +14,6 @@ public class AuthorizationMessageHandler : DelegatingHandler
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        // Skip auth header for auth endpoints to prevent infinite refresh loops
         var path = request.RequestUri?.PathAndQuery ?? "";
         if (!path.Contains("/api/auth/login") && 
             !path.Contains("/api/auth/register") &&
@@ -24,7 +21,6 @@ public class AuthorizationMessageHandler : DelegatingHandler
         {
             try
             {
-                // Use IServiceProvider to avoid circular dependency during construction
                 using var scope = _serviceProvider.CreateScope();
                 var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
                 

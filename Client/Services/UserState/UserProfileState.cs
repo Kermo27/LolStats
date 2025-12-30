@@ -4,7 +4,7 @@ using LolStatsTracker.Shared.Models;
 
 namespace LolStatsTracker.Services.UserState;
 
-public class UserProfileState : IDisposable
+public class UserProfileState : IUserProfileState, IDisposable
 {
     private readonly HttpClient _http;
     private readonly ILocalStorageService _localStorage;

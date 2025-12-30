@@ -8,7 +8,7 @@ public class MilestoneApiService : BaseApiService, IMilestoneService
 {
     private const string BaseUrl = "api/Milestones";
 
-    public MilestoneApiService(HttpClient http, UserProfileState userState) 
+    public MilestoneApiService(HttpClient http, IUserProfileState userState) 
         : base(http, userState) { }
 
     public async Task<List<RankMilestoneDto>> GetMilestonesAsync()

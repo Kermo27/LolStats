@@ -1,6 +1,6 @@
 ﻿@using LolStatsTracker.Services.UserState
 @using LolStatsTracker.Shared.Models
-@inject UserProfileState UserState
+@inject IUserProfileState UserState
 @inject IDialogService DialogService
 
 @if (UserState.CurrentProfile != null)

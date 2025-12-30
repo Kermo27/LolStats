@@ -62,7 +62,6 @@
 
     private async Task HandleFileChange(InputFileChangeEventArgs e)
     {
-        // Po wybraniu pliku zamknij menu (opcjonalne, MudMenu zamyka się samo przy kliku)
         await OnImport.InvokeAsync(e);
     }
 }

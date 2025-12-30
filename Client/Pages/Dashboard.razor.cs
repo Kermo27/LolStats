@@ -37,17 +37,14 @@ public partial class Dashboard : IDisposable
     private List<RankMilestoneDto> _milestones = new();
     private (string Start, string End, int Gained)? _lpRangeInfo;
     
-    // Game mode filter
     private string _selectedGameMode = "Ranked Solo";
     
-    // MudChart data
     private List<LpDataPoint> _lpChartData = new();
     private List<ChartSeries> _lpSeries = new();
     private string[] _lpLabels = Array.Empty<string>();
 
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to profile and season changes
         UserState.OnProfileChanged += OnProfileChangedAsync;
         SeasonState.OnSeasonChanged += OnSeasonChangedAsync;
         
@@ -89,17 +86,14 @@ public partial class Dashboard : IDisposable
             return;
         }
         
-        // Reset chart data
         _lpChartData = new List<LpDataPoint>();
         _lpSeries = new List<ChartSeries>();
         _lpLabels = Array.Empty<string>();
         
-        // Get season and game mode filtered stats from server
         var seasonId = SeasonState.CurrentSeason?.Id;
         var gameModeFilter = _selectedGameMode == "All" ? null : _selectedGameMode;
         _stats = await StatsService.GetSummaryAsync(6, seasonId, gameModeFilter);
         
-        // Get matches and filter by season and game mode
         var allMatches = await MatchService.GetAllAsync();
         var matches = allMatches
             .Where(m => SeasonState.IsDateInCurrentSeason(m.Date))
@@ -114,7 +108,6 @@ public partial class Dashboard : IDisposable
             PrepareLpChart(matches);
         }
         
-        // Load rank milestones
         _milestones = await MilestoneService.GetMilestonesAsync();
     }
 
@@ -152,8 +145,7 @@ public partial class Dashboard : IDisposable
         
         _lpSeries.Add(new ChartSeries { Name = "LP", Data = data.ToArray() });
         _lpLabels = labels.ToArray();
-
-        // Calculate LP range info for display
+        
         if (matches.Count >= 2)
         {
             var first = matches.First();

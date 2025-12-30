@@ -9,10 +9,10 @@ public static class AppTheme
         PaletteDark = new PaletteDark()
         {
             Primary = "#3B82F6",          
-            Secondary = "#8B5CF6",         // Purple accent for gaming aesthetic
-            Tertiary = "#10B981",          // Emerald for positive indicators
-            Background = "#08080c",        // Deeper dark for premium feel
-            Surface = "#12121a",           // Refined surface
+            Secondary = "#8B5CF6",
+            Tertiary = "#10B981",
+            Background = "#08080c",
+            Surface = "#12121a",
             AppbarBackground = "#0c0c14",
             DrawerBackground = "#0c0c14",
             DrawerText = "#94A3B8",
@@ -77,7 +77,7 @@ public static class AppTheme
         PaletteLight = new PaletteLight()
         {
             Primary = "#3B82F6",           
-            Secondary = "#8B5CF6",          // Purple accent
+            Secondary = "#8B5CF6",
             Tertiary = "#10B981",
             Background = "#F8FAFC",        
             Surface = "#ffffff",            

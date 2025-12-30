@@ -1,4 +1,3 @@
-using System.Net.Http;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -22,20 +21,15 @@ var apiUrl = builder.Configuration["ApiUrl"] ?? "http://localhost:5109";
 // Add LocalStorage first (required by auth services)
 builder.Services.AddBlazoredLocalStorage();
 
-// Add Authorization Handler
 builder.Services.AddScoped<AuthorizationMessageHandler>();
 
-// Configure HttpClient with Authorization Handler
 builder.Services.AddHttpClient("API", client => client.BaseAddress = new Uri(apiUrl))
     .AddHttpMessageHandler<AuthorizationMessageHandler>();
 
-// Register the regular HttpClient as the "API" one
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("API"));
 
-// Add named HttpClient for Auth (no handler)
 builder.Services.AddHttpClient("Auth", client => client.BaseAddress = new Uri(apiUrl));
 
-// Add Authentication Services
 builder.Services.AddScoped<IAuthService, AuthenticationService>(sp => 
 {
     var localStorage = sp.GetRequiredService<ILocalStorageService>();
@@ -48,12 +42,10 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
     sp.GetRequiredService<JwtAuthenticationStateProvider>());
 builder.Services.AddAuthorizationCore();
 
-// Add MudBlazor
 builder.Services.AddMudServices();
 
-// Application Services
-builder.Services.AddScoped<UserProfileState>();
-builder.Services.AddScoped<SeasonState>();
+builder.Services.AddScoped<IUserProfileState, UserProfileState>();
+builder.Services.AddScoped<ISeasonState, SeasonState>();
 builder.Services.AddScoped<IMatchService, MatchApiService>();
 builder.Services.AddScoped<ILeagueAssetsService, LeagueAssetsService>();
 builder.Services.AddScoped<IStatsService, StatsApiService>();
