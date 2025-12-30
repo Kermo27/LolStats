@@ -15,9 +15,9 @@
                         <MudText>@enemy.ChampionName</MudText>
                     </div>
                     <div class="text-right">
-                        <MudText Typo="Typo.caption">Losses</MudText>
+                        <MudText Typo="Typo.caption">Your Winrate</MudText>
                         <MudText Color="Color.Error" Class="font-weight-bold">
-                            @((100 - (enemy.WinrateAgainst * 100)).ToString("F0"))%
+                            @(((1 - enemy.WinrateAgainst) * 100).ToString("F0"))%
                         </MudText>
                     </div>
                 </div>
