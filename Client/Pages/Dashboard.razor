@@ -14,13 +14,29 @@
             </div>
         </div>
         
-        <MudSelect T="string" Value="_selectedGameMode" ValueChanged="OnGameModeChanged" Label="Game Mode" Variant="Variant.Outlined" Dense="true" Style="min-width: 180px;">
-            <MudSelectItem Value="@("All")">All Modes</MudSelectItem>
-            <MudSelectItem Value="@("Ranked Solo")">Ranked Solo</MudSelectItem>
-            <MudSelectItem Value="@("Ranked Flex")">Ranked Flex</MudSelectItem>
-            <MudSelectItem Value="@("Normal")">Normal</MudSelectItem>
-            <MudSelectItem Value="@("ARAM")">ARAM</MudSelectItem>
-        </MudSelect>
+        <div class="d-flex gap-3">
+            <MudSelect T="string" Value="_selectedRole" ValueChanged="OnRoleChanged" Label="Role" Variant="Variant.Outlined" Dense="true" Style="min-width: 130px;">
+                <MudSelectItem Value="@("All")">All Roles</MudSelectItem>
+                <MudSelectItem Value="@("Top")">Top</MudSelectItem>
+                <MudSelectItem Value="@("Jungle")">Jungle</MudSelectItem>
+                <MudSelectItem Value="@("Mid")">Mid</MudSelectItem>
+                <MudSelectItem Value="@("ADC")">ADC</MudSelectItem>
+                <MudSelectItem Value="@("Support")">Support</MudSelectItem>
+            </MudSelect>
+            <MudSelect T="string" Value="_selectedGameMode" ValueChanged="OnGameModeChanged" Label="Game Mode" Variant="Variant.Outlined" Dense="true" Style="min-width: 180px;">
+                <MudSelectItem Value="@("All")">All Modes</MudSelectItem>
+                <MudSelectItem Value="@("Ranked Solo")">Ranked Solo</MudSelectItem>
+                <MudSelectItem Value="@("Ranked Flex")">Ranked Flex</MudSelectItem>
+                <MudSelectItem Value="@("Normal")">Normal</MudSelectItem>
+                <MudSelectItem Value="@("Swift Play")">Swift Play</MudSelectItem>
+                <MudSelectItem Value="@("ARAM")">ARAM</MudSelectItem>
+                <MudSelectItem Value="@("ARAM Mayhem")">ARAM Mayhem</MudSelectItem>
+                <MudSelectItem Value="@("URF")">URF</MudSelectItem>
+                <MudSelectItem Value="@("ARURF")">ARURF</MudSelectItem>
+                <MudSelectItem Value="@("Arena")">Arena</MudSelectItem>
+                <MudSelectItem Value="@("Other")">Other</MudSelectItem>
+            </MudSelect>
+        </div>
     </div>
 
     @if (_stats == null)
@@ -54,7 +70,7 @@
             </MudItem>
 
             <MudItem xs="12" sm="6" md="4">
-                <BestDuoCard Duos="_stats.BestDuos" />
+                <BestDuoCard Duos="_bestDuos" />
             </MudItem>
 
             <MudItem xs="12" md="4">
@@ -66,11 +82,11 @@
             </MudItem>
 
             <MudItem xs="12" md="7">
-                <TopChampionsCard Champions="_stats.ChampionStats" />
+                <TopChampionsCard Champions="FilteredChampions" />
             </MudItem>
 
             <MudItem xs="12" md="5">
-                <HardEnemiesCard Enemies="_stats.EnemyBotStats" />
+                <HardEnemiesCard Enemies="_hardestEnemies" Role="@_selectedRole" />
             </MudItem>
             
             <MudItem xs="12">

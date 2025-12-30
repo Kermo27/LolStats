@@ -38,6 +38,9 @@ public partial class Dashboard : IDisposable
     private (string Start, string End, int Gained)? _lpRangeInfo;
     
     private string _selectedGameMode = "Ranked Solo";
+    private string _selectedRole = "All";
+    private List<EnemyStatsDto> _hardestEnemies = new();
+    private List<DuoSummary> _bestDuos = new();
     
     private List<LpDataPoint> _lpChartData = new();
     private List<ChartSeries> _lpSeries = new();
@@ -77,6 +80,32 @@ public partial class Dashboard : IDisposable
         await LoadDashboardDataAsync();
     }
 
+    private async Task OnRoleChanged(string role)
+    {
+        _selectedRole = role;
+        await LoadHardestEnemiesAsync();
+        await LoadBestDuosAsync();
+        StateHasChanged();
+    }
+
+    private List<ChampionStatsDto> FilteredChampions => _stats?.ChampionStats
+        .Where(c => _selectedRole == "All" || c.Role == _selectedRole)
+        .ToList() ?? new();
+
+    private async Task LoadHardestEnemiesAsync()
+    {
+        var seasonId = SeasonState.CurrentSeason?.Id;
+        var gameModeFilter = _selectedGameMode == "All" ? null : _selectedGameMode;
+        _hardestEnemies = await StatsService.GetHardestEnemiesAsync(_selectedRole, seasonId, gameModeFilter);
+    }
+
+    private async Task LoadBestDuosAsync()
+    {
+        var seasonId = SeasonState.CurrentSeason?.Id;
+        var gameModeFilter = _selectedGameMode == "All" ? null : _selectedGameMode;
+        _bestDuos = await StatsService.GetBestDuosAsync(_selectedRole, seasonId, gameModeFilter);
+    }
+
     private async Task LoadDashboardDataAsync()
     {
         if (UserState.CurrentProfile == null)
@@ -109,6 +138,8 @@ public partial class Dashboard : IDisposable
         }
         
         _milestones = await MilestoneService.GetMilestonesAsync();
+        await LoadHardestEnemiesAsync();
+        await LoadBestDuosAsync();
     }
 
     private void PrepareActivityMatrix(List<ActivityDayDto> activity)

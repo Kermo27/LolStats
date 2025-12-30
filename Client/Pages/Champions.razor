@@ -25,20 +25,30 @@
                   Class="rounded-xl glass-card"
                   Dense="true">
             
-            <ToolBarContent>
-                <MudText Typo="Typo.h6">All champions</MudText>
-                <MudSpacer />
-                <MudTextField @bind-Value="_searchString" 
-                              Placeholder="Search..." 
-                              Adornment="Adornment.Start" 
-                              AdornmentIcon="@Icons.Material.Filled.Search" 
-                              IconSize="Size.Medium" 
-                              Class="mt-0"
-                              Clearable="true" />
-            </ToolBarContent>
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">All champions</MudText>
+            <MudSpacer />
+            <MudSelect T="string" @bind-Value="_selectedRole" Label="Role" Variant="Variant.Outlined" Dense="true" 
+                       Class="mr-4" Style="width: 150px;">
+                <MudSelectItem Value="@("All")">All Roles</MudSelectItem>
+                <MudSelectItem Value="@("Top")">Top</MudSelectItem>
+                <MudSelectItem Value="@("Jungle")">Jungle</MudSelectItem>
+                <MudSelectItem Value="@("Mid")">Mid</MudSelectItem>
+                <MudSelectItem Value="@("ADC")">ADC</MudSelectItem>
+                <MudSelectItem Value="@("Support")">Support</MudSelectItem>
+            </MudSelect>
+            <MudTextField @bind-Value="_searchString" 
+                          Placeholder="Search..." 
+                          Adornment="Adornment.Start" 
+                          AdornmentIcon="@Icons.Material.Filled.Search" 
+                          IconSize="Size.Medium" 
+                          Class="mt-0"
+                          Clearable="true" />
+        </ToolBarContent>
 
             <HeaderContent>
                 <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.ChampionName)">Champion</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.Role)">Role</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.Games)" InitialDirection="SortDirection.Descending">Games</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.Winrate)">Winrate</MudTableSortLabel></MudTh>
                 <MudTh>W / L</MudTh>
@@ -53,6 +63,12 @@
                              style="border-radius: 50%; object-fit: cover;" />
                         <MudText Class="font-weight-bold">@context.ChampionName</MudText>
                     </div>
+                </MudTd>
+                
+                <MudTd DataLabel="Role">
+                    <MudChip T="string" Size="Size.Small" Color="@GetRoleColor(context.Role)" Variant="Variant.Filled">
+                        @context.Role
+                    </MudChip>
                 </MudTd>
                 
                 <MudTd DataLabel="Gry">
@@ -79,7 +95,7 @@
                     <MudText Class="text-error d-inline">@context.Losses L</MudText>
                 </MudTd>
                 
-                <MudTd DataLabel="Wydajność">
+                <MudTd DataLabel="Performance">
                     @if (context.Games >= 5 && context.Winrate >= 0.6)
                     {
                         <MudChip T="string" Color="Color.Warning" Size="Size.Small" Icon="@Icons.Material.Filled.Star">CARRY</MudChip>

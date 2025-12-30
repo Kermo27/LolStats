@@ -7,9 +7,10 @@ public interface IStatsService
     Task<OverviewDto> GetOverviewAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
     Task<List<ChampionStatsDto>> GetChampionStatsAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
     Task<List<EnemyStatsDto>> GetEnemyStatsAsync(Guid profileId, string role, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
+    Task<List<EnemyStatsDto>> GetHardestEnemiesForRoleAsync(Guid profileId, string playerRole, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
     Task<List<ActivityDayDto>> GetActivityAsync(Guid profileId, int months, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
     Task<EnchanterUsageSummary> GetEnchanterUsageAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
-    Task<List<DuoSummary>> GetBestDuosAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
+    Task<List<DuoSummary>> GetBestDuosAsync(Guid profileId, string? playerRole = null, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
     Task<List<DuoSummary>> GetWorstEnemyDuosAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
     Task<StreakDto> GetStreakAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
     Task<TimeAnalysisDto> GetTimeAnalysisAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);

@@ -18,6 +18,7 @@ public partial class Champions : IDisposable
     private List<ChampionStatsDto> _championStats = new();
     private bool _isLoading = true;
     private string _searchString = "";
+    private string _selectedRole = "All";
 
     protected override async Task OnInitializedAsync()
     {
@@ -80,8 +81,19 @@ public partial class Champions : IDisposable
         return Color.Error;
     }
     
+    private static Color GetRoleColor(string role) => role switch
+    {
+        "Top" => Color.Warning,
+        "Jungle" => Color.Success,
+        "Mid" => Color.Info,
+        "ADC" => Color.Error,
+        "Support" => Color.Secondary,
+        _ => Color.Default
+    };
+    
     private bool FilterFunc(ChampionStatsDto element)
     {
+        if (_selectedRole != "All" && element.Role != _selectedRole) return false;
         if (string.IsNullOrWhiteSpace(_searchString)) return true;
         if (element.ChampionName.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) return true;
         return false;

@@ -111,3 +111,14 @@
     opacity: 0.7;
     border: 1px solid white;
 }
+
+/* Hide horizontal scrollbar in drawer/nav */
+.mud-drawer-content {
+    overflow-x: hidden !important;
+}
+
+.mud-nav-link {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

@@ -3,7 +3,6 @@ using LolStatsTracker.API.Services.StatsService;
 using LolStatsTracker.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace LolStatsTracker.API.Controllers;
 
@@ -62,6 +61,16 @@ public class StatsController : BaseApiController
         return Ok(await _statsService.GetEnemyStatsAsync(profileId, role, startDate, endDate, gameMode));
     }
 
+    [HttpGet("hardest-enemies")]
+    public async Task<ActionResult<List<EnemyStatsDto>>> GetHardestEnemies([FromQuery] string? playerRole = null, [FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
+    {
+        var profileId = GetProfileId();
+        if (profileId == Guid.Empty) return BadRequest("Profile ID is missing");
+
+        var (startDate, endDate) = await GetSeasonDatesAsync(seasonId);
+        return Ok(await _statsService.GetHardestEnemiesForRoleAsync(profileId, playerRole ?? "All", startDate, endDate, gameMode));
+    }
+
     [HttpGet("activity")]
     public async Task<ActionResult<List<ActivityDayDto>>> GetActivity([FromQuery] int months = 6, [FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
     {
@@ -87,13 +96,13 @@ public class StatsController : BaseApiController
     }
 
     [HttpGet("best-duos")]
-    public async Task<ActionResult<DuoSummary>> GetBestDuos([FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
+    public async Task<ActionResult<DuoSummary>> GetBestDuos([FromQuery] string? playerRole = null, [FromQuery] int? seasonId = null, [FromQuery] string? gameMode = null)
     {
         var profileId = GetProfileId();
         if (profileId == Guid.Empty) return BadRequest("Profile ID is missing");
         
         var (startDate, endDate) = await GetSeasonDatesAsync(seasonId);
-        var duos = await _statsService.GetBestDuosAsync(profileId, startDate, endDate, gameMode);
+        var duos = await _statsService.GetBestDuosAsync(profileId, playerRole, startDate, endDate, gameMode);
         return Ok(duos);
     }
 

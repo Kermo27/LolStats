@@ -29,9 +29,17 @@ public class StatsApiService : BaseApiService, IStatsService
         return await GetAsync<List<EnemyStatsDto>>(url) ?? new();
     }
 
-    public async Task<List<DuoSummary>> GetBestDuosAsync(int? seasonId = null, string? gameMode = null)
+    public async Task<List<EnemyStatsDto>> GetHardestEnemiesAsync(string? playerRole = null, int? seasonId = null, string? gameMode = null)
     {
-        var url = BuildUrl($"{BaseUrl}/best-duos", seasonId, gameMode);
+        var roleParam = !string.IsNullOrEmpty(playerRole) && playerRole != "All" ? $"?playerRole={playerRole}" : "";
+        var url = BuildUrl($"{BaseUrl}/hardest-enemies{roleParam}", seasonId, gameMode);
+        return await GetAsync<List<EnemyStatsDto>>(url) ?? new();
+    }
+
+    public async Task<List<DuoSummary>> GetBestDuosAsync(string? playerRole = null, int? seasonId = null, string? gameMode = null)
+    {
+        var roleParam = !string.IsNullOrEmpty(playerRole) && playerRole != "All" ? $"?playerRole={playerRole}" : "";
+        var url = BuildUrl($"{BaseUrl}/best-duos{roleParam}", seasonId, gameMode);
         return await GetAsync<List<DuoSummary>>(url) ?? new();
     }
 
