@@ -213,7 +213,10 @@ public class AdminService : IAdminService
             p.Profile.ProfileIconId,
             p.Profile.SoloTier,
             p.Profile.SoloRank,
-            p.Profile.SoloLP
+            p.Profile.SoloLP,
+            p.Profile.FlexTier,
+            p.Profile.FlexRank,
+            p.Profile.FlexLP
         )).ToList();
     }
 
@@ -246,7 +249,10 @@ public class AdminService : IAdminService
             p.Profile.ProfileIconId,
             p.Profile.SoloTier,
             p.Profile.SoloRank,
-            p.Profile.SoloLP
+            p.Profile.SoloLP,
+            p.Profile.FlexTier,
+            p.Profile.FlexRank,
+            p.Profile.FlexLP
         )).ToList();
     }
 }

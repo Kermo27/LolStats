@@ -13,7 +13,7 @@ public static class DataMapper
         _championDataService = championDataService;
     }
     
-    public static MatchEntry MapToMatchEntry(LcuEndOfGameStats eogStats, LcuQueueStats? rankedStats, Guid profileId, LcuGame? gameDetails = null)
+    public static MatchEntry MapToMatchEntry(LcuEndOfGameStats eogStats, LcuQueueStats? soloRankedStats, LcuQueueStats? flexRankedStats, Guid profileId, LcuGame? gameDetails = null)
     {
         var localPlayer = eogStats.LocalPlayer;
         if (localPlayer == null)
@@ -80,6 +80,10 @@ public static class DataMapper
         
         var stats = sourcePlayer.Stats;
         
+        // Select appropriate ranked stats based on queue type
+        // QueueId 420 = Ranked Solo/Duo, QueueId 440 = Ranked Flex
+        var rankedStats = eogStats.QueueId == 440 ? flexRankedStats : soloRankedStats;
+        
         var match = new MatchEntry
         {
             Id = Guid.NewGuid(),
@@ -100,7 +104,7 @@ public static class DataMapper
             Win = isWin,
             Date = DateTime.Now,
             
-            // Rank Info
+            // Rank Info - uses appropriate ranked stats based on queue type
             CurrentTier = rankedStats?.Tier ?? "Unranked",
             CurrentDivision = ParseDivision(rankedStats?.Division),
             CurrentLp = rankedStats?.LeaguePoints ?? 0,

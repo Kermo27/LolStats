@@ -189,10 +189,7 @@ public class ApiSyncService
         }
     }
     
-    /// <summary>
-    /// Updates profile rank data using data from LCU (no Riot API key needed)
-    /// </summary>
-    public async Task<bool> UpdateProfileRankDataAsync(Guid profileId, int profileIconId, LolStatsTracker.TrayApp.Models.Lcu.LcuQueueStats? soloRankedStats)
+    public async Task<bool> UpdateProfileRankDataAsync(Guid profileId, int profileIconId, LolStatsTracker.TrayApp.Models.Lcu.LcuQueueStats? soloRankedStats, LolStatsTracker.TrayApp.Models.Lcu.LcuQueueStats? flexRankedStats = null)
     {
         try
         {
@@ -209,7 +206,10 @@ public class ApiSyncService
                 ProfileIconId = profileIconId,
                 SoloTier = soloRankedStats?.Tier,
                 SoloRank = soloRankedStats?.Division,
-                SoloLP = soloRankedStats?.LeaguePoints
+                SoloLP = soloRankedStats?.LeaguePoints,
+                FlexTier = flexRankedStats?.Tier,
+                FlexRank = flexRankedStats?.Division,
+                FlexLP = flexRankedStats?.LeaguePoints
             };
             
             var updateRequest = new HttpRequestMessage(HttpMethod.Patch, $"/api/profiles/{profileId}/rankdata");
@@ -224,11 +224,14 @@ public class ApiSyncService
             
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Updated profile rank data: Icon={Icon}, Rank={Tier} {Division} {LP}LP",
+                _logger.LogInformation("Updated profile rank data: Icon={Icon}, Solo={SoloTier} {SoloDivision} {SoloLP}LP, Flex={FlexTier} {FlexDivision} {FlexLP}LP",
                     profileIconId, 
                     soloRankedStats?.Tier ?? "Unranked", 
                     soloRankedStats?.Division ?? "",
-                    soloRankedStats?.LeaguePoints ?? 0);
+                    soloRankedStats?.LeaguePoints ?? 0,
+                    flexRankedStats?.Tier ?? "Unranked",
+                    flexRankedStats?.Division ?? "",
+                    flexRankedStats?.LeaguePoints ?? 0);
                 return true;
             }
             else
@@ -246,9 +249,6 @@ public class ApiSyncService
         }
     }
 
-    /// <summary>
-    /// Fetches summoner icon and rank from Riot API and updates the profile (requires Riot API key)
-    /// </summary>
     public async Task<bool> UpdateProfileRankDataFromRiotApiAsync(Guid profileId, string puuid)
     {
         try
@@ -277,6 +277,7 @@ public class ApiSyncService
             // Get ranked data
             var rankedEntries = await _riotApiService.GetRankedStatsAsync(summoner.Id);
             var soloEntry = rankedEntries?.FirstOrDefault(e => e.QueueType == "RANKED_SOLO_5x5");
+            var flexEntry = rankedEntries?.FirstOrDefault(e => e.QueueType == "RANKED_FLEX_SR");
             
             // Build update payload
             var updateData = new
@@ -284,7 +285,10 @@ public class ApiSyncService
                 ProfileIconId = summoner.ProfileIconId,
                 SoloTier = soloEntry?.Tier,
                 SoloRank = soloEntry?.Rank,
-                SoloLP = soloEntry?.LeaguePoints
+                SoloLP = soloEntry?.LeaguePoints,
+                FlexTier = flexEntry?.Tier,
+                FlexRank = flexEntry?.Rank,
+                FlexLP = flexEntry?.LeaguePoints
             };
             
             var updateRequest = new HttpRequestMessage(HttpMethod.Patch, $"/api/profiles/{profileId}/rankdata");
@@ -299,11 +303,14 @@ public class ApiSyncService
             
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Updated profile rank data: Icon={Icon}, Rank={Tier} {Division} {LP}LP",
+                _logger.LogInformation("Updated profile rank data: Icon={Icon}, Solo={SoloTier} {SoloDivision} {SoloLP}LP, Flex={FlexTier} {FlexDivision} {FlexLP}LP",
                     summoner.ProfileIconId, 
                     soloEntry?.Tier ?? "Unranked", 
                     soloEntry?.Rank ?? "",
-                    soloEntry?.LeaguePoints ?? 0);
+                    soloEntry?.LeaguePoints ?? 0,
+                    flexEntry?.Tier ?? "Unranked",
+                    flexEntry?.Rank ?? "",
+                    flexEntry?.LeaguePoints ?? 0);
                 return true;
             }
             else

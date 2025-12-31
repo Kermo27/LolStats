@@ -91,9 +91,6 @@ public class ProfilesController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Update profile rank data (icon, tier, rank, LP) - called by TrayApp
-    /// </summary>
     [HttpPatch("{id:guid}/rankdata")]
     public async Task<ActionResult> UpdateRankData(Guid id, [FromBody] UpdateRankDataDto dto)
     {
@@ -107,6 +104,9 @@ public class ProfilesController : ControllerBase
         profile.SoloTier = dto.SoloTier;
         profile.SoloRank = dto.SoloRank;
         profile.SoloLP = dto.SoloLP;
+        profile.FlexTier = dto.FlexTier;
+        profile.FlexRank = dto.FlexRank;
+        profile.FlexLP = dto.FlexLP;
 
         await _profileService.UpdateAsync(profile, userId);
         return Ok(new { message = "Rank data updated" });
@@ -117,5 +117,8 @@ public record UpdateRankDataDto(
     int? ProfileIconId,
     string? SoloTier,
     string? SoloRank,
-    int? SoloLP
+    int? SoloLP,
+    string? FlexTier,
+    string? FlexRank,
+    int? FlexLP
 );

@@ -287,7 +287,7 @@ public class LcuService : IDisposable
         return null;
     }
     
-    public async Task<LcuQueueStats?> GetRankedStatsAsync()
+    public async Task<LcuQueueStats?> GetSoloRankedStatsAsync()
     {
         if (_httpClient == null) return null;
         try
@@ -302,9 +302,51 @@ public class LcuService : IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get ranked stats");
+            _logger.LogError(ex, "Failed to get solo ranked stats");
         }
         return null;
+    }
+
+    public async Task<LcuQueueStats?> GetFlexRankedStatsAsync()
+    {
+        if (_httpClient == null) return null;
+        try
+        { 
+             var response = await _httpClient.GetAsync("/lol-ranked/v1/current-ranked-stats");
+             if (response.IsSuccessStatusCode)
+             {
+                 var json = await response.Content.ReadAsStringAsync();
+                 var stats = JsonConvert.DeserializeObject<LcuRankedStats>(json);
+                 return stats?.Queues.FirstOrDefault(q => q.QueueType == "RANKED_FLEX_SR");
+             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get flex ranked stats");
+        }
+        return null;
+    }
+
+    public async Task<(LcuQueueStats? Solo, LcuQueueStats? Flex)> GetAllRankedStatsAsync()
+    {
+        if (_httpClient == null) return (null, null);
+        try
+        { 
+             var response = await _httpClient.GetAsync("/lol-ranked/v1/current-ranked-stats");
+             if (response.IsSuccessStatusCode)
+             {
+                 var json = await response.Content.ReadAsStringAsync();
+                 var stats = JsonConvert.DeserializeObject<LcuRankedStats>(json);
+                 var solo = stats?.Queues.FirstOrDefault(q => q.QueueType == "RANKED_SOLO_5x5");
+                 var flex = stats?.Queues.FirstOrDefault(q => q.QueueType == "RANKED_FLEX_SR");
+                 return (solo, flex);
+             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get ranked stats");
+        }
+        return (null, null);
     }
 
     public async Task<LcuGame?> GetGameDetailsAsync(long gameId)

@@ -1,10 +1,5 @@
 namespace LolStatsTracker.Shared.DTOs;
 
-// ===== ADMIN DTOs =====
-
-/// <summary>
-/// User data for admin list
-/// </summary>
 public record UserListDto(
     Guid Id,
     string Username,
@@ -15,14 +10,8 @@ public record UserListDto(
     int MatchCount
 );
 
-/// <summary>
-/// Request to update user role
-/// </summary>
 public record UpdateUserRoleDto(string Role);
 
-/// <summary>
-/// System statistics for admin dashboard
-/// </summary>
 public record SystemStatsDto(
     int TotalUsers,
     int TotalProfiles,
@@ -33,9 +22,6 @@ public record SystemStatsDto(
     int NewUsersThisWeek
 );
 
-/// <summary>
-/// Match data for admin list with profile info
-/// </summary>
 public record AdminMatchDto(
     Guid Id,
     long? GameId,
@@ -50,9 +36,6 @@ public record AdminMatchDto(
     string? Username
 );
 
-/// <summary>
-/// Profile data for admin list
-/// </summary>
 public record ProfileListDto(
     Guid Id,
     string Name,
@@ -65,12 +48,12 @@ public record ProfileListDto(
     int? ProfileIconId,
     string? SoloTier,
     string? SoloRank,
-    int? SoloLP
+    int? SoloLP,
+    string? FlexTier,
+    string? FlexRank,
+    int? FlexLP
 );
 
-/// <summary>
-/// Paginated response wrapper
-/// </summary>
 public record PaginatedResponse<T>(
     List<T> Items,
     int TotalCount,

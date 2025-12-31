@@ -2,9 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LolStatsTracker.Shared.Models;
 
-/// <summary>
-/// Represents an authenticated user in the system
-/// </summary>
 public class User
 {
     [Key]
@@ -22,19 +19,10 @@ public class User
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
-    /// <summary>
-    /// User role for authorization (User, Admin)
-    /// </summary>
     [MaxLength(20)]
     public string Role { get; set; } = "User";
-    
-    /// <summary>
-    /// Refresh token for JWT refresh flow
-    /// </summary>
+
     public string? RefreshToken { get; set; }
     
-    /// <summary>
-    /// Expiry date for the refresh token
-    /// </summary>
     public DateTime? RefreshTokenExpiry { get; set; }
 }

@@ -14,7 +14,8 @@ public class TrayBackgroundService : BackgroundService
     private readonly IUserSettingsService _settingsService;
     private readonly ChampionDataService _championDataService;
     
-    private LcuQueueStats? _cachedRankedStats;
+    private LcuQueueStats? _cachedSoloRankedStats;
+    private LcuQueueStats? _cachedFlexRankedStats;
     private readonly HashSet<long> _processedGameIds = new();
     private string? _currentSummonerName;
     private Guid _activeProfileId = Guid.Empty;
@@ -66,7 +67,9 @@ public class TrayBackgroundService : BackgroundService
                 if (_lcuService.IsConnected)
                 {
                     // Refresh stats periodically
-                     _cachedRankedStats = await _lcuService.GetRankedStatsAsync();
+                     var allStats = await _lcuService.GetAllRankedStatsAsync();
+                     _cachedSoloRankedStats = allStats.Solo;
+                     _cachedFlexRankedStats = allStats.Flex;
                      
                      await CheckForAccountChangeAsync();
                 }
@@ -126,8 +129,10 @@ public class TrayBackgroundService : BackgroundService
                 // Get initial summoner info
                 await CheckForAccountChangeAsync();
                 
-                 // Cache ranked stats
-                _cachedRankedStats = await _lcuService.GetRankedStatsAsync();
+                // Cache ranked stats
+                var allStats = await _lcuService.GetAllRankedStatsAsync();
+                _cachedSoloRankedStats = allStats.Solo;
+                _cachedFlexRankedStats = allStats.Flex;
             }
             catch (Exception ex)
             {
@@ -161,9 +166,21 @@ public class TrayBackgroundService : BackgroundService
                 
                 // Update profile rank data (icon, tier, rank, LP) from LCU
                 // Fetch fresh ranked stats if not cached yet
-                var rankedStats = _cachedRankedStats ?? await _lcuService.GetRankedStatsAsync();
-                _cachedRankedStats = rankedStats ?? _cachedRankedStats;
-                var soloStats = rankedStats;
+                LcuQueueStats? soloStats;
+                LcuQueueStats? flexStats;
+                if (_cachedSoloRankedStats != null || _cachedFlexRankedStats != null)
+                {
+                    soloStats = _cachedSoloRankedStats;
+                    flexStats = _cachedFlexRankedStats;
+                }
+                else
+                {
+                    var allStats = await _lcuService.GetAllRankedStatsAsync();
+                    soloStats = allStats.Solo;
+                    flexStats = allStats.Flex;
+                }
+                _cachedSoloRankedStats = soloStats ?? _cachedSoloRankedStats;
+                _cachedFlexRankedStats = flexStats ?? _cachedFlexRankedStats;
                 
                 _ = Task.Run(async () => 
                 {
@@ -172,7 +189,8 @@ public class TrayBackgroundService : BackgroundService
                         await _apiSyncService.UpdateProfileRankDataAsync(
                             _activeProfileId, 
                             summoner.ProfileIconId,
-                            soloStats);
+                            soloStats,
+                            flexStats);
                     }
                     catch (Exception ex)
                     {
@@ -228,10 +246,11 @@ public class TrayBackgroundService : BackgroundService
             await Task.Delay(3000);
             
             // Fetch fresh ranked stats AFTER the delay to get updated LP
-            var freshRankedStats = await _lcuService.GetRankedStatsAsync();
-            _cachedRankedStats = freshRankedStats ?? _cachedRankedStats;
+            var freshRankedStats = await _lcuService.GetAllRankedStatsAsync();
+            _cachedSoloRankedStats = freshRankedStats.Solo ?? _cachedSoloRankedStats;
+            _cachedFlexRankedStats = freshRankedStats.Flex ?? _cachedFlexRankedStats;
             
-            var match = Helpers.DataMapper.MapToMatchEntry(eogStats, _cachedRankedStats, _activeProfileId, gameDetails);
+            var match = Helpers.DataMapper.MapToMatchEntry(eogStats, _cachedSoloRankedStats, _cachedFlexRankedStats, _activeProfileId, gameDetails);
             
             var success = await _apiSyncService.SyncMatchAsync(match);
             
@@ -250,7 +269,8 @@ public class TrayBackgroundService : BackgroundService
                             await _apiSyncService.UpdateProfileRankDataAsync(
                                 _activeProfileId,
                                 summoner.ProfileIconId,
-                                _cachedRankedStats);
+                                _cachedSoloRankedStats,
+                                _cachedFlexRankedStats);
                         }
                     }
                     catch (Exception ex)

@@ -22,7 +22,8 @@
                   Class="admin-table" Elevation="0">
             <HeaderContent>
                 <MudTh>Profile</MudTh>
-                <MudTh>Rank</MudTh>
+                <MudTh>Solo/Duo</MudTh>
+                <MudTh>Flex</MudTh>
                 <MudTh>User</MudTh>
                 <MudTh>Default</MudTh>
                 <MudTh>Linked</MudTh>
@@ -46,7 +47,7 @@
                         <MudText>@context.Name#@context.Tag</MudText>
                     </MudStack>
                 </MudTd>
-                <MudTd DataLabel="Rank">
+                <MudTd DataLabel="Solo/Duo">
                     @if (!string.IsNullOrEmpty(context.SoloTier))
                     {
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
@@ -54,6 +55,22 @@
                                       Width="24" Height="24" Class="rank-icon" />
                             <MudText Typo="Typo.body2" Style="@GetRankColor(context.SoloTier)">
                                 @FormatRank(context.SoloTier, context.SoloRank, context.SoloLP)
+                            </MudText>
+                        </MudStack>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Class="text-gray-500">Unranked</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Flex">
+                    @if (!string.IsNullOrEmpty(context.FlexTier))
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudImage Src="@GetRankIconUrl(context.FlexTier)" Alt="@context.FlexTier" 
+                                      Width="24" Height="24" Class="rank-icon" />
+                            <MudText Typo="Typo.body2" Style="@GetRankColor(context.FlexTier)">
+                                @FormatRank(context.FlexTier, context.FlexRank, context.FlexLP)
                             </MudText>
                         </MudStack>
                     }
