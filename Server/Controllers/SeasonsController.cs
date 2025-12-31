@@ -1,5 +1,6 @@
 using LolStatsTracker.API.Data;
 using LolStatsTracker.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -43,6 +44,7 @@ public class SeasonsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Season>> Create(Season season)
     {
         _context.Seasons.Add(season);
@@ -51,6 +53,7 @@ public class SeasonsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, Season season)
     {
         if (id != season.Id) return BadRequest();
@@ -61,6 +64,7 @@ public class SeasonsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var season = await _context.Seasons.FindAsync(id);

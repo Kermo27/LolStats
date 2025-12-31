@@ -1,0 +1,234 @@
+@using LolStatsTracker.Services.AdminService
+@using LolStatsTracker.Shared.DTOs
+@inject IAdminService AdminService
+@inject ISnackbar Snackbar
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h6">All Profiles</MudText>
+        <MudTextField @bind-Value="_searchTerm" Placeholder="Search by name..."
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="SearchChanged"
+                      Style="max-width: 300px;" />
+    </MudStack>
+
+    @if (_isLoading)
+    {
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="400px" />
+    }
+    else if (FilteredProfiles.Any())
+    {
+        <MudTable Items="@FilteredProfiles" Hover="true" Striped="true" Dense="true"
+                  Class="admin-table" Elevation="0">
+            <HeaderContent>
+                <MudTh>Profile</MudTh>
+                <MudTh>Rank</MudTh>
+                <MudTh>User</MudTh>
+                <MudTh>Default</MudTh>
+                <MudTh>Linked</MudTh>
+                <MudTh>Matches</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Profile">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        @if (context.ProfileIconId.HasValue)
+                        {
+                            <MudAvatar Size="Size.Small" Style="border: 2px solid #3b82f6;">
+                                <MudImage Src="@GetProfileIconUrl(context.ProfileIconId.Value)" Alt="Icon" />
+                            </MudAvatar>
+                        }
+                        else
+                        {
+                            <MudAvatar Size="Size.Small" Color="Color.Primary">
+                                @context.Name[0].ToString().ToUpper()
+                            </MudAvatar>
+                        }
+                        <MudText>@context.Name#@context.Tag</MudText>
+                    </MudStack>
+                </MudTd>
+                <MudTd DataLabel="Rank">
+                    @if (!string.IsNullOrEmpty(context.SoloTier))
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudImage Src="@GetRankIconUrl(context.SoloTier)" Alt="@context.SoloTier" 
+                                      Width="24" Height="24" Class="rank-icon" />
+                            <MudText Typo="Typo.body2" Style="@GetRankColor(context.SoloTier)">
+                                @FormatRank(context.SoloTier, context.SoloRank, context.SoloLP)
+                            </MudText>
+                        </MudStack>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Class="text-gray-500">Unranked</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="User">
+                    @if (context.Username != null)
+                    {
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => ShowUserProfiles(context.UserId!.Value, context.Username))">
+                            @context.Username
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">No owner</MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Default">
+                    @if (context.IsDefault)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Star" Color="Color.Warning" Size="Size.Small" />
+                    }
+                </MudTd>
+                <MudTd DataLabel="Linked">
+                    @if (!string.IsNullOrEmpty(context.RiotPuuid))
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Default" Size="Size.Small" />
+                    }
+                </MudTd>
+                <MudTd DataLabel="Matches">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary">@context.MatchCount</MudChip>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info">No profiles</MudAlert>
+    }
+</MudStack>
+
+@* User Profiles Dialog *@
+<MudDialog @bind-Visible="_dialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Profiles of @_selectedUsername</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_userProfiles.Any())
+        {
+            <MudList T="ProfileListDto" Dense="true">
+                @foreach (var profile in _userProfiles)
+                {
+                    <MudListItem T="ProfileListDto">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="width: 100%;">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudAvatar Size="Size.Small" Color="@(profile.IsDefault ? Color.Warning : Color.Primary)">
+                                    @profile.Name[0].ToString().ToUpper()
+                                </MudAvatar>
+                                <MudText>@profile.Name#@profile.Tag</MudText>
+                                @if (profile.IsDefault)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Star" Color="Color.Warning" Size="Size.Small" />
+                                }
+                            </MudStack>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary">@profile.MatchCount matches</MudChip>
+                        </MudStack>
+                    </MudListItem>
+                }
+            </MudList>
+        }
+        else
+        {
+            <MudText Class="pa-4">No profiles</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseDialog">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .admin-table {
+        background: rgba(30, 30, 40, 0.4);
+        border-radius: 8px;
+    }
+</style>
+
+@code {
+    private List<ProfileListDto> _profiles = new();
+    private List<ProfileListDto> _userProfiles = new();
+    private bool _isLoading = true;
+    private string _searchTerm = "";
+    private bool _dialogVisible;
+    private string _selectedUsername = "";
+    
+    private readonly DialogOptions _dialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        CloseButton = true,
+        MaxWidth = MaxWidth.Small
+    };
+
+    private List<ProfileListDto> FilteredProfiles => string.IsNullOrWhiteSpace(_searchTerm)
+        ? _profiles
+        : _profiles.Where(p => 
+            p.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            p.Tag.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            (p.Username?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+        ).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfilesAsync();
+    }
+
+    private async Task LoadProfilesAsync()
+    {
+        _isLoading = true;
+        _profiles = await AdminService.GetProfilesAsync();
+        _isLoading = false;
+    }
+
+    private void SearchChanged(string value)
+    {
+        _searchTerm = value;
+        StateHasChanged();
+    }
+
+    private async Task ShowUserProfiles(Guid userId, string username)
+    {
+        _selectedUsername = username;
+        _userProfiles = await AdminService.GetProfilesByUserIdAsync(userId);
+        _dialogVisible = true;
+    }
+
+    private void CloseDialog()
+    {
+        _dialogVisible = false;
+        _userProfiles = new();
+    }
+
+    private string GetProfileIconUrl(int iconId) => 
+        $"https://ddragon.leagueoflegends.com/cdn/14.24.1/img/profileicon/{iconId}.png";
+
+    private string GetRankIconUrl(string tier) =>
+        $"https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/{tier.ToLower()}.png";
+
+    private string FormatRank(string? tier, string? rank, int? lp)
+    {
+        if (string.IsNullOrEmpty(tier)) return "Unranked";
+        var division = !string.IsNullOrEmpty(rank) ? $" {rank}" : "";
+        var lpText = lp.HasValue ? $" ({lp} LP)" : "";
+        return $"{tier}{division}{lpText}";
+    }
+
+    private string GetRankColor(string? tier) => tier?.ToUpper() switch
+    {
+        "IRON" => "color: #515151;",
+        "BRONZE" => "color: #8c5a3c;",
+        "SILVER" => "color: #80989d;",
+        "GOLD" => "color: #cd8837;",
+        "PLATINUM" => "color: #4e9996;",
+        "EMERALD" => "color: #2d9171;",
+        "DIAMOND" => "color: #576bce;",
+        "MASTER" => "color: #9d48e0;",
+        "GRANDMASTER" => "color: #cd4545;",
+        "CHALLENGER" => "color: #f4c874;",
+        _ => "color: #888;"
+    };
+}

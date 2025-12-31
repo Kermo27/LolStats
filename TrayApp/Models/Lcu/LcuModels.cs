@@ -20,6 +20,9 @@ public class LcuSummoner
     
     [JsonProperty("summonerLevel")]
     public int SummonerLevel { get; set; }
+    
+    [JsonProperty("profileIconId")]
+    public int ProfileIconId { get; set; }
 }
 
 public class LcuRankedStats

@@ -1,0 +1,65 @@
+@using LolStatsTracker.Shared.DTOs
+
+<MudGrid Spacing="4">
+    @if (IsLoading)
+    {
+        @for (int i = 0; i < 4; i++)
+        {
+            <MudItem xs="12" sm="6" md="3">
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="120px" />
+            </MudItem>
+        }
+    }
+    else if (Stats != null)
+    {
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Title="Users" Value="@Stats.TotalUsers.ToString()" 
+                      Icon="@Icons.Material.Filled.People" Color="Color.Primary"
+                      Subtitle="@($"+{Stats.NewUsersThisWeek} this week")" />
+        </MudItem>
+        
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Title="Profiles" Value="@Stats.TotalProfiles.ToString()" 
+                      Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Secondary" />
+        </MudItem>
+        
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Title="Matches" Value="@Stats.TotalMatches.ToString()" 
+                      Icon="@Icons.Material.Filled.SportsEsports" Color="Color.Tertiary"
+                      Subtitle="@($"+{Stats.MatchesToday} today")" />
+        </MudItem>
+        
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Title="Seasons" Value="@Stats.TotalSeasons.ToString()" 
+                      Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Info" />
+        </MudItem>
+        
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4 stat-card">
+                <MudText Typo="Typo.h6" Class="mb-3">This week's activity</MudText>
+                <MudStack Row="true" Spacing="4">
+                    <MudStack>
+                        <MudText Typo="Typo.h3" Color="Color.Primary">@Stats.MatchesThisWeek</MudText>
+                        <MudText Typo="Typo.body2" Class="text-gray-400">Matches played</MudText>
+                    </MudStack>
+                    <MudDivider Vertical="true" FlexItem="true" />
+                    <MudStack>
+                        <MudText Typo="Typo.h3" Color="Color.Secondary">@Stats.NewUsersThisWeek</MudText>
+                        <MudText Typo="Typo.body2" Class="text-gray-400">New users</MudText>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    }
+    else
+    {
+        <MudItem xs="12">
+            <MudAlert Severity="Severity.Warning">Failed to load statistics</MudAlert>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    [Parameter] public SystemStatsDto? Stats { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+}

@@ -1,0 +1,89 @@
+@using LolStatsTracker.Shared.DTOs
+@inject IDialogService DialogService
+
+@if (IsLoading)
+{
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="400px" />
+}
+else if (Users.Any())
+{
+    <MudTable Items="@Users" Hover="true" Striped="true" Dense="true"
+              Class="admin-table" Elevation="0">
+        <HeaderContent>
+            <MudTh>User</MudTh>
+            <MudTh>Email</MudTh>
+            <MudTh>Role</MudTh>
+            <MudTh>Created At</MudTh>
+            <MudTh>Profile</MudTh>
+            <MudTh>Matches</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="User">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudAvatar Size="Size.Small" Color="@(context.Role == "Admin" ? Color.Secondary : Color.Primary)">
+                        @context.Username[0].ToString().ToUpper()
+                    </MudAvatar>
+                    <MudText>@context.Username</MudText>
+                </MudStack>
+            </MudTd>
+            <MudTd DataLabel="Email">@(context.Email ?? "-")</MudTd>
+            <MudTd DataLabel="Role">
+                <MudSelect T="string" Value="@context.Role" Dense="true" Margin="Margin.Dense"
+                           ValueChanged="@(role => OnRoleChanged.InvokeAsync((context.Id, role)))"
+                           Class="role-select">
+                    <MudSelectItem Value="@("User")">User</MudSelectItem>
+                    <MudSelectItem Value="@("Admin")">Admin</MudSelectItem>
+                </MudSelect>
+            </MudTd>
+            <MudTd DataLabel="Created At">@context.CreatedAt.ToString("dd.MM.yyyy HH:mm")</MudTd>
+            <MudTd DataLabel="Profile">
+                <MudChip T="string" Size="Size.Small" Color="Color.Info">@context.ProfileCount</MudChip>
+            </MudTd>
+            <MudTd DataLabel="Matches">
+                <MudChip T="string" Size="Size.Small" Color="Color.Primary">@context.MatchCount</MudChip>
+            </MudTd>
+            <MudTd DataLabel="Actions">
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                               OnClick="@(() => ConfirmDelete(context))" 
+                               Title="Delete user" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+else
+{
+    <MudAlert Severity="Severity.Info">No users</MudAlert>
+}
+
+<style>
+    .admin-table {
+        background: rgba(30, 30, 40, 0.4);
+        border-radius: 8px;
+    }
+    
+    .role-select {
+        min-width: 100px;
+    }
+</style>
+
+@code {
+    [Parameter] public List<UserListDto> Users { get; set; } = new();
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public EventCallback<(Guid userId, string role)> OnRoleChanged { get; set; }
+    [Parameter] public EventCallback<Guid> OnUserDeleted { get; set; }
+
+    private async Task ConfirmDelete(UserListDto user)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Confirm Delete",
+            $"Are you sure you want to delete user {user.Username}? This action is irreversible and will delete all profiles and matches for this user.",
+            yesText: "Delete",
+            cancelText: "Cancel");
+        
+        if (result == true)
+        {
+            await OnUserDeleted.InvokeAsync(user.Id);
+        }
+    }
+}

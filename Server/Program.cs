@@ -2,6 +2,7 @@ using System.Text;
 using AspNetCoreRateLimit;
 using LolStatsTracker.API.Data;
 using LolStatsTracker.API.Models;
+using LolStatsTracker.API.Services.AdminService;
 using LolStatsTracker.API.Services.AuthService;
 using LolStatsTracker.API.Services.MatchService;
 using LolStatsTracker.API.Services.MilestoneService;
@@ -69,6 +70,7 @@ builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IMilestoneService, MilestoneService>();
 builder.Services.AddHttpClient<IDDragonService, DDragonService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();

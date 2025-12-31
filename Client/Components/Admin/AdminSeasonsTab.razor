@@ -1,0 +1,245 @@
+@using LolStatsTracker.Shared.Models
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h6">Manage Seasons</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenAddDialog">
+            Add Season
+        </MudButton>
+    </MudStack>
+
+    @if (_isLoading)
+    {
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="300px" />
+    }
+    else if (_seasons.Any())
+    {
+        <MudTable Items="@_seasons" Hover="true" Striped="true" Dense="true"
+                  Class="admin-table" Elevation="0">
+            <HeaderContent>
+                <MudTh>ID</MudTh>
+                <MudTh>Number</MudTh>
+                <MudTh>Name</MudTh>
+                <MudTh>Start Date</MudTh>
+                <MudTh>End Date</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="ID">@context.Id</MudTd>
+                <MudTd DataLabel="Number">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary">S@(context.Number)</MudChip>
+                </MudTd>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Start Date">@context.StartDate.ToString("dd.MM.yyyy")</MudTd>
+                <MudTd DataLabel="End Date">@(context.EndDate?.ToString("dd.MM.yyyy") ?? "—")</MudTd>
+                <MudTd DataLabel="Status">
+                    @if (context.ContainsDate(DateTime.Today))
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success">Active</MudChip>
+                    }
+                    else if (context.EndDate.HasValue && context.EndDate < DateTime.Today)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Default">Ended</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">Upcoming</MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => OpenEditDialog(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                                   OnClick="@(() => ConfirmDelete(context))" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info">No seasons</MudAlert>
+    }
+</MudStack>
+
+@* Add/Edit Dialog *@
+<MudDialog @bind-Visible="_dialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(_editingSeason == null ? "Add new season" : "Edit season")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3" Class="pa-4" Style="min-width: 350px;">
+            <MudNumericField @bind-Value="_formNumber" Label="Season number" Required="true" Min="1" />
+            <MudTextField @bind-Value="_formCustomName" Label="Custom name (optional)" Placeholder="e.g. Split 1 2025" />
+            <MudDatePicker @bind-Date="_formStartDate" Label="Start date" Required="true" />
+            <MudDatePicker @bind-Date="_formEndDate" Label="End date" Clearable="true" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseDialog">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveSeason">
+            @(_editingSeason == null ? "Add" : "Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .admin-table {
+        background: rgba(30, 30, 40, 0.4);
+        border-radius: 8px;
+    }
+</style>
+
+@code {
+    private List<Season> _seasons = new();
+    private bool _isLoading = true;
+    private bool _dialogVisible;
+    private Season? _editingSeason;
+    
+    // Form fields
+    private int _formNumber;
+    private string? _formCustomName;
+    private DateTime? _formStartDate;
+    private DateTime? _formEndDate;
+    
+    private readonly DialogOptions _dialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        CloseButton = true,
+        MaxWidth = MaxWidth.Small
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSeasonsAsync();
+    }
+
+    private async Task LoadSeasonsAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _seasons = await Http.GetFromJsonAsync<List<Season>>("api/Seasons") ?? new();
+        }
+        catch
+        {
+            _seasons = new();
+        }
+        _isLoading = false;
+    }
+
+    private void OpenAddDialog()
+    {
+        _editingSeason = null;
+        _formNumber = _seasons.Any() ? _seasons.Max(s => s.Number) + 1 : 1;
+        _formCustomName = null;
+        _formStartDate = DateTime.Today;
+        _formEndDate = null;
+        _dialogVisible = true;
+    }
+
+    private void OpenEditDialog(Season season)
+    {
+        _editingSeason = season;
+        _formNumber = season.Number;
+        _formCustomName = season.CustomName;
+        _formStartDate = season.StartDate;
+        _formEndDate = season.EndDate;
+        _dialogVisible = true;
+    }
+
+    private void CloseDialog()
+    {
+        _dialogVisible = false;
+        _editingSeason = null;
+    }
+
+    private async Task SaveSeason()
+    {
+        if (_formStartDate == null)
+        {
+            Snackbar.Add("Start date is required", Severity.Warning);
+            return;
+        }
+
+        var season = new Season
+        {
+            Id = _editingSeason?.Id ?? 0,
+            Number = _formNumber,
+            CustomName = string.IsNullOrWhiteSpace(_formCustomName) ? null : _formCustomName,
+            StartDate = _formStartDate.Value,
+            EndDate = _formEndDate
+        };
+
+        try
+        {
+            if (_editingSeason == null)
+            {
+                var response = await Http.PostAsJsonAsync("api/Seasons", season);
+                if (response.IsSuccessStatusCode)
+                {
+                    Snackbar.Add($"Season {season.Number} has been added", Severity.Success);
+                }
+                else
+                {
+                    Snackbar.Add("Failed to add season", Severity.Error);
+                    return;
+                }
+            }
+            else
+            {
+                var response = await Http.PutAsJsonAsync($"api/Seasons/{season.Id}", season);
+                if (response.IsSuccessStatusCode)
+                {
+                    Snackbar.Add($"Season {season.Number} has been updated", Severity.Success);
+                }
+                else
+                {
+                    Snackbar.Add("Failed to update season", Severity.Error);
+                    return;
+                }
+            }
+
+            CloseDialog();
+            await LoadSeasonsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ConfirmDelete(Season season)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Confirm Delete",
+            $"Are you sure you want to delete {season.Name}?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                var response = await Http.DeleteAsync($"api/Seasons/{season.Id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    Snackbar.Add($"{season.Name} has been deleted", Severity.Success);
+                    await LoadSeasonsAsync();
+                }
+                else
+                {
+                    Snackbar.Add("Failed to delete season", Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

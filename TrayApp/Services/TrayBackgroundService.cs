@@ -158,6 +158,27 @@ public class TrayBackgroundService : BackgroundService
                 _logger.LogInformation("Using profile {ProfileId} for {SummonerName}", 
                     _activeProfileId, _currentSummonerName);
                 StatusChanged?.Invoke(this, $"Ready - {_currentSummonerName}");
+                
+                // Update profile rank data (icon, tier, rank, LP) from LCU
+                // Fetch fresh ranked stats if not cached yet
+                var rankedStats = _cachedRankedStats ?? await _lcuService.GetRankedStatsAsync();
+                _cachedRankedStats = rankedStats ?? _cachedRankedStats;
+                var soloStats = rankedStats;
+                
+                _ = Task.Run(async () => 
+                {
+                    try
+                    {
+                        await _apiSyncService.UpdateProfileRankDataAsync(
+                            _activeProfileId, 
+                            summoner.ProfileIconId,
+                            soloStats);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to update profile rank data");
+                    }
+                });
             }
             else
             {
@@ -217,6 +238,26 @@ public class TrayBackgroundService : BackgroundService
             if (success)
             {
                 StatusChanged?.Invoke(this, $"Synced: {match.Champion} ({gameMode} - {(match.Win ? "Win" : "Loss")})");
+                
+                // Also update profile rank data (may have changed after ranked game)
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var summoner = await _lcuService.GetCurrentSummonerAsync();
+                        if (summoner != null)
+                        {
+                            await _apiSyncService.UpdateProfileRankDataAsync(
+                                _activeProfileId,
+                                summoner.ProfileIconId,
+                                _cachedRankedStats);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to update profile rank data after match");
+                    }
+                });
             }
             else
             {

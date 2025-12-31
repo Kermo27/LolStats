@@ -1,4 +1,6 @@
-﻿<MudNavMenu Dense="true" Class="pt-4">
+﻿@inject AuthenticationStateProvider AuthStateProvider
+
+<MudNavMenu Dense="true" Class="pt-4">
     
     @foreach (var link in _navLinks)
     {
@@ -10,6 +12,19 @@
             @link.Title
         </MudNavLink>
     }
+    
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <MudDivider Class="my-3 mx-4" Style="border-color: rgba(255,255,255,0.1);" />
+            <MudNavLink Href="admin"
+                        Match="NavLinkMatch.Prefix"
+                        Icon="@Icons.Material.Filled.AdminPanelSettings"
+                        Class="hover:bg-[#2a2a35] hover:text-white rounded-lg mx-2 my-1 transition-colors duration-200"
+                        ActiveClass="bg-[#8b5cf6] text-white font-semibold rounded-lg mx-2 my-1 shadow-md shadow-purple-500/20">
+                Admin Panel
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
     
 </MudNavMenu>
 

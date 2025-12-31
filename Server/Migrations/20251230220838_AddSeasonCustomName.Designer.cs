@@ -3,6 +3,7 @@ using System;
 using LolStatsTracker.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LolStatsTracker.API.Migrations
 {
     [DbContext(typeof(MatchDbContext))]
-    partial class MatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251230220838_AddSeasonCustomName")]
+    partial class AddSeasonCustomName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
@@ -410,19 +413,7 @@ namespace LolStatsTracker.API.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("ProfileIconId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("RiotPuuid")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("SoloLP")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("SoloRank")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SoloTier")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Tag")

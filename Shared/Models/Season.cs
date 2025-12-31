@@ -7,10 +7,11 @@ public class Season
     [Key]
     public int Id { get; set; }
     public int Number { get; set; }
+    public string? CustomName { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     
-    public string Name => $"Season {Number}";
+    public string Name => !string.IsNullOrEmpty(CustomName) ? CustomName : $"Season {Number}";
 
     public bool ContainsDate(DateTime date)
     {

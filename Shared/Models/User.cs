@@ -23,6 +23,12 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     /// <summary>
+    /// User role for authorization (User, Admin)
+    /// </summary>
+    [MaxLength(20)]
+    public string Role { get; set; } = "User";
+    
+    /// <summary>
     /// Refresh token for JWT refresh flow
     /// </summary>
     public string? RefreshToken { get; set; }

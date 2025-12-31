@@ -16,18 +16,21 @@ public class ApiSyncService
     private readonly HttpClient _httpClient;
     private readonly AppConfiguration _config;
     private readonly TrayAuthService _authService;
+    private readonly RiotApiService _riotApiService;
     
     public ApiSyncService(
         ILogger<ApiSyncService> logger,
         IOptions<AppConfiguration> config,
         HttpClient httpClient,
-        TrayAuthService authService)
+        TrayAuthService authService,
+        RiotApiService riotApiService)
     {
         _logger = logger;
         _config = config.Value;
         _httpClient = httpClient;
         _httpClient.BaseAddress = new Uri(_config.ApiBaseUrl);
         _authService = authService;
+        _riotApiService = riotApiService;
     }
     
     public async Task<bool> SyncMatchAsync(MatchEntry match)
@@ -183,6 +186,138 @@ public class ApiSyncService
         {
             _logger.LogError(ex, "Error getting/creating profile");
             return null;
+        }
+    }
+    
+    /// <summary>
+    /// Updates profile rank data using data from LCU (no Riot API key needed)
+    /// </summary>
+    public async Task<bool> UpdateProfileRankDataAsync(Guid profileId, int profileIconId, LolStatsTracker.TrayApp.Models.Lcu.LcuQueueStats? soloRankedStats)
+    {
+        try
+        {
+            var token = await _authService.GetValidAccessTokenAsync();
+            if (token == null)
+            {
+                _logger.LogWarning("Not authenticated, cannot update profile rank data");
+                return false;
+            }
+            
+            // Build update payload from LCU data
+            var updateData = new
+            {
+                ProfileIconId = profileIconId,
+                SoloTier = soloRankedStats?.Tier,
+                SoloRank = soloRankedStats?.Division,
+                SoloLP = soloRankedStats?.LeaguePoints
+            };
+            
+            var updateRequest = new HttpRequestMessage(HttpMethod.Patch, $"/api/profiles/{profileId}/rankdata");
+            updateRequest.Content = new StringContent(
+                JsonConvert.SerializeObject(updateData),
+                Encoding.UTF8,
+                "application/json"
+            );
+            _authService.AddAuthHeader(updateRequest);
+            
+            var response = await _httpClient.SendAsync(updateRequest);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Updated profile rank data: Icon={Icon}, Rank={Tier} {Division} {LP}LP",
+                    profileIconId, 
+                    soloRankedStats?.Tier ?? "Unranked", 
+                    soloRankedStats?.Division ?? "",
+                    soloRankedStats?.LeaguePoints ?? 0);
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Failed to update profile rank data: {StatusCode} - {Error}", 
+                    response.StatusCode, error);
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating profile rank data");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Fetches summoner icon and rank from Riot API and updates the profile (requires Riot API key)
+    /// </summary>
+    public async Task<bool> UpdateProfileRankDataFromRiotApiAsync(Guid profileId, string puuid)
+    {
+        try
+        {
+            if (!_riotApiService.IsConfigured)
+            {
+                _logger.LogDebug("Riot API not configured, skipping profile data update");
+                return false;
+            }
+            
+            var token = await _authService.GetValidAccessTokenAsync();
+            if (token == null)
+            {
+                _logger.LogWarning("Not authenticated, cannot update profile rank data");
+                return false;
+            }
+            
+            // Get summoner data (has profile icon)
+            var summoner = await _riotApiService.GetSummonerByPuuidAsync(puuid);
+            if (summoner == null)
+            {
+                _logger.LogWarning("Failed to get summoner data for PUUID: {Puuid}", puuid);
+                return false;
+            }
+            
+            // Get ranked data
+            var rankedEntries = await _riotApiService.GetRankedStatsAsync(summoner.Id);
+            var soloEntry = rankedEntries?.FirstOrDefault(e => e.QueueType == "RANKED_SOLO_5x5");
+            
+            // Build update payload
+            var updateData = new
+            {
+                ProfileIconId = summoner.ProfileIconId,
+                SoloTier = soloEntry?.Tier,
+                SoloRank = soloEntry?.Rank,
+                SoloLP = soloEntry?.LeaguePoints
+            };
+            
+            var updateRequest = new HttpRequestMessage(HttpMethod.Patch, $"/api/profiles/{profileId}/rankdata");
+            updateRequest.Content = new StringContent(
+                JsonConvert.SerializeObject(updateData),
+                Encoding.UTF8,
+                "application/json"
+            );
+            _authService.AddAuthHeader(updateRequest);
+            
+            var response = await _httpClient.SendAsync(updateRequest);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Updated profile rank data: Icon={Icon}, Rank={Tier} {Division} {LP}LP",
+                    summoner.ProfileIconId, 
+                    soloEntry?.Tier ?? "Unranked", 
+                    soloEntry?.Rank ?? "",
+                    soloEntry?.LeaguePoints ?? 0);
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Failed to update profile rank data: {StatusCode} - {Error}", 
+                    response.StatusCode, error);
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating profile rank data");
+            return false;
         }
     }
 }

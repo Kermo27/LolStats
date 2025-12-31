@@ -90,4 +90,32 @@ public class ProfilesController : ControllerBase
 
         return NoContent();
     }
+
+    /// <summary>
+    /// Update profile rank data (icon, tier, rank, LP) - called by TrayApp
+    /// </summary>
+    [HttpPatch("{id:guid}/rankdata")]
+    public async Task<ActionResult> UpdateRankData(Guid id, [FromBody] UpdateRankDataDto dto)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+
+        var profile = await _profileService.GetByIdAsync(id, userId);
+        if (profile == null) return NotFound();
+
+        profile.ProfileIconId = dto.ProfileIconId;
+        profile.SoloTier = dto.SoloTier;
+        profile.SoloRank = dto.SoloRank;
+        profile.SoloLP = dto.SoloLP;
+
+        await _profileService.UpdateAsync(profile, userId);
+        return Ok(new { message = "Rank data updated" });
+    }
 }
+
+public record UpdateRankDataDto(
+    int? ProfileIconId,
+    string? SoloTier,
+    string? SoloRank,
+    int? SoloLP
+);

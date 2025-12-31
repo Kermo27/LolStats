@@ -1,0 +1,120 @@
+@page "/admin"
+@using LolStatsTracker.Services.AdminService
+@using LolStatsTracker.Shared.DTOs
+@using LolStatsTracker.Components.Admin
+@inject IAdminService AdminService
+@inject ISnackbar Snackbar
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Admin Panel - LoL Stats Tracker</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6">
+    <MudText Typo="Typo.h4" Class="mb-6 font-bold text-gradient-primary">
+        <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Class="mr-2" />
+        Admin Panel
+    </MudText>
+
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" 
+             Class="admin-tabs" PanelClass="pa-6">
+        
+        <MudTabPanel Text="Dashboard" Icon="@Icons.Material.Filled.Dashboard">
+            <AdminDashboardTab Stats="_stats" IsLoading="_isLoadingStats" />
+        </MudTabPanel>
+        
+        <MudTabPanel Text="Users" Icon="@Icons.Material.Filled.People">
+            <AdminUsersTab Users="_users" IsLoading="_isLoadingUsers" 
+                           OnRoleChanged="HandleRoleChanged" 
+                           OnUserDeleted="HandleUserDeleted" />
+        </MudTabPanel>
+        
+        <MudTabPanel Text="Profiles" Icon="@Icons.Material.Filled.AccountCircle">
+            <AdminProfilesTab />
+        </MudTabPanel>
+        
+        <MudTabPanel Text="Matches" Icon="@Icons.Material.Filled.SportsEsports">
+            <AdminMatchesTab />
+        </MudTabPanel>
+        
+        <MudTabPanel Text="Seasons" Icon="@Icons.Material.Filled.EmojiEvents">
+            <AdminSeasonsTab />
+        </MudTabPanel>
+        
+    </MudTabs>
+</MudContainer>
+
+<style>
+    .text-gradient-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .admin-tabs {
+        background: rgba(30, 30, 40, 0.6);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+</style>
+
+@code {
+    private SystemStatsDto? _stats;
+    private List<UserListDto> _users = new();
+    private bool _isLoadingStats = true;
+    private bool _isLoadingUsers = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        var statsTask = LoadStatsAsync();
+        var usersTask = LoadUsersAsync();
+        await Task.WhenAll(statsTask, usersTask);
+    }
+
+    private async Task LoadStatsAsync()
+    {
+        _isLoadingStats = true;
+        _stats = await AdminService.GetStatsAsync();
+        _isLoadingStats = false;
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        _isLoadingUsers = true;
+        _users = await AdminService.GetUsersAsync();
+        _isLoadingUsers = false;
+    }
+
+    private async Task HandleRoleChanged((Guid userId, string role) args)
+    {
+        var success = await AdminService.UpdateUserRoleAsync(args.userId, args.role);
+        if (success)
+        {
+            Snackbar.Add($"Role changed to {args.role}", Severity.Success);
+            await LoadUsersAsync();
+        }
+        else
+        {
+            Snackbar.Add("Failed to change role", Severity.Error);
+        }
+    }
+
+    private async Task HandleUserDeleted(Guid userId)
+    {
+        var success = await AdminService.DeleteUserAsync(userId);
+        if (success)
+        {
+            Snackbar.Add("User deleted", Severity.Success);
+            await LoadDataAsync();
+        }
+        else
+        {
+            Snackbar.Add("Failed to delete user", Severity.Error);
+        }
+    }
+}

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.AspNetCore.Components.Authorization;
 using LolStatsTracker;
+using LolStatsTracker.Services.AdminService;
 using LolStatsTracker.Services.AuthService;
 using LolStatsTracker.Services.LeagueAssetsService;
 using LolStatsTracker.Services.MatchService;
@@ -50,5 +51,6 @@ builder.Services.AddScoped<IMatchService, MatchApiService>();
 builder.Services.AddScoped<ILeagueAssetsService, LeagueAssetsService>();
 builder.Services.AddScoped<IStatsService, StatsApiService>();
 builder.Services.AddScoped<IMilestoneService, MilestoneApiService>();
+builder.Services.AddScoped<IAdminService, AdminApiService>();
 
 await builder.Build().RunAsync();
