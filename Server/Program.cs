@@ -1,4 +1,6 @@
+using System.Net;
 using System.Text;
+using System.Text.Json;
 using AspNetCoreRateLimit;
 using LolStatsTracker.API.Data;
 using LolStatsTracker.API.Models;
@@ -10,6 +12,7 @@ using LolStatsTracker.API.Services.ProfileService;
 using LolStatsTracker.API.Services.StatsService;
 using LolStatsTracker.API.Services.DDragonService;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -47,21 +50,25 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Rate Limiting Configuration
 builder.Services.AddMemoryCache();
 builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
 builder.Services.AddInMemoryRateLimiting();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
+    ?? ["http://localhost:5067"];
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
         policy.AllowAnyHeader()
             .AllowAnyMethod()
-            .WithOrigins("http://localhost:5067");
+            .AllowCredentials()
+            .WithOrigins(corsOrigins);
     });
 });
+
+builder.Services.AddHealthChecks();
 
 // Application Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -107,7 +114,31 @@ using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<MatchDbContext>();
 db.Database.Migrate();
 
-// Configure the HTTP request pipeline.
+// Global Exception Handler
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+        context.Response.ContentType = "application/json";
+        
+        var exceptionHandler = context.Features.Get<IExceptionHandlerFeature>();
+        if (exceptionHandler != null)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(exceptionHandler.Error, "Unhandled exception occurred");
+            
+            var response = new
+            {
+                error = "An unexpected error occurred",
+                requestId = context.TraceIdentifier
+            };
+            
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+    });
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -121,6 +152,8 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 app.Run();
