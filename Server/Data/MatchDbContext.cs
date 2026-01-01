@@ -11,7 +11,6 @@ public class MatchDbContext : DbContext
     public DbSet<MatchEntry> Matches => Set<MatchEntry>();
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<Season> Seasons => Set<Season>();
-    public DbSet<RankMilestone> RankMilestones => Set<RankMilestone>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,12 +36,6 @@ public class MatchDbContext : DbContext
             .HasOne<UserProfile>()
             .WithMany()
             .HasForeignKey(m => m.ProfileId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<RankMilestone>()
-            .HasOne<UserProfile>()
-            .WithMany()
-            .HasForeignKey(r => r.ProfileId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Performance indexes

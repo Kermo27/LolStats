@@ -1,7 +1,6 @@
 using LolStatsTracker.Helpers;
 using LolStatsTracker.Services.LeagueAssetsService;
 using LolStatsTracker.Services.MatchService;
-using LolStatsTracker.Services.MilestoneService;
 using LolStatsTracker.Services.SeasonState;
 using LolStatsTracker.Services.StatsService;
 using LolStatsTracker.Services.UserState;
@@ -27,14 +26,12 @@ public partial class Dashboard : IDisposable
     [Inject] private IStatsService StatsService { get; set; } = null!;
     [Inject] private ILeagueAssetsService LeagueAssetsService { get; set; } = null!;
     [Inject] private IMatchService MatchService { get; set; } = null!;
-    [Inject] private IMilestoneService MilestoneService { get; set; } = null!;
     [Inject] private IUserProfileState UserState { get; set; } = null!;
     [Inject] private ISeasonState SeasonState { get; set; } = null!;
 
     private StatsSummaryDto? _stats;
     private List<List<(DateTime Date, int Count)>> _matrix = new();
     private int _maxGamesPerDay;
-    private List<RankMilestoneDto> _milestones = new();
     private (string Start, string End, int Gained)? _lpRangeInfo;
     
     private string _selectedGameMode = "Ranked Solo";
@@ -137,7 +134,6 @@ public partial class Dashboard : IDisposable
             PrepareLpChart(matches);
         }
         
-        _milestones = await MilestoneService.GetMilestonesAsync();
         await LoadHardestEnemiesAsync();
         await LoadBestDuosAsync();
     }

@@ -1,5 +1,4 @@
 ﻿using LolStatsTracker.API.Data;
-using LolStatsTracker.API.Services.MilestoneService;
 using LolStatsTracker.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,12 +7,10 @@ namespace LolStatsTracker.API.Services.MatchService;
 public class MatchService : IMatchService
 {
     private readonly MatchDbContext _db;
-    private readonly IMilestoneService _milestoneService;
 
-    public MatchService(MatchDbContext db, IMilestoneService milestoneService)
+    public MatchService(MatchDbContext db)
     {
         _db = db;
-        _milestoneService = milestoneService;
     }
 
     public async Task<List<MatchEntry>> GetAllAsync(Guid profileId)
@@ -34,19 +31,8 @@ public class MatchService : IMatchService
 
     public async Task<MatchEntry> AddAsync(MatchEntry match)
     {
-        var previousMatch = await _db.Matches
-            .Where(m => m.ProfileId == match.ProfileId && m.Date < match.Date)
-            .OrderByDescending(m => m.Date)
-            .FirstOrDefaultAsync();
-
         _db.Matches.Add(match);
         await _db.SaveChangesAsync();
-        
-        if (match.ProfileId.HasValue)
-        {
-            await _milestoneService.CheckAndRecordMilestoneAsync(match.ProfileId.Value, match, previousMatch);
-        }
-
         return match;
     }
     
@@ -59,9 +45,6 @@ public class MatchService : IMatchService
         {
             return null; 
         }
-
-        var oldTier = existingMatch.CurrentTier;
-        var oldDivision = existingMatch.CurrentDivision;
         
         existingMatch.Champion = updatedMatch.Champion;
         existingMatch.Role = updatedMatch.Role;
@@ -84,17 +67,6 @@ public class MatchService : IMatchService
         existingMatch.ProfileId = profileId;
 
         await _db.SaveChangesAsync();
-        
-        if (oldTier != existingMatch.CurrentTier || oldDivision != existingMatch.CurrentDivision)
-        {
-            var previousMatch = await _db.Matches
-                .Where(m => m.ProfileId == profileId && m.Date < existingMatch.Date && m.Id != existingMatch.Id)
-                .OrderByDescending(m => m.Date)
-                .FirstOrDefaultAsync();
-            
-            await _milestoneService.CheckAndRecordMilestoneAsync(profileId, existingMatch, previousMatch);
-        }
-
         return existingMatch;
     }
 

@@ -7,7 +7,6 @@ using LolStatsTracker.API.Models;
 using LolStatsTracker.API.Services.AdminService;
 using LolStatsTracker.API.Services.AuthService;
 using LolStatsTracker.API.Services.MatchService;
-using LolStatsTracker.API.Services.MilestoneService;
 using LolStatsTracker.API.Services.ProfileService;
 using LolStatsTracker.API.Services.StatsService;
 using LolStatsTracker.API.Services.DDragonService;
@@ -75,7 +74,6 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
-builder.Services.AddScoped<IMilestoneService, MilestoneService>();
 builder.Services.AddHttpClient<IDDragonService, DDragonService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 

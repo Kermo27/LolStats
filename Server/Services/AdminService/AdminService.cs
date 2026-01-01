@@ -81,11 +81,6 @@ public class AdminService : IAdminService
                 .Where(m => m.ProfileId == profile.Id)
                 .ToListAsync();
             _context.Matches.RemoveRange(matches);
-            
-            var milestones = await _context.RankMilestones
-                .Where(r => r.ProfileId == profile.Id)
-                .ToListAsync();
-            _context.RankMilestones.RemoveRange(milestones);
         }
 
         // Delete profiles
