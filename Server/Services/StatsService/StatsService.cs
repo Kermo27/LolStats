@@ -70,13 +70,27 @@ public class StatsService : IStatsService
                 var mostPlayedRole = g.GroupBy(m => m.Role)
                                       .OrderByDescending(r => r.Count())
                                       .First().Key;
+                
+                var avgKda = g.Average(m => m.Deaths == 0 
+                    ? m.Kills + m.Assists 
+                    : (double)(m.Kills + m.Assists) / m.Deaths);
+                
+                var avgCsm = g.Average(m => m.GameLengthMinutes > 0 
+                    ? (double)m.Cs / m.GameLengthMinutes 
+                    : 0);
+                
+                var avgVisionScore = g.Average(m => m.VisionScore ?? 0);
+                
                 return new ChampionStatsDto(
                     ChampionName: g.Key,
                     Role: mostPlayedRole,
                     Games: games,
                     Wins: wins,
                     Losses: games - wins,
-                    Winrate: (double)wins / games
+                    Winrate: (double)wins / games,
+                    AvgKda: Math.Round(avgKda, 2),
+                    AvgCsm: Math.Round(avgCsm, 1),
+                    AvgVisionScore: Math.Round(avgVisionScore, 0)
                 );
             })
             .OrderByDescending(x => x.Games)

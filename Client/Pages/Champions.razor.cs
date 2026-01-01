@@ -19,6 +19,7 @@ public partial class Champions : IDisposable
     private bool _isLoading = true;
     private string _searchString = "";
     private string _selectedRole = "All";
+    private string _selectedGameMode = "Ranked Solo";
 
     protected override async Task OnInitializedAsync()
     {
@@ -54,6 +55,15 @@ public partial class Champions : IDisposable
         await InvokeAsync(StateHasChanged);
     }
 
+    private async Task OnGameModeChanged(string mode)
+    {
+        _selectedGameMode = mode;
+        _isLoading = true;
+        StateHasChanged();
+        await LoadDataAsync();
+        StateHasChanged();
+    }
+
     private async Task LoadDataAsync()
     {
         if (UserState.CurrentProfile == null)
@@ -64,7 +74,8 @@ public partial class Champions : IDisposable
         }
         
         var seasonId = SeasonState.CurrentSeason?.Id;
-        _championStats = await StatsService.GetChampionsAsync(seasonId);
+        var gameModeFilter = _selectedGameMode == "All" ? null : _selectedGameMode;
+        _championStats = await StatsService.GetChampionsAsync(seasonId, gameModeFilter);
         _isLoading = false;
     }
 
@@ -90,6 +101,13 @@ public partial class Champions : IDisposable
         "Support" => Color.Secondary,
         _ => Color.Default
     };
+    
+    private static string GetKdaClass(double kda)
+    {
+        if (kda >= 4.0) return "text-success font-weight-bold";
+        if (kda >= 2.5) return "text-info";
+        return "text-error";
+    }
     
     private bool FilterFunc(ChampionStatsDto element)
     {

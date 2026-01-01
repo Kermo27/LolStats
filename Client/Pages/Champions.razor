@@ -37,6 +37,20 @@
                 <MudSelectItem Value="@("ADC")">ADC</MudSelectItem>
                 <MudSelectItem Value="@("Support")">Support</MudSelectItem>
             </MudSelect>
+            <MudSelect T="string" Value="_selectedGameMode" ValueChanged="OnGameModeChanged" Label="Game Mode" Variant="Variant.Outlined" Dense="true"
+                       Class="mr-4" Style="width: 180px;">
+                <MudSelectItem Value="@("All")">All Modes</MudSelectItem>
+                <MudSelectItem Value="@("Ranked Solo")">Ranked Solo</MudSelectItem>
+                <MudSelectItem Value="@("Ranked Flex")">Ranked Flex</MudSelectItem>
+                <MudSelectItem Value="@("Normal")">Normal</MudSelectItem>
+                <MudSelectItem Value="@("Swift Play")">Swift Play</MudSelectItem>
+                <MudSelectItem Value="@("ARAM")">ARAM</MudSelectItem>
+                <MudSelectItem Value="@("ARAM Mayhem")">ARAM Mayhem</MudSelectItem>
+                <MudSelectItem Value="@("URF")">URF</MudSelectItem>
+                <MudSelectItem Value="@("ARURF")">ARURF</MudSelectItem>
+                <MudSelectItem Value="@("Arena")">Arena</MudSelectItem>
+                <MudSelectItem Value="@("Other")">Other</MudSelectItem>
+            </MudSelect>
             <MudTextField @bind-Value="_searchString" 
                           Placeholder="Search..." 
                           Adornment="Adornment.Start" 
@@ -52,6 +66,9 @@
                 <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.Games)" InitialDirection="SortDirection.Descending">Games</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.Winrate)">Winrate</MudTableSortLabel></MudTh>
                 <MudTh>W / L</MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.AvgKda)">KDA</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.AvgCsm)">CS/min</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ChampionStatsDto, object>(x => x.AvgVisionScore)">Vision</MudTableSortLabel></MudTh>
                 <MudTh>Wydajność</MudTh>
             </HeaderContent>
             
@@ -93,6 +110,18 @@
                 <MudTd DataLabel="W/L">
                     <MudText Class="text-success d-inline">@context.Wins W</MudText> / 
                     <MudText Class="text-error d-inline">@context.Losses L</MudText>
+                </MudTd>
+                
+                <MudTd DataLabel="KDA">
+                    <MudText Typo="Typo.body2" Class="@GetKdaClass(context.AvgKda)">@context.AvgKda.ToString("F2")</MudText>
+                </MudTd>
+                
+                <MudTd DataLabel="CS/min">
+                    <MudText Typo="Typo.body2">@context.AvgCsm.ToString("F1")</MudText>
+                </MudTd>
+                
+                <MudTd DataLabel="Vision Score">
+                    <MudText Typo="Typo.body2">@context.AvgVisionScore.ToString("F0")</MudText>
                 </MudTd>
                 
                 <MudTd DataLabel="Performance">
