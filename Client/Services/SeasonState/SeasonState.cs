@@ -87,6 +87,12 @@ public class SeasonState : ISeasonState, IDisposable
         await SetActiveSeasonAsync(null);
     }
 
+    public (DateTime? StartDate, DateTime? EndDate) GetCurrentSeasonDates()
+    {
+        if (CurrentSeason == null) return (null, null);
+        return (CurrentSeason.StartDate, CurrentSeason.EndDate);
+    }
+    
     public bool IsDateInCurrentSeason(DateTime date)
     {
         if (CurrentSeason == null) return true;

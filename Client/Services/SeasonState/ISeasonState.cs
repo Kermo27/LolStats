@@ -15,5 +15,6 @@ public interface ISeasonState
     Task InitializeAsync();
     Task SetActiveSeasonAsync(Season? season);
     Task ClearSeasonFilterAsync();
+    (DateTime? StartDate, DateTime? EndDate) GetCurrentSeasonDates();
     bool IsDateInCurrentSeason(DateTime date);
 }

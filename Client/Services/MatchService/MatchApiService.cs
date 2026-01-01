@@ -1,6 +1,8 @@
 ﻿using LolStatsTracker.Services.Common;
 using LolStatsTracker.Services.UserState;
+using LolStatsTracker.Shared.DTOs;
 using LolStatsTracker.Shared.Models;
+using System.Web;
 
 namespace LolStatsTracker.Services.MatchService;
 
@@ -14,6 +16,31 @@ public class MatchApiService : BaseApiService, IMatchService
     public async Task<List<MatchEntry>> GetAllAsync()
     {
         return await GetAsync<List<MatchEntry>>(BaseUrl) ?? new List<MatchEntry>();
+    }
+    
+    public async Task<List<MatchEntry>> GetRecentAsync(int count, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
+    {
+        var queryParams = HttpUtility.ParseQueryString(string.Empty);
+        queryParams["count"] = count.ToString();
+        if (startDate.HasValue) queryParams["startDate"] = startDate.Value.ToString("o");
+        if (endDate.HasValue) queryParams["endDate"] = endDate.Value.ToString("o");
+        if (!string.IsNullOrEmpty(gameMode)) queryParams["gameMode"] = gameMode;
+        
+        var url = $"{BaseUrl}/recent?{queryParams}";
+        return await GetAsync<List<MatchEntry>>(url) ?? new List<MatchEntry>();
+    }
+    
+    public async Task<PaginatedResponse<MatchEntry>> GetPaginatedAsync(int page, int pageSize, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null)
+    {
+        var queryParams = HttpUtility.ParseQueryString(string.Empty);
+        queryParams["page"] = page.ToString();
+        queryParams["pageSize"] = pageSize.ToString();
+        if (startDate.HasValue) queryParams["startDate"] = startDate.Value.ToString("o");
+        if (endDate.HasValue) queryParams["endDate"] = endDate.Value.ToString("o");
+        if (!string.IsNullOrEmpty(gameMode)) queryParams["gameMode"] = gameMode;
+        
+        var url = $"{BaseUrl}/paginated?{queryParams}";
+        return await GetAsync<PaginatedResponse<MatchEntry>>(url) ?? new PaginatedResponse<MatchEntry>(new List<MatchEntry>(), 0, page, pageSize);
     }
     
     public async Task<MatchEntry?> GetAsync(Guid id)

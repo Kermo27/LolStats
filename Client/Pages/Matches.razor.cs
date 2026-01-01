@@ -21,10 +21,13 @@ public partial class Matches : IDisposable
     [Inject] private ISeasonState SeasonState { get; set; } = null!;
 
     private MatchEntry currentMatch = new();
-    private List<MatchEntry> _allMatches = new();
     private List<MatchEntry> matches = new();
     private bool isEditing;
     private string _selectedGameMode = "Ranked Solo";
+    private int _page = 1;
+    private int _pageSize = 30;
+    private int _totalCount;
+    private int TotalPages => _totalCount == 0 ? 1 : (int)Math.Ceiling((double)_totalCount / _pageSize);
 
     protected override async Task OnInitializedAsync()
     {
@@ -60,23 +63,22 @@ public partial class Matches : IDisposable
 
     private async Task OnSeasonChangedAsync()
     {
-        ApplySeasonFilter();
+        _page = 1;
+        await LoadDataAsync();
         await InvokeAsync(StateHasChanged);
     }
 
-    private void ApplySeasonFilter()
-    {
-        matches = _allMatches
-            .Where(m => SeasonState.IsDateInCurrentSeason(m.Date))
-            .Where(m => _selectedGameMode == "All" || m.GameMode == _selectedGameMode)
-            .OrderByDescending(m => m.Date)
-            .ToList();
-    }
-
-    private void OnGameModeChanged(string mode)
+    private async Task OnGameModeChanged(string mode)
     {
         _selectedGameMode = mode;
-        ApplySeasonFilter();
+        _page = 1;
+        await LoadDataAsync();
+    }
+    
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await LoadDataAsync();
     }
 
     private void PrepareNewMatch()
@@ -98,11 +100,12 @@ public partial class Matches : IDisposable
 
     private async Task LoadDataAsync()
     {
-        _allMatches = (await MatchService.GetAllAsync())
-            .OrderByDescending(m => m.Date)
-            .ToList();
+        var (startDate, endDate) = SeasonState.GetCurrentSeasonDates();
+        var gameModeFilter = _selectedGameMode == "All" ? null : _selectedGameMode;
         
-        ApplySeasonFilter();
+        var response = await MatchService.GetPaginatedAsync(_page, _pageSize, startDate, endDate, gameModeFilter);
+        matches = response.Items;
+        _totalCount = response.TotalCount;
     }
 
     private async Task SaveMatchData(MatchEntry matchData)

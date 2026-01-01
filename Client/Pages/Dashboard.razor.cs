@@ -120,13 +120,9 @@ public partial class Dashboard : IDisposable
         var gameModeFilter = _selectedGameMode == "All" ? null : _selectedGameMode;
         _stats = await StatsService.GetSummaryAsync(6, seasonId, gameModeFilter);
         
-        var allMatches = await MatchService.GetAllAsync();
-        var matches = allMatches
-            .Where(m => SeasonState.IsDateInCurrentSeason(m.Date))
-            .Where(m => _selectedGameMode == "All" || m.GameMode == _selectedGameMode)
-            .OrderBy(m => m.Date)
-            .TakeLast(20)
-            .ToList();
+        var (startDate, endDate) = SeasonState.GetCurrentSeasonDates();
+        var matches = await MatchService.GetRecentAsync(20, startDate, endDate, gameModeFilter);
+        matches = matches.OrderBy(m => m.Date).ToList();
         
         if (_stats != null)
         {

@@ -1,4 +1,5 @@
 ﻿using LolStatsTracker.API.Data;
+using LolStatsTracker.Shared.DTOs;
 using LolStatsTracker.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,6 +21,53 @@ public class MatchService : IMatchService
             .OrderByDescending(m => m.Date)
             .AsNoTracking()
             .ToListAsync();
+    }
+    
+    public async Task<List<MatchEntry>> GetRecentAsync(Guid profileId, int count, DateTime? startDate, DateTime? endDate, string? gameMode)
+    {
+        var query = _db.Matches
+            .Where(m => m.ProfileId == profileId)
+            .AsNoTracking();
+        
+        if (startDate.HasValue)
+            query = query.Where(m => m.Date >= startDate.Value);
+        
+        if (endDate.HasValue)
+            query = query.Where(m => m.Date <= endDate.Value);
+        
+        if (!string.IsNullOrEmpty(gameMode))
+            query = query.Where(m => m.GameMode == gameMode);
+        
+        return await query
+            .OrderByDescending(m => m.Date)
+            .Take(count)
+            .ToListAsync();
+    }
+    
+    public async Task<PaginatedResponse<MatchEntry>> GetPaginatedAsync(Guid profileId, int page, int pageSize, DateTime? startDate, DateTime? endDate, string? gameMode)
+    {
+        var query = _db.Matches
+            .Where(m => m.ProfileId == profileId)
+            .AsNoTracking();
+        
+        if (startDate.HasValue)
+            query = query.Where(m => m.Date >= startDate.Value);
+        
+        if (endDate.HasValue)
+            query = query.Where(m => m.Date <= endDate.Value);
+        
+        if (!string.IsNullOrEmpty(gameMode))
+            query = query.Where(m => m.GameMode == gameMode);
+        
+        var totalCount = await query.CountAsync();
+        
+        var items = await query
+            .OrderByDescending(m => m.Date)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        
+        return new PaginatedResponse<MatchEntry>(items, totalCount, page, pageSize);
     }
     
     public async Task<MatchEntry?> GetAsync(Guid id, Guid profileId)

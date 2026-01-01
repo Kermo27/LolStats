@@ -36,4 +36,16 @@
                   OnEdit="StartEdit"
                   OnDelete="DeleteMatch" />
     
+    @if (TotalPages > 1)
+    {
+        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center" Class="mt-4">
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mr-4">
+                Showing @matches.Count of @_totalCount matches
+            </MudText>
+            <MudPagination Count="@TotalPages" Selected="@_page" SelectedChanged="OnPageChanged"
+                          Color="Color.Primary" ShowFirstButton="true" ShowLastButton="true" />
+        </MudStack>
+    }
+    
 </MudContainer>
+

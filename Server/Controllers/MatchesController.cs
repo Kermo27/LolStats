@@ -1,5 +1,5 @@
-﻿using LolStatsTracker.API.Models;
-using LolStatsTracker.API.Services.MatchService;
+﻿using LolStatsTracker.API.Services.MatchService;
+using LolStatsTracker.Shared.DTOs;
 using LolStatsTracker.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,6 +26,35 @@ public class MatchesController : BaseApiController
             return BadRequest("Profile ID header is missing.");
         
         return Ok(await _matchService.GetAllAsync(profileId));
+    }
+    
+    [HttpGet("recent")]
+    public async Task<ActionResult<List<MatchEntry>>> GetRecent(
+        [FromQuery] int count = 20, 
+        [FromQuery] DateTime? startDate = null, 
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? gameMode = null)
+    {
+        var profileId = GetProfileId();
+        if (profileId == Guid.Empty)
+            return BadRequest("Profile ID header is missing.");
+        
+        return Ok(await _matchService.GetRecentAsync(profileId, count, startDate, endDate, gameMode));
+    }
+    
+    [HttpGet("paginated")]
+    public async Task<ActionResult<PaginatedResponse<MatchEntry>>> GetPaginated(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? gameMode = null)
+    {
+        var profileId = GetProfileId();
+        if (profileId == Guid.Empty)
+            return BadRequest("Profile ID header is missing.");
+        
+        return Ok(await _matchService.GetPaginatedAsync(profileId, page, pageSize, startDate, endDate, gameMode));
     }
     
     [HttpGet("{id:guid}")]
