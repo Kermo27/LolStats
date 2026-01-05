@@ -7,10 +7,6 @@ import { AuthService } from '../../core/services/auth.service';
 import { ProfileStateService } from '../../core/services/profile-state.service';
 import { SeasonStateService } from '../../core/services/season-state.service';
 
-/**
- * Navbar - odpowiednik MainLayout.razor z Blazora
- * Zawiera logo, linki, SeasonSelector, ProfileSelector i Logout
- */
 @Component({
   selector: 'app-navbar',
   standalone: true,
@@ -22,20 +18,21 @@ import { SeasonStateService } from '../../core/services/season-state.service';
           <span class="logo-icon">📊</span>
           <span class="logo-text">LoL Stats Tracker</span>
         </a>
-        
+
         <div class="nav-links">
           <a routerLink="/" class="nav-link">Dashboard</a>
           <a routerLink="/matches" class="nav-link">Matches</a>
+          <a routerLink="/champions" class="nav-link">Champions</a>
         </div>
       </div>
-      
+
       <div class="navbar-right">
         <app-season-selector />
-        
+
         <div class="divider"></div>
-        
+
         <app-profile-selector />
-        
+
         <button class="logout-btn" (click)="logout()">
           <span>Logout</span>
         </button>
@@ -52,13 +49,13 @@ import { SeasonStateService } from '../../core/services/season-state.service';
       background: #111827;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
-    
+
     .navbar-left {
       display: flex;
       align-items: center;
       gap: 32px;
     }
-    
+
     .logo {
       display: flex;
       align-items: center;
@@ -66,22 +63,22 @@ import { SeasonStateService } from '../../core/services/season-state.service';
       text-decoration: none;
       color: #fff;
     }
-    
+
     .logo-icon {
       font-size: 24px;
     }
-    
+
     .logo-text {
       font-size: 18px;
       font-weight: 600;
       color: #00d9ff;
     }
-    
+
     .nav-links {
       display: flex;
       gap: 8px;
     }
-    
+
     .nav-link {
       padding: 8px 16px;
       color: #888;
@@ -89,24 +86,24 @@ import { SeasonStateService } from '../../core/services/season-state.service';
       border-radius: 6px;
       transition: all 0.2s;
     }
-    
+
     .nav-link:hover {
       color: #fff;
       background: rgba(255, 255, 255, 0.1);
     }
-    
+
     .navbar-right {
       display: flex;
       align-items: center;
       gap: 16px;
     }
-    
+
     .divider {
       width: 1px;
       height: 24px;
       background: rgba(255, 255, 255, 0.2);
     }
-    
+
     .logout-btn {
       padding: 8px 16px;
       background: transparent;
@@ -116,7 +113,7 @@ import { SeasonStateService } from '../../core/services/season-state.service';
       cursor: pointer;
       transition: all 0.2s;
     }
-    
+
     .logout-btn:hover {
       background: rgba(255, 82, 82, 0.1);
       border-color: #ff5252;
@@ -132,7 +129,6 @@ export class NavbarComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    // Inicjalizuj profile i sezony przy starcie
     this.profileState.initialize().subscribe();
     this.seasonState.initialize().subscribe();
   }

@@ -1,17 +1,13 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 
-// Konfiguracja tras - odpowiednik @page w Blazor
-// Każda trasa mapuje ścieżkę URL do komponentu
 export const routes: Routes = [
-    // Strona logowania - dostępna dla wszystkich
     {
         path: 'login',
         loadComponent: () => import('./pages/login/login.component')
             .then(m => m.LoginComponent)
     },
 
-    // Dashboard - chroniony (wymaga zalogowania)
     {
         path: '',
         loadComponent: () => import('./pages/dashboard/dashboard.component')
@@ -19,7 +15,6 @@ export const routes: Routes = [
         canActivate: [authGuard]
     },
 
-    // Matches - lista meczy z paginacją
     {
         path: 'matches',
         loadComponent: () => import('./pages/matches/matches.component')
@@ -27,7 +22,19 @@ export const routes: Routes = [
         canActivate: [authGuard]
     },
 
-    // History - stara strona (do usunięcia w przyszłości)
+    {
+        path: 'champions',
+        loadComponent: () => import('./pages/champions/champions.component')
+            .then(m => m.ChampionsComponent),
+        canActivate: [authGuard]
+    },
+
+    {
+        path: 'register',
+        loadComponent: () => import('./pages/register/register.component')
+            .then(m => m.RegisterComponent)
+    },
+
     {
         path: 'history',
         loadComponent: () => import('./pages/history/history.component')
@@ -35,7 +42,6 @@ export const routes: Routes = [
         canActivate: [authGuard]
     },
 
-    // Przekierowanie nieznanych ścieżek na dashboard
     {
         path: '**',
         redirectTo: ''
