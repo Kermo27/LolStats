@@ -112,8 +112,10 @@ try
         });
     });
 
+    // Health checks - separate liveness and readiness
     builder.Services.AddHealthChecks()
-        .AddDbContextCheck<MatchDbContext>("database");
+        .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy())
+        .AddDbContextCheck<MatchDbContext>("database", tags: ["ready"]);
 
     // Application Services
     builder.Services.AddScoped<IAuthService, AuthService>();
@@ -224,7 +226,17 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    app.MapHealthChecks("/health");
+    // Liveness check - simple, for Railway/Docker healthcheck
+    app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+    {
+        Predicate = check => !check.Tags.Contains("ready")
+    });
+    
+    // Readiness check - includes database
+    app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+    {
+        Predicate = _ => true
+    });
 
     app.MapControllers();
     
