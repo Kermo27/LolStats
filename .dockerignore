@@ -38,14 +38,14 @@ Dockerfile*
 Thumbs.db
 Desktop.ini
 
-# Angular Client (not needed for API container)
-AngularClient/
+# Angular Client
+# AngularClient/
 
-# Blazor Client (not needed for API container)
-Client/
+# Blazor Client
+# Client/
 
-# TrayApp (not needed for API container)
-TrayApp/
+# TrayApp
+# TrayApp/
 
 # Tests (not needed in production container)
 Tests/
