@@ -5,33 +5,10 @@ namespace LolStatsTracker.API.Services.AuthService;
 
 public interface IAuthService
 {
-    /// <summary>
-    /// Register a new user
-    /// </summary>
-    Task<(bool Success, string? Error, User? User)> RegisterAsync(RegisterDto dto);
-    
-    /// <summary>
-    /// Authenticate user and generate tokens
-    /// </summary>
-    Task<(bool Success, string? Error, TokenResponseDto? Token)> LoginAsync(LoginDto dto);
-    
-    /// <summary>
-    /// Refresh access token using refresh token
-    /// </summary>
-    Task<(bool Success, string? Error, TokenResponseDto? Token)> RefreshTokenAsync(string refreshToken);
-    
-    /// <summary>
-    /// Revoke refresh token (logout)
-    /// </summary>
-    Task<bool> RevokeTokenAsync(Guid userId);
-    
-    /// <summary>
-    /// Get user by ID
-    /// </summary>
-    Task<User?> GetUserByIdAsync(Guid userId);
-    
-    /// <summary>
-    /// Get user ID from JWT claims
-    /// </summary>
+    Task<Result<User>> RegisterAsync(RegisterDto dto);
+    Task<Result<TokenResponseDto>> LoginAsync(LoginDto dto);
+    Task<Result<TokenResponseDto>> RefreshTokenAsync(string refreshToken);
+    Task<Result> RevokeTokenAsync(Guid userId);
+    Task<Result<User>> GetUserByIdAsync(Guid userId);
     Guid? GetUserIdFromClaims(System.Security.Claims.ClaimsPrincipal user);
 }

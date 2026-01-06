@@ -1,4 +1,5 @@
 ﻿using LolStatsTracker.API.Data;
+using LolStatsTracker.API.Services.CacheService;
 using LolStatsTracker.Shared.DTOs;
 using LolStatsTracker.Shared.Models;
 using Microsoft.EntityFrameworkCore;
@@ -8,10 +9,14 @@ namespace LolStatsTracker.API.Services.MatchService;
 public class MatchService : IMatchService
 {
     private readonly MatchDbContext _db;
+    private readonly ICacheService _cache;
+    private readonly ILogger<MatchService> _logger;
 
-    public MatchService(MatchDbContext db)
+    public MatchService(MatchDbContext db, ICacheService cache, ILogger<MatchService> logger)
     {
         _db = db;
+        _cache = cache;
+        _logger = logger;
     }
 
     public async Task<List<MatchEntry>> GetAllAsync(Guid profileId)
@@ -59,7 +64,8 @@ public class MatchService : IMatchService
         if (!string.IsNullOrEmpty(gameMode))
             query = query.Where(m => m.GameMode == gameMode);
         
-        var totalCount = await query.CountAsync();
+        var totalItems = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
         
         var items = await query
             .OrderByDescending(m => m.Date)
@@ -67,13 +73,12 @@ public class MatchService : IMatchService
             .Take(pageSize)
             .ToListAsync();
         
-        return new PaginatedResponse<MatchEntry>(items, totalCount, page, pageSize);
+        return new PaginatedResponse<MatchEntry>(items, totalItems, page, pageSize);
     }
-    
+
     public async Task<MatchEntry?> GetAsync(Guid id, Guid profileId)
     {
-        return await _db.Matches
-            .AsNoTracking()
+        return await _db.Matches.AsNoTracking()
             .FirstOrDefaultAsync(m => m.Id == id && m.ProfileId == profileId);
     }
 
@@ -81,6 +86,13 @@ public class MatchService : IMatchService
     {
         _db.Matches.Add(match);
         await _db.SaveChangesAsync();
+        
+        // Invalidate stats cache for this profile
+        if (match.ProfileId.HasValue)
+        {
+            await InvalidateStatsCacheAsync(match.ProfileId.Value);
+        }
+        
         return match;
     }
     
@@ -115,6 +127,10 @@ public class MatchService : IMatchService
         existingMatch.ProfileId = profileId;
 
         await _db.SaveChangesAsync();
+        
+        // Invalidate stats cache
+        await InvalidateStatsCacheAsync(profileId);
+        
         return existingMatch;
     }
 
@@ -124,10 +140,18 @@ public class MatchService : IMatchService
         if (match == null)
             return false;
         
+        var profileId = match.ProfileId;
+        
         _db.Matches.Remove(match);
         await _db.SaveChangesAsync();
+        
+        // Invalidate stats cache
+        if (profileId.HasValue)
+        {
+            await InvalidateStatsCacheAsync(profileId.Value);
+        }
+        
         return true;
-
     }
     
     public async Task ClearAsync(Guid profileId)
@@ -136,5 +160,18 @@ public class MatchService : IMatchService
         
         _db.Matches.RemoveRange(matches); 
         await _db.SaveChangesAsync();
+        
+        // Invalidate stats cache
+        await InvalidateStatsCacheAsync(profileId);
+    }
+
+    private async Task InvalidateStatsCacheAsync(Guid profileId)
+    {
+        _logger.LogDebug("Invalidating stats cache for profile: {ProfileId}", profileId);
+        
+        await _cache.RemoveAsync(CacheKeys.StatsSummary(profileId, null, null));
+        await _cache.RemoveAsync(CacheKeys.StatsSummary(profileId, null, "Ranked Solo"));
+        await _cache.RemoveAsync(CacheKeys.StatsSummary(profileId, null, "Ranked Flex"));
+        await _cache.RemoveAsync(CacheKeys.StatsSummary(profileId, null, "All"));
     }
 }

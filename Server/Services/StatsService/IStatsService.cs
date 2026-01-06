@@ -16,4 +16,5 @@ public interface IStatsService
     Task<TimeAnalysisDto> GetTimeAnalysisAsync(Guid profileId, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
     Task<TiltStatusDto> GetTiltStatusAsync(Guid profileId, string? gameMode = null);
     Task<StatsSummaryDto> GetStatsSummaryAsync(Guid profileId, int activityMonths, DateTime? startDate = null, DateTime? endDate = null, string? gameMode = null);
+    Task InvalidateCacheAsync(Guid profileId);
 }

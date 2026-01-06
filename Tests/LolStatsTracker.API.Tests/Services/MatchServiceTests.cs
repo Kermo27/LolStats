@@ -1,7 +1,10 @@
 using LolStatsTracker.API.Data;
+using LolStatsTracker.API.Services.CacheService;
 using LolStatsTracker.API.Services.MatchService;
 using LolStatsTracker.Shared.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace LolStatsTracker.API.Tests.Services;
@@ -11,6 +14,8 @@ public class MatchServiceTests : IDisposable
     private readonly MatchDbContext _db;
     private readonly MatchService _service;
     private readonly Guid _profileId = Guid.NewGuid();
+    private readonly Mock<ICacheService> _cacheMock;
+    private readonly Mock<ILogger<MatchService>> _loggerMock;
 
     public MatchServiceTests()
     {
@@ -19,7 +24,9 @@ public class MatchServiceTests : IDisposable
             .Options;
         
         _db = new MatchDbContext(options);
-        _service = new MatchService(_db);
+        _cacheMock = new Mock<ICacheService>();
+        _loggerMock = new Mock<ILogger<MatchService>>();
+        _service = new MatchService(_db, _cacheMock.Object, _loggerMock.Object);
 
         _db.UserProfiles.Add(new UserProfile { Id = _profileId, Name = "TestUser" });
         _db.SaveChanges();
