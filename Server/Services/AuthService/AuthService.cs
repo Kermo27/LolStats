@@ -28,7 +28,7 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<(bool Success, string? Error, User? User)> RegisterAsync(RegisterDto dto)
+    public async Task<Result<User>> RegisterAsync(RegisterDto dto)
     {
         try
         {
@@ -38,7 +38,7 @@ public class AuthService : IAuthService
 
             if (existingUser != null)
             {
-                return (false, "Username already exists", null);
+                return Result<User>.Failure("Username already exists", ErrorCodes.Conflict);
             }
 
             // Check if email already exists (if provided)
@@ -49,14 +49,14 @@ public class AuthService : IAuthService
 
                 if (existingEmail != null)
                 {
-                    return (false, "Email already registered", null);
+                    return Result<User>.Failure("Email already registered", ErrorCodes.Conflict);
                 }
             }
 
             // Validate password strength
             if (dto.Password.Length < 6)
             {
-                return (false, "Password must be at least 6 characters", null);
+                return Result<User>.ValidationError("Password must be at least 6 characters");
             }
 
             // Create user with BCrypt hashed password
@@ -73,16 +73,16 @@ public class AuthService : IAuthService
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("User registered: {Username}", user.Username);
-            return (true, null, user);
+            return Result<User>.Success(user);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error registering user: {Username}", dto.Username);
-            return (false, "An error occurred during registration", null);
+            return Result<User>.Failure("An error occurred during registration");
         }
     }
 
-    public async Task<(bool Success, string? Error, TokenResponseDto? Token)> LoginAsync(LoginDto dto)
+    public async Task<Result<TokenResponseDto>> LoginAsync(LoginDto dto)
     {
         try
         {
@@ -91,29 +91,29 @@ public class AuthService : IAuthService
 
             if (user == null)
             {
-                return (false, "Invalid username or password", null);
+                return Result<TokenResponseDto>.Unauthorized("Invalid username or password");
             }
 
             // Verify password with BCrypt
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             {
-                return (false, "Invalid username or password", null);
+                return Result<TokenResponseDto>.Unauthorized("Invalid username or password");
             }
 
             // Generate tokens
             var tokenResponse = await GenerateTokensAsync(user);
 
             _logger.LogInformation("User logged in: {Username}", user.Username);
-            return (true, null, tokenResponse);
+            return Result<TokenResponseDto>.Success(tokenResponse);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during login for user: {Username}", dto.Username);
-            return (false, "An error occurred during login", null);
+            return Result<TokenResponseDto>.Failure("An error occurred during login");
         }
     }
 
-    public async Task<(bool Success, string? Error, TokenResponseDto? Token)> RefreshTokenAsync(string refreshToken)
+    public async Task<Result<TokenResponseDto>> RefreshTokenAsync(string refreshToken)
     {
         try
         {
@@ -123,7 +123,7 @@ public class AuthService : IAuthService
             if (user == null)
             {
                 _logger.LogWarning("Refresh failed: Invalid token provided");
-                return (false, "Refresh token not found or already rotated", null);
+                return Result<TokenResponseDto>.Unauthorized("Refresh token not found or already rotated");
             }
 
             if (user.RefreshTokenExpiry < DateTime.UtcNow)
@@ -133,7 +133,7 @@ public class AuthService : IAuthService
                 user.RefreshToken = null;
                 user.RefreshTokenExpiry = null;
                 await _context.SaveChangesAsync();
-                return (false, "Refresh token expired", null);
+                return Result<TokenResponseDto>.Unauthorized("Refresh token expired");
             }
 
             // Generate NEW access token but KEEP the same refresh token (no rotation)
@@ -142,7 +142,7 @@ public class AuthService : IAuthService
 
             _logger.LogInformation("Token refreshed for user: {Username}", user.Username);
             
-            return (true, null, new TokenResponseDto
+            return Result<TokenResponseDto>.Success(new TokenResponseDto
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken, // Return the same refresh token
@@ -158,18 +158,18 @@ public class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error refreshing token");
-            return (false, "An error occurred during token refresh", null);
+            return Result<TokenResponseDto>.Failure("An error occurred during token refresh");
         }
     }
 
-    public async Task<bool> RevokeTokenAsync(Guid userId)
+    public async Task<Result> RevokeTokenAsync(Guid userId)
     {
         try
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
             {
-                return false;
+                return Result.NotFound("User not found");
             }
 
             user.RefreshToken = null;
@@ -177,18 +177,23 @@ public class AuthService : IAuthService
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Token revoked for user: {Username}", user.Username);
-            return true;
+            return Result.Success();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error revoking token for user: {UserId}", userId);
-            return false;
+            return Result.Failure("An error occurred while revoking token");
         }
     }
 
-    public async Task<User?> GetUserByIdAsync(Guid userId)
+    public async Task<Result<User>> GetUserByIdAsync(Guid userId)
     {
-        return await _context.Users.FindAsync(userId);
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            return Result<User>.NotFound("User not found");
+        }
+        return Result<User>.Success(user);
     }
 
     public Guid? GetUserIdFromClaims(ClaimsPrincipal user)

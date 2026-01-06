@@ -10,91 +10,113 @@ namespace LolStatsTracker.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ILoginAttemptService _loginAttemptService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(
+        IAuthService authService, 
+        ILoginAttemptService loginAttemptService,
+        ILogger<AuthController> logger)
     {
         _authService = authService;
+        _loginAttemptService = loginAttemptService;
         _logger = logger;
     }
-
-    /// <summary>
-    /// Register a new user
-    /// </summary>
+    
     [HttpPost("register")]
+    [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<TokenResponseDto>> Register([FromBody] RegisterDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
-        {
-            return BadRequest("Username and password are required");
-        }
+        var result = await _authService.RegisterAsync(dto);
 
-        var (success, error, user) = await _authService.RegisterAsync(dto);
-
-        if (!success)
+        if (result.IsFailure)
         {
-            return BadRequest(error);
+            return result.ErrorCode switch
+            {
+                ErrorCodes.Conflict => Conflict(CreateApiError(result.ErrorCode, result.Error!)),
+                ErrorCodes.ValidationError => BadRequest(CreateApiError(result.ErrorCode, result.Error!)),
+                _ => BadRequest(CreateApiError(result.ErrorCode ?? ErrorCodes.BadRequest, result.Error ?? "Registration failed"))
+            };
         }
 
         // Auto-login after registration
         var loginDto = new LoginDto { Username = dto.Username, Password = dto.Password };
-        var (loginSuccess, loginError, token) = await _authService.LoginAsync(loginDto);
+        var loginResult = await _authService.LoginAsync(loginDto);
 
-        if (!loginSuccess)
+        if (loginResult.IsFailure)
         {
             return Ok(new { message = "Registration successful, please login" });
         }
 
-        return Ok(token);
+        _logger.LogInformation("User registered and logged in: {Username}", dto.Username);
+        return Ok(loginResult.Value);
     }
-
-    /// <summary>
-    /// Login with username and password
-    /// </summary>
+    
     [HttpPost("login")]
+    [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status423Locked)]
     public async Task<ActionResult<TokenResponseDto>> Login([FromBody] LoginDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+        // Check if account is locked out
+        if (await _loginAttemptService.IsLockedOutAsync(dto.Username))
         {
-            return BadRequest("Username and password are required");
+            _logger.LogWarning("Login attempt for locked account: {Username}", dto.Username);
+            return StatusCode(StatusCodes.Status423Locked, new ApiError
+            {
+                Code = "ACCOUNT_LOCKED",
+                Message = "Account is temporarily locked due to too many failed login attempts. Please try again later.",
+                RequestId = HttpContext.TraceIdentifier
+            });
         }
 
-        var (success, error, token) = await _authService.LoginAsync(dto);
+        var result = await _authService.LoginAsync(dto);
 
-        if (!success)
+        if (result.IsFailure)
         {
-            return Unauthorized(error);
+            await _loginAttemptService.RecordFailedAttemptAsync(dto.Username);
+            var remaining = await _loginAttemptService.GetRemainingAttemptsAsync(dto.Username);
+            
+            _logger.LogWarning("Failed login attempt for {Username}. {Remaining} attempts remaining", 
+                dto.Username, remaining);
+
+            return Unauthorized(new ApiError
+            {
+                Code = ErrorCodes.Unauthorized,
+                Message = result.Error ?? "Invalid credentials",
+                RequestId = HttpContext.TraceIdentifier,
+                Details = remaining > 0 ? $"{remaining} attempts remaining" : null
+            });
         }
 
-        return Ok(token);
+        // Clear failed attempts on successful login
+        await _loginAttemptService.ClearAttemptsAsync(dto.Username);
+        _logger.LogInformation("User logged in: {Username}", dto.Username);
+        
+        return Ok(result.Value);
     }
-
-    /// <summary>
-    /// Refresh access token using refresh token
-    /// </summary>
+    
     [HttpPost("refresh")]
+    [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<TokenResponseDto>> RefreshToken([FromBody] RefreshTokenDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.RefreshToken))
+        var result = await _authService.RefreshTokenAsync(dto.RefreshToken);
+
+        if (result.IsFailure)
         {
-            return BadRequest("Refresh token is required");
+            return Unauthorized(CreateApiError(ErrorCodes.Unauthorized, result.Error ?? "Token refresh failed"));
         }
 
-        var (success, error, token) = await _authService.RefreshTokenAsync(dto.RefreshToken);
-
-        if (!success)
-        {
-            return Unauthorized(error);
-        }
-
-        return Ok(token);
+        return Ok(result.Value);
     }
-
-    /// <summary>
-    /// Logout (revoke refresh token)
-    /// </summary>
+    
     [Authorize]
     [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult> Logout()
     {
         var userId = _authService.GetUserIdFromClaims(User);
@@ -103,15 +125,21 @@ public class AuthController : ControllerBase
             return Unauthorized();
         }
 
-        await _authService.RevokeTokenAsync(userId.Value);
+        var result = await _authService.RevokeTokenAsync(userId.Value);
+        if (result.IsFailure)
+        {
+            _logger.LogWarning("Logout failed for user {UserId}: {Error}", userId.Value, result.Error);
+        }
+        
+        _logger.LogInformation("User logged out: {UserId}", userId.Value);
         return Ok(new { message = "Logged out successfully" });
     }
-
-    /// <summary>
-    /// Get current user info
-    /// </summary>
+    
     [Authorize]
     [HttpGet("me")]
+    [ProducesResponseType(typeof(UserInfoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserInfoDto>> GetCurrentUser()
     {
         var userId = _authService.GetUserIdFromClaims(User);
@@ -120,17 +148,28 @@ public class AuthController : ControllerBase
             return Unauthorized();
         }
 
-        var user = await _authService.GetUserByIdAsync(userId.Value);
-        if (user == null)
+        var result = await _authService.GetUserByIdAsync(userId.Value);
+        if (result.IsFailure)
         {
-            return NotFound();
+            return NotFound(CreateApiError(ErrorCodes.NotFound, result.Error ?? "User not found"));
         }
 
+        var user = result.Value!;
         return Ok(new UserInfoDto
         {
             Id = user.Id,
             Username = user.Username,
             Email = user.Email
         });
+    }
+
+    private ApiError CreateApiError(string code, string message)
+    {
+        return new ApiError
+        {
+            Code = code,
+            Message = message,
+            RequestId = HttpContext.TraceIdentifier
+        };
     }
 }

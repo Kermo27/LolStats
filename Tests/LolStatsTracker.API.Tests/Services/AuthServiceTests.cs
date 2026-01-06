@@ -52,12 +52,11 @@ public class AuthServiceTests : IDisposable
             Email = "test@example.com"
         };
 
-        var (success, error, user) = await _service.RegisterAsync(dto);
+        var result = await _service.RegisterAsync(dto);
 
-        Assert.True(success);
-        Assert.Null(error);
-        Assert.NotNull(user);
-        Assert.Equal("testuser", user.Username);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal("testuser", result.Value.Username);
     }
 
     [Fact]
@@ -77,11 +76,11 @@ public class AuthServiceTests : IDisposable
             Password = "password123" 
         };
 
-        var (success, error, user) = await _service.RegisterAsync(dto);
+        var result = await _service.RegisterAsync(dto);
 
-        Assert.False(success);
-        Assert.Contains("already exists", error);
-        Assert.Null(user);
+        Assert.True(result.IsFailure);
+        Assert.Contains("already exists", result.Error);
+        Assert.Null(result.Value);
     }
 
     [Fact]
@@ -103,10 +102,10 @@ public class AuthServiceTests : IDisposable
             Email = "existing@example.com"
         };
 
-        var (success, error, user) = await _service.RegisterAsync(dto);
+        var result = await _service.RegisterAsync(dto);
 
-        Assert.False(success);
-        Assert.Contains("Email", error);
+        Assert.True(result.IsFailure);
+        Assert.Contains("Email", result.Error);
     }
 
     [Fact]
@@ -118,10 +117,10 @@ public class AuthServiceTests : IDisposable
             Password = "short" // Less than 6 characters
         };
 
-        var (success, error, user) = await _service.RegisterAsync(dto);
+        var result = await _service.RegisterAsync(dto);
 
-        Assert.False(success);
-        Assert.Contains("6 characters", error);
+        Assert.True(result.IsFailure);
+        Assert.Contains("6 characters", result.Error);
     }
 
     [Fact]
@@ -155,31 +154,30 @@ public class AuthServiceTests : IDisposable
             Password = "password123" 
         });
 
-        var (success, error, token) = await _service.LoginAsync(new LoginDto 
+        var result = await _service.LoginAsync(new LoginDto 
         { 
             Username = "loginuser", 
             Password = "password123" 
         });
 
-        Assert.True(success);
-        Assert.Null(error);
-        Assert.NotNull(token);
-        Assert.NotEmpty(token.AccessToken);
-        Assert.NotEmpty(token.RefreshToken);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.NotEmpty(result.Value.AccessToken);
+        Assert.NotEmpty(result.Value.RefreshToken);
     }
 
     [Fact]
     public async Task LoginAsync_InvalidUsername_ReturnsError()
     {
-        var (success, error, token) = await _service.LoginAsync(new LoginDto 
+        var result = await _service.LoginAsync(new LoginDto 
         { 
             Username = "nonexistent", 
             Password = "password123" 
         });
 
-        Assert.False(success);
-        Assert.Contains("Invalid", error);
-        Assert.Null(token);
+        Assert.True(result.IsFailure);
+        Assert.Contains("Invalid", result.Error);
+        Assert.Null(result.Value);
     }
 
     [Fact]
@@ -191,14 +189,14 @@ public class AuthServiceTests : IDisposable
             Password = "correctpassword" 
         });
 
-        var (success, error, token) = await _service.LoginAsync(new LoginDto 
+        var result = await _service.LoginAsync(new LoginDto 
         { 
             Username = "testuser", 
             Password = "wrongpassword" 
         });
 
-        Assert.False(success);
-        Assert.Contains("Invalid", error);
+        Assert.True(result.IsFailure);
+        Assert.Contains("Invalid", result.Error);
     }
 
     [Fact]
@@ -210,13 +208,13 @@ public class AuthServiceTests : IDisposable
             Password = "password123" 
         });
 
-        var (success, error, token) = await _service.LoginAsync(new LoginDto 
+        var result = await _service.LoginAsync(new LoginDto 
         { 
             Username = "TESTUSER", 
             Password = "password123" 
         });
 
-        Assert.True(success);
+        Assert.True(result.IsSuccess);
     }
 
     [Fact]
@@ -259,20 +257,20 @@ public class AuthServiceTests : IDisposable
             Password = "password123" 
         });
 
-        var (success, error, newToken) = await _service.RefreshTokenAsync(loginResult.Token!.RefreshToken);
+        var result = await _service.RefreshTokenAsync(loginResult.Value!.RefreshToken);
 
-        Assert.True(success);
-        Assert.NotNull(newToken);
-        Assert.NotEmpty(newToken.AccessToken);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.NotEmpty(result.Value.AccessToken);
     }
 
     [Fact]
     public async Task RefreshTokenAsync_InvalidToken_ReturnsError()
     {
-        var (success, error, token) = await _service.RefreshTokenAsync("invalid-refresh-token");
+        var result = await _service.RefreshTokenAsync("invalid-refresh-token");
 
-        Assert.False(success);
-        Assert.Null(token);
+        Assert.True(result.IsFailure);
+        Assert.Null(result.Value);
     }
 
     [Fact]
@@ -289,10 +287,10 @@ public class AuthServiceTests : IDisposable
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        var (success, error, token) = await _service.RefreshTokenAsync("expired-token");
+        var result = await _service.RefreshTokenAsync("expired-token");
 
-        Assert.False(success);
-        Assert.Contains("expired", error);
+        Assert.True(result.IsFailure);
+        Assert.Contains("expired", result.Error);
     }
 
     #endregion
@@ -318,7 +316,7 @@ public class AuthServiceTests : IDisposable
         
         var result = await _service.RevokeTokenAsync(user.Id);
 
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         
         await _db.Entry(user).ReloadAsync();
         Assert.Null(user.RefreshToken);
@@ -326,10 +324,10 @@ public class AuthServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RevokeTokenAsync_NonExistentUser_ReturnsFalse()
+    public async Task RevokeTokenAsync_NonExistentUser_ReturnsFailure()
     {
         var result = await _service.RevokeTokenAsync(Guid.NewGuid());
-        Assert.False(result);
+        Assert.True(result.IsFailure);
     }
 
     #endregion
@@ -339,23 +337,24 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task GetUserByIdAsync_ExistingUser_ReturnsUser()
     {
-        var (_, _, user) = await _service.RegisterAsync(new RegisterDto 
+        var registerResult = await _service.RegisterAsync(new RegisterDto 
         { 
             Username = "testuser", 
             Password = "password123" 
         });
 
-        var result = await _service.GetUserByIdAsync(user!.Id);
+        var result = await _service.GetUserByIdAsync(registerResult.Value!.Id);
 
-        Assert.NotNull(result);
-        Assert.Equal("testuser", result.Username);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal("testuser", result.Value.Username);
     }
 
     [Fact]
-    public async Task GetUserByIdAsync_NonExistentUser_ReturnsNull()
+    public async Task GetUserByIdAsync_NonExistentUser_ReturnsFailure()
     {
         var result = await _service.GetUserByIdAsync(Guid.NewGuid());
-        Assert.Null(result);
+        Assert.True(result.IsFailure);
     }
 
     #endregion

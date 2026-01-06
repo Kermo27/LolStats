@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+
+# Build outputs
+**/bin
+**/obj
+**/out
+
+# IDE
+.vs
+.vscode
+.idea
+*.user
+*.suo
+
+# Test results
+**/TestResults
+**/coverage
+
+# Logs
+**/logs
+*.log
+
+# Docker
+**/docker-compose*.yml
+Dockerfile*
+
+# Misc
+*.md
+!README.md
+*.db
+*.sqlite
+.env
+.env.*
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Angular Client (not needed for API container)
+AngularClient/
+
+# Blazor Client (not needed for API container)
+Client/
+
+# TrayApp (not needed for API container)
+TrayApp/
+
+# Tests (not needed in production container)
+Tests/

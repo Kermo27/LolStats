@@ -50,14 +50,26 @@ public class MatchDbContext : DbContext
         modelBuilder.Entity<MatchEntry>()
             .HasIndex(m => new { m.ProfileId, m.Date })
             .HasDatabaseName("IX_Matches_ProfileId_Date");
+        
+        modelBuilder.Entity<MatchEntry>()
+            .HasIndex(m => new { m.ProfileId, m.Champion })
+            .HasDatabaseName("IX_Matches_ProfileId_Champion");
+
+        modelBuilder.Entity<MatchEntry>()
+            .HasIndex(m => new { m.ProfileId, m.Date, m.GameMode })
+            .HasDatabaseName("IX_Matches_ProfileId_Date_GameMode");
+
+        modelBuilder.Entity<MatchEntry>()
+            .HasIndex(m => new { m.ProfileId, m.Role })
+            .HasDatabaseName("IX_Matches_ProfileId_Role");
 
         modelBuilder.Entity<Season>().HasData(
             new Season 
             { 
                 Id = 1, 
                 Number = 15, 
-                StartDate = new DateTime(2025, 1, 9), 
-                EndDate = new DateTime(2026, 1, 6) 
+                StartDate = new DateTime(2025, 1, 9, 0, 0, 0, DateTimeKind.Utc), 
+                EndDate = new DateTime(2026, 1, 6, 0, 0, 0, DateTimeKind.Utc) 
             }
         );
     }
