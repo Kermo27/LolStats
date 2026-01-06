@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Velopack;
 
 namespace LolStatsTracker.TrayApp;
 
@@ -20,6 +21,9 @@ public partial class App : Application
     
     protected override async void OnStartup(StartupEventArgs e)
     {
+        VelopackApp.Build()
+            .Run();
+
         base.OnStartup(e);
         
         _host = Host.CreateDefaultBuilder()
@@ -40,6 +44,7 @@ public partial class App : Application
                 services.AddSingleton<ChampionDataService>();
                 services.AddSingleton<RiotApiService>();
                 services.AddHttpClient<ApiSyncService>();
+                services.AddSingleton<UpdateService>();
                 
                 services.AddSingleton<TrayBackgroundService>();
                 services.AddHostedService(provider => provider.GetRequiredService<TrayBackgroundService>());
@@ -97,6 +102,12 @@ public partial class App : Application
         }
         
         await _host.StartAsync();
+        
+        // Initialize Update Service
+        var updateService = _host.Services.GetRequiredService<UpdateService>();
+        await updateService.InitializeAsync();
+        // Fire and forget update check
+        _ = updateService.CheckForUpdatesAsync();
         
         SetupTrayIcon();
     }

@@ -28,3 +28,7 @@ TestResults/
 *.db
 *.db-shm
 *.db-wal
+
+# Build artifacts
+publish/
+Releases/
