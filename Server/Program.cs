@@ -35,30 +35,53 @@ try
 
     builder.Services.AddOpenApi();
     
-    var connectionString = builder.Configuration.GetConnectionString("PostgreSQL") 
-        ?? throw new InvalidOperationException("PostgreSQL connection string is required");
+    // Railway uses DATABASE_URL, standard config uses ConnectionStrings:PostgreSQL
+    var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+        ?? builder.Configuration.GetConnectionString("PostgreSQL");
+    
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        Log.Fatal("PostgreSQL connection string is required. Set DATABASE_URL or ConnectionStrings:PostgreSQL");
+        throw new InvalidOperationException("PostgreSQL connection string is required");
+    }
+    
+    // Convert Railway's postgres:// URL format to Npgsql format if needed
+    if (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://"))
+    {
+        connectionString = ConvertPostgresUrlToConnectionString(connectionString);
+    }
+    
     builder.Services.AddDbContext<MatchDbContext>(options =>
     {
         options.UseNpgsql(connectionString, npgsqlOptions =>
         {
-            npgsqlOptions.EnableRetryOnFailure(3);
-            npgsqlOptions.CommandTimeout(30);
+            npgsqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+            npgsqlOptions.CommandTimeout(60);
         });
     });
-    Log.Information("Using PostgreSQL database");
+    Log.Information("PostgreSQL configured");
 
     // Configure Caching - Redis or Memory
-    var useRedis = builder.Configuration.GetValue<bool>("Caching:UseRedis");
-    if (useRedis)
+    var redisUrl = Environment.GetEnvironmentVariable("REDIS_URL") 
+        ?? builder.Configuration.GetConnectionString("Redis");
+    var useRedis = !string.IsNullOrEmpty(redisUrl) || builder.Configuration.GetValue<bool>("Caching:UseRedis");
+    
+    if (useRedis && !string.IsNullOrEmpty(redisUrl))
     {
-        var redisConnection = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+        // Convert redis:// URL format if needed
+        var redisConnection = redisUrl;
+        if (redisConnection.StartsWith("redis://"))
+        {
+            redisConnection = ConvertRedisUrlToConnectionString(redisConnection);
+        }
+        
         builder.Services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = redisConnection;
             options.InstanceName = "LolStats:";
         });
         builder.Services.AddScoped<ICacheService, RedisCacheService>();
-        Log.Information("Using Redis caching with connection: {Redis}", redisConnection);
+        Log.Information("Redis caching configured");
     }
     else
     {
@@ -250,4 +273,42 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
+}
+
+// Helper function to convert postgres:// URL to Npgsql connection string
+static string ConvertPostgresUrlToConnectionString(string url)
+{
+    var uri = new Uri(url);
+    var userInfo = uri.UserInfo.Split(':');
+    var builder = new Npgsql.NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.Port > 0 ? uri.Port : 5432,
+        Database = uri.AbsolutePath.TrimStart('/'),
+        Username = userInfo[0],
+        Password = userInfo.Length > 1 ? userInfo[1] : "",
+        SslMode = Npgsql.SslMode.Require,
+        TrustServerCertificate = true
+    };
+    return builder.ConnectionString;
+}
+
+// Helper function to convert redis:// URL to StackExchange.Redis format
+static string ConvertRedisUrlToConnectionString(string url)
+{
+    var uri = new Uri(url);
+    var host = uri.Host;
+    var port = uri.Port > 0 ? uri.Port : 6379;
+    var password = "";
+    
+    if (!string.IsNullOrEmpty(uri.UserInfo))
+    {
+        password = uri.UserInfo.Contains(':') 
+            ? uri.UserInfo.Split(':')[1] 
+            : uri.UserInfo;
+    }
+    
+    return string.IsNullOrEmpty(password) 
+        ? $"{host}:{port}" 
+        : $"{host}:{port},password={password}";
 }
