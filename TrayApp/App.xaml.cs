@@ -103,6 +103,9 @@ public partial class App : Application
         
         await _host.StartAsync();
         
+        // Subscribe to authentication failure event to show login when token refresh fails
+        _authService!.AuthenticationFailed += OnAuthenticationFailed;
+        
         // Initialize Update Service
         var updateService = _host.Services.GetRequiredService<UpdateService>();
         await updateService.InitializeAsync();
@@ -110,6 +113,33 @@ public partial class App : Application
         _ = updateService.CheckForUpdatesAsync();
         
         SetupTrayIcon();
+    }
+    
+    private void OnAuthenticationFailed(object? sender, EventArgs e)
+    {
+        // Run on UI thread
+        Dispatcher.Invoke(() =>
+        {
+            System.Diagnostics.Debug.WriteLine("Authentication failed, prompting for re-login");
+            
+            var loginWindow = new LoginWindow();
+            var loginVm = _host!.Services.GetRequiredService<LoginViewModel>();
+            loginWindow.DataContext = loginVm;
+            
+            loginVm.LoginResultAction = (success) => 
+            {
+                if (success)
+                {
+                    loginWindow.LoginSuccessful = true;
+                    loginWindow.DialogResult = true;
+                    loginWindow.Close();
+                }
+            };
+            
+            loginWindow.ShowDialog();
+            
+            // If user closes without logging in, we continue but sync will fail
+        });
     }
     
     private void SetupTrayIcon()

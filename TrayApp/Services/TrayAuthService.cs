@@ -25,6 +25,9 @@ public class TrayAuthService
     private TokenResponseDto? _currentToken;
     private readonly SemaphoreSlim _refreshSemaphore = new(1, 1);
     
+    // Event fired when authentication fails and re-login is required
+    public event EventHandler? AuthenticationFailed;
+    
     public bool IsAuthenticated => _currentToken != null && DateTime.UtcNow < _currentToken.ExpiresAt;
     public string? AccessToken => _currentToken?.AccessToken;
     public UserInfoDto? CurrentUser => _currentToken?.User;
@@ -204,6 +207,10 @@ public class TrayAuthService
                 response.StatusCode, errorContent);
             
             await ClearStoredTokenAsync();
+            
+            // Notify that re-login is required
+            AuthenticationFailed?.Invoke(this, EventArgs.Empty);
+            
             return false;
         }
         catch (Exception ex)
