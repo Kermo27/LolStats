@@ -14,8 +14,7 @@ public class MatchEntry
     
     [Required]
     public string Champion { get; set; } = string.Empty;
-    [Required] 
-    public string Role { get; set; } = "ADC";
+    public string Role { get; set; } = "N/A";
     public string LaneAlly { get; set; } = string.Empty;
     public string LaneEnemy { get; set; } = string.Empty;
     public string LaneEnemyAlly { get; set; } = string.Empty;

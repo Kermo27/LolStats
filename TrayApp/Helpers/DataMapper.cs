@@ -102,7 +102,7 @@ public static class DataMapper
             Cs = csOrVisionScore,
             GameLengthMinutes = gameLengthMinutes,
             Win = isWin,
-            Date = DateTime.Now,
+            Date = DateTime.UtcNow,
             
             // Rank Info - uses appropriate ranked stats based on queue type
             CurrentTier = rankedStats?.Tier ?? "Unranked",
