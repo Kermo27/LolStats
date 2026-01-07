@@ -8,6 +8,7 @@ namespace LolStatsTracker.TrayApp.ViewModels;
 public partial class SettingsViewModel : ObservableObject
 {
     private readonly IUserSettingsService _settingsService;
+    private readonly UpdateService _updateService;
 
     [ObservableProperty]
     private string _serverUrl = string.Empty;
@@ -27,9 +28,22 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSaving;
 
-    public SettingsViewModel(IUserSettingsService settingsService)
+    [ObservableProperty]
+    private bool _isCheckingForUpdates;
+
+    [ObservableProperty]
+    private string _updateStatus = "Click 'Check for Updates' to check";
+
+    [ObservableProperty]
+    private bool _updateAvailable;
+
+    [ObservableProperty]
+    private string? _availableVersion;
+
+    public SettingsViewModel(IUserSettingsService settingsService, UpdateService updateService)
     {
         _settingsService = settingsService;
+        _updateService = updateService;
         LoadFromSettings();
     }
 
@@ -92,4 +106,55 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     public Action? CloseAction { get; set; }
+
+    [RelayCommand]
+    private async Task CheckForUpdatesAsync()
+    {
+        if (IsCheckingForUpdates) return;
+        
+        try
+        {
+            IsCheckingForUpdates = true;
+            UpdateStatus = "Checking for updates...";
+            UpdateAvailable = false;
+            AvailableVersion = null;
+
+            var updateInfo = await _updateService.CheckForUpdatesInfoAsync();
+            
+            if (updateInfo != null)
+            {
+                UpdateAvailable = true;
+                AvailableVersion = updateInfo.Version;
+                UpdateStatus = $"Update available: v{updateInfo.Version}";
+            }
+            else
+            {
+                UpdateStatus = "You have the latest version!";
+            }
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsCheckingForUpdates = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task DownloadAndInstallAsync()
+    {
+        if (!UpdateAvailable) return;
+        
+        try
+        {
+            UpdateStatus = "Downloading update...";
+            await _updateService.DownloadAndApplyAsync();
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = $"Download failed: {ex.Message}";
+        }
+    }
 }

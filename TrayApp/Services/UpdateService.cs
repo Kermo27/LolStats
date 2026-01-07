@@ -87,4 +87,55 @@ public class UpdateService(ILogger<UpdateService> logger)
             _logger.LogError(ex, "Failed to check/download updates.");
         }
     }
+
+    // Record to hold update info for UI
+    public record UpdateInfo(string Version);
+    
+    private VelopackAsset? _pendingUpdate;
+
+    /// <summary>
+    /// Check for updates and return info without downloading
+    /// </summary>
+    public async Task<UpdateInfo?> CheckForUpdatesInfoAsync()
+    {
+        if (_updateManager == null)
+        {
+            Log("UpdateManager is null, cannot check for updates.");
+            return null;
+        }
+
+        Log("Checking for updates (info only)...");
+        var updateInfo = await _updateManager.CheckForUpdatesAsync();
+        
+        if (updateInfo == null)
+        {
+            Log("No updates available.");
+            return null;
+        }
+
+        _pendingUpdate = updateInfo.TargetFullRelease;
+        var version = updateInfo.TargetFullRelease.Version.ToString();
+        Log($"Update available: {version}");
+        return new UpdateInfo(version);
+    }
+
+    /// <summary>
+    /// Download and apply pending update
+    /// </summary>
+    public async Task DownloadAndApplyAsync()
+    {
+        if (_updateManager == null || _pendingUpdate == null)
+        {
+            Log("No pending update to download.");
+            return;
+        }
+
+        Log("Downloading update...");
+        var updateInfo = await _updateManager.CheckForUpdatesAsync();
+        if (updateInfo == null) return;
+        
+        await _updateManager.DownloadUpdatesAsync(updateInfo);
+        Log("Update downloaded. Applying and restarting...");
+        _updateManager.ApplyUpdatesAndRestart(updateInfo);
+    }
 }
