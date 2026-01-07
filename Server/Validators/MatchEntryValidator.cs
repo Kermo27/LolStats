@@ -7,7 +7,12 @@ public class MatchEntryValidator : AbstractValidator<MatchEntry>
 {
     private static readonly HashSet<string> ValidRoles = new(StringComparer.OrdinalIgnoreCase)
     {
-        "ADC", "Support", "Mid", "Jungle", "Top"
+        "ADC", "Support", "Mid", "Jungle", "Top", "N/A", "Unknown"
+    };
+
+    private static readonly HashSet<string> SummonersRiftModes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Ranked Solo", "Ranked Flex", "Normal"
     };
 
     private static readonly HashSet<string> ValidTiers = new(StringComparer.OrdinalIgnoreCase)
@@ -17,7 +22,8 @@ public class MatchEntryValidator : AbstractValidator<MatchEntry>
 
     private static readonly HashSet<string> ValidGameModes = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Ranked Solo", "Ranked Flex", "Normal", "ARAM", "Arena", "URF", "Ultimate Spellbook"
+        "Ranked Solo", "Ranked Flex", "Normal", "ARAM", "ARAM Mayhem", "Arena", "URF", "ARURF", 
+        "Ultimate Spellbook", "Swift Play", "Other"
     };
 
     public MatchEntryValidator()
@@ -26,9 +32,14 @@ public class MatchEntryValidator : AbstractValidator<MatchEntry>
             .NotEmpty().WithMessage("Champion is required")
             .MaximumLength(50).WithMessage("Champion name is too long");
 
+        // Role is required only for Summoner's Rift modes
         RuleFor(x => x.Role)
             .NotEmpty().WithMessage("Role is required")
-            .Must(r => ValidRoles.Contains(r)).WithMessage("Invalid role. Must be: ADC, Support, Mid, Jungle, or Top");
+            .When(x => SummonersRiftModes.Contains(x.GameMode ?? ""));
+
+        RuleFor(x => x.Role)
+            .Must(r => ValidRoles.Contains(r)).WithMessage("Invalid role. Must be: ADC, Support, Mid, Jungle, Top, or N/A")
+            .When(x => !string.IsNullOrWhiteSpace(x.Role));
 
         RuleFor(x => x.Kills)
             .GreaterThanOrEqualTo(0).WithMessage("Kills cannot be negative")
