@@ -108,6 +108,27 @@ jobs:
           Set-Content $csproj $content
           Write-Host "Updated version to $version"
 
+      - name: Create appsettings.json
+        if: steps.version.outputs.skip == 'false'
+        shell: pwsh
+        run: |
+          $config = @{
+            AppConfiguration = @{
+              ApiBaseUrl = "https://lolstats-production.up.railway.app"
+              ProfileId = "00000000-0000-0000-0000-000000000000"
+              AutoStartWithWindows = $false
+              CheckIntervalSeconds = 10
+            }
+            Logging = @{
+              LogLevel = @{
+                Default = "Information"
+                Microsoft = "Warning"
+              }
+            }
+          }
+          $config | ConvertTo-Json -Depth 3 | Set-Content "TrayApp/appsettings.json"
+          Write-Host "Created appsettings.json with production API URL"
+
       - name: Restore dependencies
         run: dotnet restore TrayApp/LolStatsTracker.TrayApp.csproj
 
