@@ -17,6 +17,7 @@
                         <MenuItem Header="Settings..." Command="{Binding OpenSettingsCommand}"/>
                         <MenuItem Header="Open Dashboard" Command="{Binding OpenDashboardCommand}"/>
                         <Separator/>
+                        <MenuItem Header="{Binding Version}" IsEnabled="False" FontStyle="Italic"/>
                         <MenuItem Header="Exit" Command="{Binding ExitApplicationCommand}"/>
                     </ContextMenu>
                 </tb:TaskbarIcon.ContextMenu>

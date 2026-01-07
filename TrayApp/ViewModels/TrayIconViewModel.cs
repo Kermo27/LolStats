@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Diagnostics;
+using System.Reflection;
 using System.Windows;
 using LolStatsTracker.TrayApp.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,8 @@ public partial class TrayIconViewModel : ObservableObject
 
     [ObservableProperty]
     private string _toolTipText = "LoL Stats Tracker";
+
+    public string Version => $"v{Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0"}";
 
     public TrayIconViewModel(
         LcuService lcuService, 

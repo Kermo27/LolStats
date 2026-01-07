@@ -32,3 +32,6 @@ TestResults/
 # Build artifacts
 publish/
 Releases/
+
+# TrayApp config with API URL
+TrayApp/appsettings.json

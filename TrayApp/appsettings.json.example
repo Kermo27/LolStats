@@ -1,6 +1,6 @@
 {
   "AppConfiguration": {
-    "ApiBaseUrl": "",
+    "ApiBaseUrl": "https://YOUR-API-URL-HERE",
     "ProfileId": "00000000-0000-0000-0000-000000000000",
     "AutoStartWithWindows": false,
     "CheckIntervalSeconds": 10
