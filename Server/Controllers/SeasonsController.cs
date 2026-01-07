@@ -47,6 +47,11 @@ public class SeasonsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Season>> Create(Season season)
     {
+        // Convert to UTC for PostgreSQL
+        season.StartDate = DateTime.SpecifyKind(season.StartDate, DateTimeKind.Utc);
+        if (season.EndDate.HasValue)
+            season.EndDate = DateTime.SpecifyKind(season.EndDate.Value, DateTimeKind.Utc);
+        
         _context.Seasons.Add(season);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = season.Id }, season);
@@ -57,6 +62,11 @@ public class SeasonsController : ControllerBase
     public async Task<IActionResult> Update(int id, Season season)
     {
         if (id != season.Id) return BadRequest();
+        
+        // Convert to UTC for PostgreSQL
+        season.StartDate = DateTime.SpecifyKind(season.StartDate, DateTimeKind.Utc);
+        if (season.EndDate.HasValue)
+            season.EndDate = DateTime.SpecifyKind(season.EndDate.Value, DateTimeKind.Utc);
         
         _context.Entry(season).State = EntityState.Modified;
         await _context.SaveChangesAsync();
