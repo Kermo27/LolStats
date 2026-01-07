@@ -233,9 +233,10 @@ public class AuthServiceTests : IDisposable
         });
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == "testuser");
-        Assert.NotNull(user?.RefreshToken);
-        Assert.NotNull(user?.RefreshTokenExpiry);
-        Assert.True(user.RefreshTokenExpiry > DateTime.UtcNow);
+        var refreshToken = await _db.RefreshTokens.FirstOrDefaultAsync(rt => rt.UserId == user!.Id);
+        Assert.NotNull(refreshToken);
+        Assert.NotEmpty(refreshToken.Token);
+        Assert.True(refreshToken.ExpiresAt > DateTime.UtcNow);
     }
 
     #endregion
@@ -280,11 +281,20 @@ public class AuthServiceTests : IDisposable
         { 
             Id = Guid.NewGuid(), 
             Username = "testuser", 
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("password"),
-            RefreshToken = "expired-token",
-            RefreshTokenExpiry = DateTime.UtcNow.AddDays(-1) // Expired
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("password")
         };
         _db.Users.Add(user);
+        
+        // Add expired refresh token to the new table
+        var expiredToken = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            Token = "expired-token",
+            ExpiresAt = DateTime.UtcNow.AddDays(-1), // Expired
+            CreatedAt = DateTime.UtcNow.AddDays(-8)
+        };
+        _db.RefreshTokens.Add(expiredToken);
         await _db.SaveChangesAsync();
 
         var result = await _service.RefreshTokenAsync("expired-token");
@@ -314,13 +324,17 @@ public class AuthServiceTests : IDisposable
 
         var user = await _db.Users.FirstAsync(u => u.Username == "testuser");
         
+        // Verify token exists before revoke
+        var tokensBefore = await _db.RefreshTokens.CountAsync(rt => rt.UserId == user.Id);
+        Assert.True(tokensBefore > 0);
+        
         var result = await _service.RevokeTokenAsync(user.Id);
 
         Assert.True(result.IsSuccess);
         
-        await _db.Entry(user).ReloadAsync();
-        Assert.Null(user.RefreshToken);
-        Assert.Null(user.RefreshTokenExpiry);
+        // Verify all tokens are removed
+        var tokensAfter = await _db.RefreshTokens.CountAsync(rt => rt.UserId == user.Id);
+        Assert.Equal(0, tokensAfter);
     }
 
     [Fact]
