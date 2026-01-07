@@ -1,0 +1,158 @@
+name: Release TrayApp
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'TrayApp/**'
+      - 'Shared/**'
+      - '.github/workflows/release.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Get version from commits
+        id: version
+        shell: pwsh
+        run: |
+          # Get the latest tag
+          $latestTag = git describe --tags --abbrev=0 2>$null
+          if (-not $latestTag) {
+            $latestTag = "v1.0.0"
+          }
+          
+          # Parse version
+          $version = $latestTag -replace '^v', ''
+          $parts = $version -split '\.'
+          $major = [int]$parts[0]
+          $minor = [int]$parts[1]
+          $patch = [int]$parts[2]
+          
+          # Check commits since last tag for conventional commits
+          $commits = git log "$latestTag..HEAD" --pretty=format:"%s" 2>$null
+          
+          $hasBreaking = $false
+          $hasFeat = $false
+          $hasFix = $false
+          
+          foreach ($commit in $commits) {
+            if ($commit -match "BREAKING CHANGE" -or $commit -match "^.*!:") {
+              $hasBreaking = $true
+            }
+            elseif ($commit -match "^feat(\(.+\))?:") {
+              $hasFeat = $true
+            }
+            elseif ($commit -match "^fix(\(.+\))?:") {
+              $hasFix = $true
+            }
+          }
+          
+          # Bump version
+          if ($hasBreaking) {
+            $major++
+            $minor = 0
+            $patch = 0
+          }
+          elseif ($hasFeat) {
+            $minor++
+            $patch = 0
+          }
+          elseif ($hasFix) {
+            $patch++
+          }
+          else {
+            # No release needed
+            Write-Host "No conventional commits found, skipping release"
+            echo "skip=true" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          
+          $newVersion = "$major.$minor.$patch"
+          Write-Host "New version: $newVersion"
+          echo "version=$newVersion" >> $env:GITHUB_OUTPUT
+          echo "skip=false" >> $env:GITHUB_OUTPUT
+
+      - name: Skip if no release needed
+        if: steps.version.outputs.skip == 'true'
+        run: |
+          Write-Host "No release needed based on commits"
+          exit 0
+
+      - name: Update version in csproj
+        if: steps.version.outputs.skip == 'false'
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $csproj = "TrayApp/LolStatsTracker.TrayApp.csproj"
+          $content = Get-Content $csproj -Raw
+          
+          $content = $content -replace '<Version>.*</Version>', "<Version>$version</Version>"
+          $content = $content -replace '<AssemblyVersion>.*</AssemblyVersion>', "<AssemblyVersion>$version.0</AssemblyVersion>"
+          $content = $content -replace '<FileVersion>.*</FileVersion>', "<FileVersion>$version.0</FileVersion>"
+          
+          Set-Content $csproj $content
+          Write-Host "Updated version to $version"
+
+      - name: Restore dependencies
+        run: dotnet restore TrayApp/LolStatsTracker.TrayApp.csproj
+
+      - name: Publish TrayApp
+        run: |
+          dotnet publish TrayApp/LolStatsTracker.TrayApp.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained `
+            -o publish
+
+      - name: Install Velopack
+        run: dotnet tool install -g vpk
+
+      - name: Package with Velopack
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          vpk pack `
+            -u "LolStatsTracker" `
+            -v "$version" `
+            -p "publish" `
+            -e "LolStatsTracker.TrayApp.exe"
+
+      - name: Create Git Tag
+        if: steps.version.outputs.skip == 'false'
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$version" -m "Release v$version"
+          git push origin "v$version"
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.skip == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          prerelease: true
+          files: |
+            Releases/LolStatsTracker-${{ steps.version.outputs.version }}-full.nupkg
+            Releases/LolStatsTracker-win-Setup.exe
+            Releases/releases.win.json
+            Releases/assets.win.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
