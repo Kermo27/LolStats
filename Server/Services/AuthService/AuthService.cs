@@ -117,26 +117,26 @@ public class AuthService : IAuthService
     {
         try
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+            var storedToken = await _context.RefreshTokens
+                .Include(rt => rt.User)
+                .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
 
-            if (user == null)
+            if (storedToken == null)
             {
                 _logger.LogWarning("Refresh failed: Invalid token provided");
                 return Result<TokenResponseDto>.Unauthorized("Refresh token not found or already rotated");
             }
 
-            if (user.RefreshTokenExpiry < DateTime.UtcNow)
+            if (storedToken.ExpiresAt < DateTime.UtcNow)
             {
-                _logger.LogWarning("Refresh failed: Token expired for user {Username}", user.Username);
-                // Clear expired refresh token
-                user.RefreshToken = null;
-                user.RefreshTokenExpiry = null;
+                _logger.LogWarning("Refresh failed: Token expired for user {Username}", storedToken.User.Username);
+                _context.RefreshTokens.Remove(storedToken);
                 await _context.SaveChangesAsync();
                 return Result<TokenResponseDto>.Unauthorized("Refresh token expired");
             }
 
-            // Generate NEW access token but KEEP the same refresh token (no rotation)
+            var user = storedToken.User;
+            
             var accessToken = GenerateAccessToken(user);
             var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpiryMinutes);
 
@@ -171,12 +171,15 @@ public class AuthService : IAuthService
             {
                 return Result.NotFound("User not found");
             }
-
-            user.RefreshToken = null;
-            user.RefreshTokenExpiry = null;
+            
+            var tokens = await _context.RefreshTokens
+                .Where(rt => rt.UserId == userId)
+                .ToListAsync();
+            
+            _context.RefreshTokens.RemoveRange(tokens);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Token revoked for user: {Username}", user.Username);
+            _logger.LogInformation("All tokens revoked for user: {Username}", user.Username);
             return Result.Success();
         }
         catch (Exception ex)
@@ -206,14 +209,28 @@ public class AuthService : IAuthService
         return null;
     }
 
-    private async Task<TokenResponseDto> GenerateTokensAsync(User user)
+    private async Task<TokenResponseDto> GenerateTokensAsync(User user, string? deviceInfo = null)
     {
         var accessToken = GenerateAccessToken(user);
-        var refreshToken = GenerateRefreshToken();
-
-        // Save refresh token to database
-        user.RefreshToken = refreshToken;
-        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays);
+        var refreshTokenString = GenerateRefreshToken();
+        
+        var refreshToken = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            Token = refreshTokenString,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays),
+            DeviceInfo = deviceInfo
+        };
+        
+        _context.RefreshTokens.Add(refreshToken);
+        
+        var expiredTokens = await _context.RefreshTokens
+            .Where(rt => rt.UserId == user.Id && rt.ExpiresAt < DateTime.UtcNow)
+            .ToListAsync();
+        _context.RefreshTokens.RemoveRange(expiredTokens);
+        
         await _context.SaveChangesAsync();
 
         var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpiryMinutes);
@@ -221,7 +238,7 @@ public class AuthService : IAuthService
         return new TokenResponseDto
         {
             AccessToken = accessToken,
-            RefreshToken = refreshToken,
+            RefreshToken = refreshTokenString,
             ExpiresAt = expiresAt,
             User = new UserInfoDto
             {

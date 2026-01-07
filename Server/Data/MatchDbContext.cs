@@ -11,6 +11,7 @@ public class MatchDbContext : DbContext
     public DbSet<MatchEntry> Matches => Set<MatchEntry>();
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<Season> Seasons => Set<Season>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,6 +24,22 @@ public class MatchDbContext : DbContext
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
             .HasDatabaseName("IX_Users_Email");
+
+        // RefreshToken -> User relationship
+        modelBuilder.Entity<RefreshToken>()
+            .HasOne(rt => rt.User)
+            .WithMany(u => u.RefreshTokens)
+            .HasForeignKey(rt => rt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RefreshToken>()
+            .HasIndex(rt => rt.Token)
+            .IsUnique()
+            .HasDatabaseName("IX_RefreshTokens_Token");
+
+        modelBuilder.Entity<RefreshToken>()
+            .HasIndex(rt => rt.UserId)
+            .HasDatabaseName("IX_RefreshTokens_UserId");
 
         // UserProfile -> User relationship (nullable for legacy profiles)
         modelBuilder.Entity<UserProfile>()

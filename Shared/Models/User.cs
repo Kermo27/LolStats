@@ -21,8 +21,6 @@ public class User
     
     [MaxLength(20)]
     public string Role { get; set; } = "User";
-
-    public string? RefreshToken { get; set; }
     
-    public DateTime? RefreshTokenExpiry { get; set; }
+    public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 }
