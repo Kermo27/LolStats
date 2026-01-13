@@ -24,7 +24,7 @@ public class MatchEntry
     public int Deaths { get; set; }
     public int Assists { get; set; }
     public int Cs { get; set; }
-    public int GameLengthMinutes { get; set; }
+    public int GameLengthMinutes { get; set; } = 25;
     public bool Win { get; set; }
     public DateTime Date { get; set; } = DateTime.Today;
     
