@@ -84,6 +84,16 @@ public class MatchService : IMatchService
 
     public async Task<MatchEntry> AddAsync(MatchEntry match)
     {
+        // Ensure Date is UTC for PostgreSQL compatibility
+        if (match.Date.Kind == DateTimeKind.Local)
+        {
+            match.Date = match.Date.ToUniversalTime();
+        }
+        else if (match.Date.Kind == DateTimeKind.Unspecified)
+        {
+            match.Date = DateTime.SpecifyKind(match.Date, DateTimeKind.Utc);
+        }
+        
         _db.Matches.Add(match);
         await _db.SaveChangesAsync();
         
@@ -117,7 +127,14 @@ public class MatchService : IMatchService
         existingMatch.Cs = updatedMatch.Cs;
         existingMatch.GameLengthMinutes = updatedMatch.GameLengthMinutes;
         existingMatch.Win = updatedMatch.Win;
-        existingMatch.Date = updatedMatch.Date;
+        
+        // Ensure Date is UTC for PostgreSQL compatibility
+        var date = updatedMatch.Date;
+        if (date.Kind == DateTimeKind.Local)
+            date = date.ToUniversalTime();
+        else if (date.Kind == DateTimeKind.Unspecified)
+            date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+        existingMatch.Date = date;
         existingMatch.CurrentTier = updatedMatch.CurrentTier;
         existingMatch.CurrentDivision = updatedMatch.CurrentDivision;
         existingMatch.CurrentLp = updatedMatch.CurrentLp;
